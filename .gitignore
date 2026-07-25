@@ -45,8 +45,8 @@ folderarrangement.txt
 # Server / runtime
 .user.ini
 
-# Claude Code local overrides (shared settings.json stays tracked)
-.claude/settings.local.json
+# Claude Code (local tooling config, not part of the app)
+.claude/
 
 # Source-asset archives (extracted copies live under public/images/)
 *.zip
