@@ -38,6 +38,8 @@ $currentLocale   = I18n::locale();
     <?php endforeach; endif; ?>
     <!-- Client-side pricing mirror (previews only; server is authoritative) -->
     <script src="<?= htmlspecialchars(Asset::url('/js/pricing.js')) ?>" defer></script>
+    <!-- Exact mockup tint chains for colours the generic filter formula renders badly -->
+    <script src="<?= htmlspecialchars(Asset::url('/js/color-tint.js')) ?>" defer></script>
 </head>
 <body>
     <a href="#main-content" class="skip-link"><?= t('header.skip_to_content') ?></a>

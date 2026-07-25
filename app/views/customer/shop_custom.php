@@ -166,7 +166,10 @@ function applyCartProductColorFilter(hex) {
     const isBlack = hexLower === '#000000' || hexLower === '#000' || hsl.l < 10;
     const isGray = hsl.s < 10;
     
-    if (isWhite) {
+    const tintOverride = window.CostasTint && window.CostasTint.getOverride(hex);
+    if (tintOverride) {
+        productImg.style.filter = tintOverride;
+    } else if (isWhite) {
         productImg.style.filter = 'grayscale(1) brightness(2.2) contrast(0.85)';
     } else if (isBlack) {
         productImg.style.filter = 'grayscale(1) brightness(0.45) contrast(1.2)';
@@ -788,6 +791,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const isBlack = hexLower === '#000000' || hexLower === '#000' || l < 10;
         const isGray = s < 10;
         
+        const tintOverride = window.CostasTint && window.CostasTint.getOverride(hex);
+        if (tintOverride) return tintOverride;
+
         if (isWhite) return 'saturate(0) brightness(2) contrast(0.8)';
         if (isBlack) return 'saturate(0) brightness(0.65) contrast(1.1)';
         if (isGray) {
@@ -3153,7 +3159,10 @@ function applyColorTint(hex) {
     
     // Apply color filter to product image
     // Base image is ORANGE (~30deg hue) with transparent background
-    if (isWhite) {
+    const tintOverride = window.CostasTint && window.CostasTint.getOverride(hex);
+    if (tintOverride) {
+        mockupImg.style.filter = tintOverride;
+    } else if (isWhite) {
         // White product - desaturate completely and brighten significantly
         mockupImg.style.filter = 'saturate(0) brightness(2) contrast(0.8)';
     } else if (isBlack) {
@@ -3531,7 +3540,10 @@ document.addEventListener('mousedown', function(e) {
     const prodId = sessionStorage.getItem('custom_product_id');
     const colorId = sessionStorage.getItem('custom_color');
     const sizeId = sessionStorage.getItem('custom_size');
-    if (prodId && colorId && sizeId) {
+    // The product is what matters here; colour and size are optional refinements.
+    // Requiring all three meant a missing size silently dropped the whole handoff
+    // and the studio fell back to the first product in the list.
+    if (prodId) {
         // Find product in productsData
         const product = productsData.find(p => String(p.id) === String(prodId));
         console.log('[DEBUG] Matched product:', product);
@@ -3562,14 +3574,22 @@ document.addEventListener('mousedown', function(e) {
                 document.getElementById('rightSleeveBtn').style.display = 'none';
             }
             // Init color panel and pre-select the color chosen on the product page
-            window.pendingColorId = colorId;
+            if (colorId) window.pendingColorId = colorId;
             initStudioColorPanel(product.id);
             // Update mockup, design area, and summary
             updateMockupImage();
             applyDesignArea();
             updateSummary();
         }
-        // Optionally clear sessionStorage so it doesn't auto-select again
+        // A deliberate pick from the product page must beat any saved studio
+        // snapshot. restoreStudioState() runs later (on a timer, from a separate
+        // DOMContentLoaded handler) and guards on these sessionStorage keys - but
+        // we clear them just below, so by the time it looks they are already gone
+        // and it happily restores the previous session's product AND its uploads
+        // over the top. Flag it in memory instead, and drop the stale snapshot.
+        window.studioFreshPick = true;
+        if (typeof window.clearStudioState === 'function') window.clearStudioState();
+
         sessionStorage.removeItem('custom_product_id');
         sessionStorage.removeItem('custom_color');
         sessionStorage.removeItem('custom_size');
@@ -4549,6 +4569,12 @@ function deleteElement(id) {
         // If the user just arrived from /shop/select_product with a fresh
         // pick, sessionStorage holds the selection. Don't overwrite that
         // with an older localStorage snapshot — they wanted a fresh start.
+        // The in-memory flag is authoritative: the handoff handler runs first
+        // and clears the sessionStorage keys before we ever get here.
+        if (window.studioFreshPick) {
+            dbg('fresh product pick consumed this load, skipping restore');
+            return false;
+        }
         try {
             if (sessionStorage.getItem('custom_product_id')) {
                 dbg('fresh session-pick present, skipping restore');

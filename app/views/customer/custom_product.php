@@ -386,7 +386,10 @@ function applyColorTint(hex) {
     const isVeryLight = hsl.l > 85;
     const isBlack = hexLower === '#000000' || hexLower === '#000' || hsl.l < 10;
     const isGray = hsl.s < 10;
-    if (isWhite) {
+    const tintOverride = window.CostasTint && window.CostasTint.getOverride(hex);
+    if (tintOverride) {
+        img.style.filter = tintOverride;
+    } else if (isWhite) {
         img.style.filter = 'saturate(0) brightness(2) contrast(0.8)';
     } else if (isBlack) {
         img.style.filter = 'saturate(0) brightness(0.65) contrast(1.1)';
@@ -496,12 +499,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
-        // Store in sessionStorage
+        // Hand the chosen product/colour/size to the studio. Only write keys we
+        // actually resolved - storing a null here lands the string "null" in
+        // sessionStorage, which reads as truthy on the other side.
         sessionStorage.setItem('custom_product_id', product.id);
-        sessionStorage.setItem('custom_color', color);
-        sessionStorage.setItem('custom_size', size);
-        // Redirect to new route
-        window.location.href = '/shop/custom_product/shop_custom';
+        if (color) { sessionStorage.setItem('custom_color', color); }
+        else       { sessionStorage.removeItem('custom_color'); }
+        if (size)  { sessionStorage.setItem('custom_size', size); }
+        else       { sessionStorage.removeItem('custom_size'); }
+        window.location.href = '/shop/custom';
     });
 });
 </script>

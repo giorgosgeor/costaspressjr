@@ -275,13 +275,19 @@ function renderProduct(product) {
         });
     }
     document.getElementById('colorSwatches').innerHTML = swatchHtml;
-    // Render size options
-    let sizeHtml = '<label>' + (window.I18N ? window.I18N.t('shop.select.size_label') : 'Size:') + '</label><select id="sizeSelect"><option value="">' + (window.I18N ? window.I18N.t('shop.select.select_size') : 'Select size') + '</option>';
-    if (product.sizes) {
-        product.sizes.forEach(size => {
-            sizeHtml += `<option value="${size.id}">${size.size_name}</option>`;
-        });
+    // Render size options. A product with a single size ("One Size" caps) offers
+    // no actual choice, so select it silently instead of showing a dropdown.
+    const sizes = product.sizes || [];
+    if (sizes.length < 2) {
+        selectedSize = sizes[0] || null;
+        document.getElementById('sizeOptions').innerHTML = '';
+        return;
     }
+    selectedSize = null;
+    let sizeHtml = '<label>' + (window.I18N ? window.I18N.t('shop.select.size_label') : 'Size:') + '</label><select id="sizeSelect"><option value="">' + (window.I18N ? window.I18N.t('shop.select.select_size') : 'Select size') + '</option>';
+    sizes.forEach(size => {
+        sizeHtml += `<option value="${size.id}">${size.size_name}</option>`;
+    });
     sizeHtml += '</select>';
     document.getElementById('sizeOptions').innerHTML = sizeHtml;
 }

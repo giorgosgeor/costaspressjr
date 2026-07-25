@@ -1461,6 +1461,9 @@ function buildColorFilter(hexColor) {
     const isWhite = hexColor.toLowerCase() === '#ffffff' || hsl.l > 95;
     const isBlack = hsl.l < 10;
     const isGray  = hsl.s < 10;
+    const tintOverride = window.CostasTint && window.CostasTint.getOverride(hexColor);
+    if (tintOverride) return tintOverride;
+
     if (isWhite) return 'grayscale(1) brightness(2.2) contrast(0.85)';
     if (isBlack) return 'grayscale(1) brightness(0.45) contrast(1.2)';
     if (isGray)  return `grayscale(1) brightness(${0.2 + (hsl.l / 100) * 1.5})`;
@@ -1509,7 +1512,10 @@ function applyColorTint(hexColor) {
     
     // Apply color filter to product image
     // Base image is ORANGE (~30deg hue) with transparent background
-    if (isWhite) {
+    const tintOverride = window.CostasTint && window.CostasTint.getOverride(hexColor);
+    if (tintOverride) {
+        mockupProduct.style.filter = tintOverride;
+    } else if (isWhite) {
         // White product - desaturate completely and brighten significantly
         mockupProduct.style.filter = 'grayscale(1) brightness(2.2) contrast(0.85)';
     } else if (isBlack) {

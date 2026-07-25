@@ -24,7 +24,9 @@
             
             <div class="product-details">
                 <h1 class="product-title"><?= htmlspecialchars($product['name']) ?></h1>
-                <p class="product-type-label"><?= htmlspecialchars($product['type']) ?></p>
+                <?php if (!empty($product['description'])): ?>
+                <p class="product-type-label"><?= htmlspecialchars($product['description']) ?></p>
+                <?php endif; ?>
                 <p class="product-price-large">€<span id="product-price"><?= number_format($product['base_price'], 2) ?></span></p>
                 
                 <form action="/cart/add" method="post" class="product-form">

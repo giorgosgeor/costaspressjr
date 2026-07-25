@@ -1611,8 +1611,25 @@ class CustomerController {
             return;
         }
 
-        // Get product variants
-        $stmt = $this->db->prepare("SELECT * FROM product_variants WHERE product_id = ?");
+        // Get product variants. product_variants only stores colour/size as FKs,
+        // so resolve them here - the view renders swatches and a size dropdown and
+        // needs the hex and the size name, not the ids.
+        $stmt = $this->db->prepare("
+            SELECT pv.id, pv.product_id, pv.stock_quantity, pv.is_available,
+                   ac.color_hex     AS color,
+                   ac.color_name    AS color_name,
+                   ps.size_name     AS size,
+                   ps.size_order,
+                   COALESCE(ps.price_modifier, 0) AS price_modifier
+            FROM product_variants pv
+            LEFT JOIN available_colors ac ON ac.id = pv.color_id
+            LEFT JOIN product_sizes   ps ON ps.id = pv.size_id
+            WHERE pv.product_id = ?
+              AND pv.is_available = 1
+              AND ac.color_hex IS NOT NULL
+              AND ps.size_name IS NOT NULL
+            ORDER BY ps.size_order, ac.id
+        ");
         $stmt->execute([$id]);
         $variants = $stmt->fetchAll();
 
