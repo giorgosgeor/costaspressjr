@@ -1,0 +1,381 @@
+/* ============================================================
+   ACCOUNT — zine theme
+   ============================================================ */
+
+.account-page {
+    min-height: 100vh;
+    background: var(--paper);
+    padding: 40px 0;
+}
+
+.account-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+}
+
+.account-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.account-header h1 {
+    font-size: clamp(2.4rem, 6vw, 3.8rem);
+    color: var(--ink);
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.02em;
+    
+}
+
+.account-header p {
+    font-family: var(--font-type);
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+}
+
+.account-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.account-tab {
+    padding: 0.85rem 1.4rem;
+    background: var(--paper-2);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--ink);
+    cursor: pointer;
+    margin-bottom: -2px;
+    margin-right: -2px;
+    transition: all .12s;
+    position: relative;
+}
+
+.account-tab:hover {
+    background: var(--paper);
+    transform: translateY(-2px);
+    z-index: 2;
+}
+
+.account-tab.active {
+    background: var(--ink);
+    color: var(--paper);
+    z-index: 3;
+    box-shadow: 0 -3px 0 var(--spot);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ============================================================
+   SAVED DESIGNS GRID
+   ============================================================ */
+.designs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.4rem;
+}
+
+.design-card {
+    background: var(--paper-2);
+    border: 1px solid var(--border);
+    box-shadow: var(--stamp);
+    overflow: hidden;
+    transition: transform .15s, box-shadow .15s;
+    display: flex;
+    flex-direction: column;
+}
+
+.design-card:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: var(--stamp-sm);
+}
+
+.design-card-image {
+    width: 100%;
+    aspect-ratio: 1;
+    background: var(--paper);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.design-card-image > img:first-child {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.design-card-body { padding: 1rem; }
+
+.design-card-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    color: var(--ink);
+    margin-bottom: 0.25rem;
+}
+
+.design-card-product {
+    font-family: var(--font-type);
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    margin-bottom: 0.4rem;
+}
+
+.design-card-date {
+    font-family: var(--font-type);
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    margin-bottom: 1rem;
+}
+
+.design-card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.design-card-actions .btn {
+    flex: 1;
+    padding: 0.55rem 0.8rem;
+    font-size: 0.9rem;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid var(--border);
+}
+
+/* Local button variants used here */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ink);
+    color: var(--paper);
+    border: 1px solid var(--border);
+    font-family: var(--font-display);
+    box-shadow: var(--stamp-sm);
+    transition: transform .12s, box-shadow .12s;
+}
+
+.btn-primary:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--stamp-sm);
+    color: var(--paper);
+    background: var(--ink);
+}
+
+.btn-outline {
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    box-shadow: var(--stamp-sm);
+}
+
+.btn-outline:hover {
+    background: var(--ink);
+    color: var(--paper);
+    transform: translate(-2px, -2px);
+    box-shadow: var(--stamp-sm);
+}
+
+/* Empty State */
+.account-empty-state {
+    text-align: center;
+    padding: 3.5rem 2rem;
+    background: var(--paper-2);
+    border: 2px dashed var(--border-strong);
+}
+
+.account-empty-state h3 {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+}
+
+.account-empty-state p {
+    font-family: var(--font-type);
+    color: var(--ink-soft);
+    margin-bottom: 1.3rem;
+}
+
+.account-empty-state .btn {
+    display: inline-block;
+    padding: 0.7rem 1.6rem;
+    text-decoration: none;
+}
+
+/* ============================================================
+   PROFILE SECTION
+   ============================================================ */
+.profile-section {
+    background: var(--paper-2);
+    border: 1px solid var(--border);
+    box-shadow: var(--stamp);
+    padding: 2rem;
+    max-width: 620px;
+}
+
+.profile-field { margin-bottom: 1.4rem; }
+
+.profile-field label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    margin-bottom: 0.4rem;
+}
+
+.profile-field input {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--border);
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 1rem;
+}
+
+.profile-field input:disabled {
+    background: var(--paper-2);
+    color: var(--ink-muted);
+}
+
+.profile-field input:focus {
+    outline: none;
+    box-shadow: var(--stamp-sm);
+    transform: translate(-1px, -1px);
+}
+
+/* ============================================================
+   ORDER HISTORY CARDS
+   ============================================================ */
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.order-card {
+    background: var(--paper-2);
+    border: 1px solid var(--border);
+    box-shadow: var(--stamp-sm);
+    overflow: hidden;
+    transition: transform .15s, box-shadow .15s;
+}
+
+.order-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--stamp-sm);
+}
+
+.order-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--paper);
+}
+
+.order-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.order-number {
+    font-family: var(--font-display);
+    color: var(--ink);
+    font-size: 1.15rem;
+}
+
+.order-date {
+    font-family: var(--font-type);
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+}
+
+.order-status-badge {
+    display: inline-block;
+    padding: 0.3rem 0.85rem;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    border: 1px solid var(--border);
+    background: var(--paper-2);
+    color: var(--ink);
+}
+
+/* Status colors — match common statuses */
+.order-status-badge[data-status="pending"] { background: var(--spot-yellow); }
+.order-status-badge[data-status="processing"] { background: var(--spot-2); color: var(--paper); }
+.order-status-badge[data-status="shipped"] { background: var(--spot-3); color: var(--paper); }
+.order-status-badge[data-status="delivered"] { background: var(--spot-3); color: var(--paper); }
+.order-status-badge[data-status="cancelled"] { background: var(--bad); color: var(--paper); }
+
+.order-card-body {
+    display: flex;
+    gap: 2rem;
+    padding: 1rem 1.2rem;
+    flex-wrap: wrap;
+}
+
+.order-card-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.order-detail-label {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    letter-spacing: 0.1em;
+}
+
+.order-detail-value {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--ink);
+}
+
+.order-detail-value.order-total {
+    font-family: var(--font-display);
+    color: var(--ink);
+    font-size: 1.1rem;
+    letter-spacing: 0.02em;
+}
+
+.order-card-footer {
+    padding: 0.7rem 1.2rem;
+    border-top: 1px dashed var(--border);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.order-view-btn {
+    padding: 0.55rem 1.1rem;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+    .account-container { padding: 1rem; }
+    .account-tabs { gap: 0; }
+    .account-tab { font-size: 0.88rem; padding: 0.7rem 0.9rem; }
+    .order-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    .order-card-body { gap: 1rem; }
+}

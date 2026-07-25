@@ -1,0 +1,263 @@
+/* ============================================================
+   DESIGN AREA EDITOR (admin tool) — zine theme
+   Layout/positioning preserved for JS-targeted handles.
+   ============================================================ */
+
+body { background: var(--paper); margin: 0; }
+
+.dae-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 4px solid var(--spot);
+}
+
+.dae-header h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+}
+
+.dae-header a {
+    color: var(--paper);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+.dae-header a:hover { background: var(--spot); color: var(--paper); }
+
+.dae-saved {
+    background: var(--spot-3);
+    color: var(--paper);
+    padding: 10px 24px;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    display: none;
+    border-bottom: 2px solid var(--ink);
+}
+.dae-saved.show { display: block; }
+
+.dae-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    height: calc(100vh - 56px);
+}
+
+.dae-mockup {
+    background: #1e1e2e;
+    background-image:
+        radial-gradient(circle, rgba(241,236,222,0.06) 1px, transparent 1.5px);
+    background-size: 14px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    gap: 16px;
+}
+
+.view-tabs { display: flex; gap: 6px; }
+
+.view-tab {
+    padding: 6px 14px;
+    border: 2px solid var(--paper);
+    background: transparent;
+    color: var(--paper);
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all .12s;
+}
+.view-tab:hover { background: var(--paper); color: var(--ink); }
+.view-tab.active {
+    background: var(--spot);
+    color: var(--paper);
+    box-shadow: var(--stamp-sm);
+}
+
+.mockup-wrap {
+    position: relative;
+    display: inline-block;
+    user-select: none;
+}
+
+#mockupImg {
+    display: block;
+    max-height: calc(100vh - 170px);
+    max-width: calc(100vw - 400px);
+    object-fit: contain;
+    border: 2px solid var(--paper);
+}
+
+#designBox {
+    position: absolute;
+    border: 2.5px dashed var(--spot);
+    background: rgba(230, 57, 70, 0.15);
+    box-sizing: border-box;
+    touch-action: none;
+    cursor: move;
+}
+
+#designBox .resize-handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--paper);
+    border: 2px solid var(--spot);
+    box-sizing: border-box;
+}
+#designBox .resize-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
+#designBox .resize-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
+#designBox .resize-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
+#designBox .resize-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
+#designBox .resize-handle.n  { top: -6px; left: calc(50% - 6px); cursor: n-resize; }
+#designBox .resize-handle.s  { bottom: -6px; left: calc(50% - 6px); cursor: s-resize; }
+#designBox .resize-handle.w  { top: calc(50% - 6px); left: -6px; cursor: w-resize; }
+#designBox .resize-handle.e  { top: calc(50% - 6px); right: -6px; cursor: e-resize; }
+
+.box-label {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--spot);
+    color: var(--paper);
+    padding: 2px 8px;
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    white-space: nowrap;
+    pointer-events: none;
+    border: 1.5px solid var(--ink);
+}
+
+.dae-controls {
+    background: var(--paper);
+    border-left: 3px solid var(--ink);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.dae-section {
+    padding: 18px 20px;
+    border-bottom: 2px dashed var(--ink);
+}
+
+.dae-section h3 {
+    margin: 0 0 14px 0;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--ink-soft);
+}
+
+.dae-select {
+    width: 100%;
+    padding: 9px 10px;
+    border: 2px solid var(--ink);
+    background: var(--paper-2);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.dae-select:focus {
+    outline: none;
+    box-shadow: var(--stamp-sm);
+    transform: translate(-1px, -1px);
+}
+
+.coord-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.coord-field label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+}
+
+.coord-field input {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid var(--ink);
+    background: var(--paper-2);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    box-sizing: border-box;
+    color: var(--ink);
+}
+
+.coord-field input:focus {
+    outline: none;
+    box-shadow: var(--stamp-sm);
+    transform: translate(-1px, -1px);
+}
+
+.coord-hint {
+    font-family: var(--font-type);
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    margin-top: 8px;
+}
+
+.dae-copy-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.btn-copy {
+    flex: 1;
+    padding: 7px 10px;
+    background: var(--paper-2);
+    border: 2px solid var(--ink);
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all .12s;
+}
+
+.btn-copy:hover {
+    background: var(--ink);
+    color: var(--paper);
+    transform: translate(-1px, -1px);
+    box-shadow: var(--stamp-sm);
+}
+
+.btn-save {
+    width: calc(100% - 40px);
+    margin: 16px 20px;
+    padding: 13px;
+    background: var(--ink);
+    color: var(--paper);
+    border: 2px solid var(--ink);
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: var(--stamp-sm);
+    transition: transform .12s, box-shadow .12s;
+}
+
+.btn-save:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--stamp-sm);
+}
+
+.no-image-msg {
+    color: rgba(241, 236, 222, 0.5);
+    font-family: var(--font-type);
+    font-size: 0.95rem;
+    text-align: center;
+    padding: 40px;
+}

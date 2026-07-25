@@ -1,0 +1,18 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /admin
+Disallow: /login
+Disallow: /register
+Disallow: /logout
+Disallow: /account
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /api/
+Disallow: /custom-design/
+Disallow: /health
+
+Allow: /
+
+# Update this after deployment with the real production domain.
+Sitemap: https://www.costaspressjr.com/sitemap.xml

@@ -1,0 +1,57 @@
+# Environment / secrets
+.env
+.env.local
+*.env.local
+app/config/*.local.php
+
+# Logs
+*.log
+debug_*.log
+logs/
+
+# PHP
+vendor/
+composer.phar
+
+# Dependency lock files for local dev tooling
+.phpunit.result.cache
+
+# User uploads (regenerable, not source)
+public/images/products/
+public/images/designs/uploads/
+public/images/designs/previews/
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+._*
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.history/
+
+# Windows shortcut / binary junk
+*.lnk
+
+# Local-only notes
+folderarrangement.txt
+
+# Server / runtime
+.user.ini
+
+# Claude Code local overrides (shared settings.json stays tracked)
+.claude/settings.local.json
+
+# Source-asset archives (extracted copies live under public/images/)
+*.zip
+
+# Saved-webpage / search-engine download cruft (not part of the app)
+public/images/anime/*Search Images_files/
+*.br.js.download
+*.br.css

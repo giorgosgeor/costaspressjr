@@ -1,0 +1,87 @@
+/* ============================================================
+   SHOP / ANIME — overrides in zine flavor.
+   Reuses .products-grid and .product-card definitions from
+   customer.css where compatible; this file adjusts the anime
+   shop's specific quirks (design-cost label, no-image
+   placeholder, empty state, header overrides).
+   ============================================================ */
+
+.shop-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.shop-header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 6vw, 3.6rem);
+    margin-bottom: 10px;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+    
+}
+
+.shop-subtitle {
+    font-family: var(--font-type);
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+}
+
+/* Anime shop tile overrides (taller, fixed image height) */
+.product-card .product-image {
+    height: 200px;
+    aspect-ratio: auto;
+}
+
+.no-image-placeholder {
+    color: var(--ink-muted);
+    font-family: var(--font-type);
+    font-size: 0.9rem;
+}
+
+.product-info { padding: 15px; }
+
+.design-cost {
+    font-family: var(--font-type);
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+}
+
+.no-products {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+}
+
+/* Empty-state overrides for the anime shop */
+.empty-state {
+    background: var(--paper-2);
+    border: 2px dashed var(--border-strong);
+    padding: 40px;
+    max-width: 460px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: 15px;
+}
+
+.empty-state h3 {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    margin-bottom: 10px;
+    color: var(--ink);
+}
+
+.empty-state p {
+    font-family: var(--font-type);
+    color: var(--ink-soft);
+    line-height: 1.55;
+}
+
+@media (max-width: 600px) {
+    .shop-header h1 { font-size: 2rem; }
+}

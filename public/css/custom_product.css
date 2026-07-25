@@ -1,0 +1,160 @@
+/* ============================================================
+   CUSTOM PRODUCT page — zine theme
+   ============================================================ */
+
+.custom-product-grid {
+    display: flex;
+    gap: 36px;
+    align-items: flex-start;
+    margin-left: 28px;
+}
+
+.custom-product-gallery {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+#productThumbnails {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-right: 12px;
+}
+
+#productThumbnails img {
+    border: 1px solid var(--border);
+    cursor: pointer;
+    background: var(--paper);
+    transition: transform .12s, box-shadow .12s;
+}
+
+#productThumbnails img:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--stamp-sm);
+}
+
+.main-image {
+    margin-bottom: 0;
+    background: var(--paper-2);
+    border: 1px solid var(--border);
+    box-shadow: var(--stamp);
+    padding: 12px;
+}
+
+#mainProductImage {
+    max-width: 700px;
+    max-height: 1100px;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
+@media (max-width: 900px) {
+    .custom-product-grid {
+        flex-direction: column;
+        margin-left: 0;
+        gap: 22px;
+    }
+    .custom-product-gallery {
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-start;
+        width: 100%;
+    }
+    #productThumbnails {
+        flex-direction: row;
+        gap: 8px;
+        margin-right: 0;
+        margin-bottom: 12px;
+    }
+    .main-image {
+        margin-bottom: 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    #mainProductImage {
+        max-width: 95vw;
+        max-height: 60vh;
+        width: auto;
+        height: auto;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 600px) {
+    .custom-product-gallery {
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+    }
+    #productThumbnails {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 8px;
+        margin: 0 0 8px 0;
+        width: 100%;
+    }
+    .main-image {
+        width: 100%;
+        max-width: 100vw;
+        display: flex;
+        justify-content: flex-start;
+        box-sizing: border-box;
+    }
+    #mainProductImage {
+        max-width: 96vw;
+        max-height: 60vw;
+        width: auto;
+        height: auto;
+        display: block;
+    }
+    #colorSwatches {
+        flex-wrap: wrap;
+        row-gap: 8px;
+        column-gap: 6px;
+        width: 100%;
+    }
+    #sizeOptions {
+        flex-wrap: wrap;
+        row-gap: 8px;
+        column-gap: 8px;
+        width: 100%;
+    }
+    .custom-product-info {
+        min-width: 0 !important;
+        width: 100%;
+    }
+}
+
+/* Size label — chunky zine */
+.size-label {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    background: none;
+    border: none;
+    box-shadow: none;
+    outline: none;
+    margin-left: 0;
+    position: relative;
+    padding-left: 0;
+    color: var(--ink);
+}
+
+.size-label:not(:first-child)::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 1em;
+    width: 2px;
+    background: var(--ink);
+    display: inline-block;
+}
+
+.size-label:not(:first-child) {
+    margin-left: -20px;
+}

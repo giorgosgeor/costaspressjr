@@ -1,0 +1,191 @@
+/* ============================================================
+   SHOP — Select product step — zine theme
+   ============================================================ */
+
+.product-list-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 1.4rem;
+}
+
+.product-list-card {
+    border: 1px solid var(--border);
+    background: var(--paper-2);
+    position: relative;
+    min-height: 320px;
+    width: 240px;
+    padding: 12px 10px 14px;
+    margin: 6px;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+    box-shadow: var(--stamp-sm);
+    text-align: center;
+}
+
+.product-list-card:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: var(--stamp-sm);
+    z-index: 2;
+}
+
+.product-list-card.selected {
+    background: var(--ink);
+    color: var(--paper);
+    box-shadow: var(--stamp-sm);
+    transform: translate(-2px, -2px);
+}
+
+.product-list-card img {
+    width: 100%;
+    max-width: 250px;
+    height: auto;
+    margin: 0 auto 6px;
+    object-fit: contain;
+    display: block;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    padding: 4px;
+}
+
+.product-list-card.selected img { background: var(--paper); }
+
+.product-list-card .product-name {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    margin: 6px 0 2px;
+    line-height: 1.1;
+    color: inherit;
+}
+
+.product-list-card .product-desc {
+    font-family: var(--font-type);
+    font-size: 0.92rem;
+    margin: 0 0 4px;
+    line-height: 1.25;
+    color: inherit;
+    opacity: 0.85;
+}
+
+.product-list-card .color-preview-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    margin: 4px 0;
+    width: 100%;
+    min-height: 22px;
+}
+
+.product-list-card .color-dot {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    border: 1.5px solid var(--ink);
+    display: inline-block;
+    box-sizing: border-box;
+}
+
+.product-list-card .color-more {
+    font-family: var(--font-type);
+    font-size: 0.9rem;
+    margin-left: 4px;
+    color: var(--ink-soft);
+    align-self: center;
+}
+
+.product-list-card.selected .color-more { color: var(--paper); }
+
+.price-label {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: inherit;
+    margin-top: 6px;
+    text-align: center;
+}
+
+.price-label .price-ea {
+    font-family: var(--font-type);
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-left: 4px;
+}
+
+.product-list-card.selected .price-label .price-ea { color: var(--paper); opacity: 0.8; }
+
+.pricing-link {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--spot);
+    text-decoration-thickness: 2px;
+    cursor: pointer;
+    font-family: var(--font-type);
+    font-size: 0.85rem;
+    margin-top: 4px;
+    display: inline-block;
+    background: transparent;
+    border: none;
+}
+
+.product-list-card.selected .pricing-link { color: var(--paper); text-decoration-color: var(--paper); }
+
+.pricing-link-wrap {
+    position: relative;
+    margin-top: 4px;
+    text-align: center;
+}
+
+.pricing-popup {
+    display: none;
+    position: absolute;
+    left: 50%;
+    top: 110%;
+    transform: translateX(-50%);
+    min-width: 240px;
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    box-shadow: var(--stamp-sm);
+    padding: 14px 14px 10px;
+    z-index: 10;
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    text-align: left;
+}
+
+.pricing-link:focus + .pricing-popup,
+.pricing-link:hover + .pricing-popup,
+.pricing-popup:hover {
+    display: block;
+}
+
+.pricing-popup-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    margin-bottom: 8px;
+}
+
+.pricing-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+.pricing-table th,
+.pricing-table td {
+    padding: 4px 7px;
+    text-align: left;
+    font-size: 0.92rem;
+    border-bottom: 1.5px solid var(--ink);
+}
+
+.pricing-table th {
+    font-family: var(--font-display);
+    font-weight: 400;
+    background: var(--ink);
+    color: var(--paper);
+}
+
+.pricing-table tr:not(:first-child):hover { background: var(--paper-2); }

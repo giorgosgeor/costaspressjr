@@ -1,0 +1,87 @@
+# Costaspressjr — public web root
+# Document root on the production server MUST point at /public
+# (never the project root). Everything outside /public is private.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Never execute PHP inside upload directories.
+    RewriteRule ^images/designs/uploads/.*\.(php|phtml|phar)$ - [F,L,NC]
+    RewriteRule ^images/designs/previews/.*\.(php|phtml|phar)$ - [F,L,NC]
+    RewriteRule ^images/products/.*\.(php|phtml|phar)$ - [F,L,NC]
+    RewriteRule ^uploads/cart/.*\.(php|phtml|phar)$ - [F,L,NC]
+
+    # If the request maps to a real file or directory, serve it directly.
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Otherwise, hand off to the front controller.
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Deny access to sensitive files even if somehow placed under /public.
+<FilesMatch "(^\.|\.(env|ini|log|sql|md|sh|bak|swp)$)">
+    Require all denied
+</FilesMatch>
+
+# Security headers. HSTS is only sent over HTTPS (production).
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+    # Stripe.js loads from js.stripe.com, mounts its card fields in iframes from
+    # js.stripe.com / hooks.stripe.com, and talks to api.stripe.com. Those hosts
+    # must be allowlisted or the entire card-payment flow is blocked in the browser.
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com; form-action 'self'; frame-ancestors 'none'; base-uri 'self';"
+</IfModule>
+
+# Default charset
+AddDefaultCharset UTF-8
+
+# Disable directory listings
+Options -Indexes
+
+# Compression — text assets gzip well, images don't.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
+    AddOutputFilterByType DEFLATE application/javascript application/json application/xml
+    AddOutputFilterByType DEFLATE application/x-javascript application/xhtml+xml
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# Caching. Hashed/versioned URLs (?v=mtime via Asset::url) make a long
+# Cache-Control safe for CSS/JS. Images are cached for a week — admin uploads
+# replace files in place so a multi-year cache would surprise admins.
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    ExpiresByType text/css                  "access plus 1 year"
+    ExpiresByType application/javascript    "access plus 1 year"
+    ExpiresByType text/javascript           "access plus 1 year"
+
+    ExpiresByType image/png                 "access plus 7 days"
+    ExpiresByType image/jpeg                "access plus 7 days"
+    ExpiresByType image/webp                "access plus 7 days"
+    ExpiresByType image/gif                 "access plus 7 days"
+    ExpiresByType image/svg+xml             "access plus 30 days"
+    ExpiresByType image/x-icon              "access plus 30 days"
+
+    ExpiresByType font/woff2                "access plus 1 year"
+    ExpiresByType font/woff                 "access plus 1 year"
+
+    # HTML must always revalidate so logged-in/CSRF state is current.
+    ExpiresByType text/html                 "access plus 0 seconds"
+</IfModule>
+
+<IfModule mod_headers.c>
+    # Belt-and-braces: tell intermediaries not to cache HTML.
+    <FilesMatch "\.(php|html?)$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    </FilesMatch>
+    <FilesMatch "\.(css|js|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)$">
+        Header append Cache-Control "public"
+    </FilesMatch>
+</IfModule>

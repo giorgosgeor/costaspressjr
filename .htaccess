@@ -1,0 +1,12 @@
+# Safety net: if the document root is misconfigured and points to the project
+# root instead of /public, block everything. The correct deployment points the
+# web server's DocumentRoot directly at the /public directory.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    Order Deny,Allow
+    Deny from all
+</IfModule>

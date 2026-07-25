@@ -1,0 +1,23 @@
+# Normalize line endings: store text as LF in the repo, check out native.
+* text=auto
+
+# Keep shell/PHP/SQL/web sources as LF even on Windows checkouts.
+*.php   text eol=lf
+*.sql   text eol=lf
+*.js    text eol=lf
+*.css   text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.htaccess text eol=lf
+
+# Treat these as binary (never touch line endings).
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.svg   binary
+*.ico   binary
+*.zip   binary
+*.woff  binary
+*.woff2 binary
