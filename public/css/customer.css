@@ -695,6 +695,21 @@
 
 .product-card:hover .product-image img { transform: scale(1.04); }
 
+/* Preview-only cards (home page "featured"): nothing to click, so don't offer
+   any interactive affordance - no lift, no image zoom, no pointer cursor. */
+.product-card.is-preview,
+.product-card.is-preview * {
+    cursor: default;
+}
+
+.product-card.is-preview:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--border);
+}
+
+.product-card.is-preview:hover .product-image img { transform: none; }
+
 .product-badge {
     position: absolute;
     top: 10px;

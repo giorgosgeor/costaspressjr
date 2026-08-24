@@ -135,7 +135,7 @@ final class Pricing
         return $total;
     }
 
-    /** Raw euro cost of the print add-ons, BEFORE margin (front+back, sleeves). */
+    /** Flat euro cost of the print add-ons (front+back, sleeves). Not marked up. */
     public static function printExtraCost(bool $frontAndBack, int $sleeves): float
     {
         $extra = 0.0;
@@ -149,14 +149,13 @@ final class Pricing
     /**
      * Compute the per-unit retail price a customer pays.
      *
-     * Print add-ons are passed as $extraPrintCost — their raw euro cost BEFORE
-     * margin — so they are marked up through the tier margin and capped together
-     * with the garment (keeping the total monotonic in quantity).
+     * Print add-ons are passed as $extraPrintCost and added flat to the marked-up
+     * garment price — they are not subject to the margin.
      *
      * @param float  $supplierCost   blank garment cost stored in the DB
      * @param string $category       'tshirt' | 'hoodie' (see categoryFor)
      * @param int    $quantity       units ordered of this line (drives the tier)
-     * @param float  $extraPrintCost raw pre-margin cost of print add-ons
+     * @param float  $extraPrintCost flat euro cost of print add-ons
      */
     public static function unitPrice(
         float $supplierCost,
@@ -166,13 +165,18 @@ final class Pricing
     ): float {
         $qty = max(1, $quantity);
 
-        // Load ALL costs (garment + fixed buffers + print add-ons) before the
-        // margin so the whole line is marked up and capped as one figure.
-        $unitCost = $supplierCost + self::ERROR + self::COST_OF_PRINT + max(0.0, $extraPrintCost);
+        // The margin applies to the GARMENT only. Print add-ons are flat euro
+        // amounts added to the base price (sleeves €1 each, front+back €3) and
+        // are NOT marked up — dividing them by (1 - margin) turned a €3 add-on
+        // into €10 at the top tier. Matches public/js/pricing.js, which is what
+        // the customer is quoted in the customiser.
+        $unitCost    = $supplierCost + self::ERROR + self::COST_OF_PRINT;
+        $garmentUnit = self::cappedTotal($unitCost, $category, $qty) / $qty;
 
-        // Monotonic (anti-anomaly) total, split back to a per-unit figure so
-        // unit_price * quantity reproduces that total.
-        return round(self::cappedTotal($unitCost, $category, $qty) / $qty, 2);
+        // Adding a flat per-unit amount preserves monotonicity: the capped
+        // garment total is already non-decreasing in quantity, and extras * qty
+        // is strictly increasing, so a smaller order still never costs more.
+        return round($garmentUnit + max(0.0, $extraPrintCost), 2);
     }
 
     /**
@@ -194,7 +198,7 @@ final class Pricing
             'quantity'         => max(1, $quantity),
             'margin'           => $margin,
             'supplier_cost'    => round($supplierCost, 2),
-            'unit_cost'        => round($supplierCost + self::ERROR + self::COST_OF_PRINT + max(0.0, $extraPrintCost), 2),
+            'unit_cost'        => round($supplierCost + self::ERROR + self::COST_OF_PRINT, 2),
             'extra_print_cost' => round(max(0.0, $extraPrintCost), 2),
             'unit_price'       => $unit,
             'line_total'       => round($unit * max(1, $quantity), 2),

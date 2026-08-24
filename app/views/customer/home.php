@@ -59,7 +59,7 @@
         <div class="products-grid">
             <?php if (!empty($featuredProducts)): ?>
                 <?php foreach ($featuredProducts as $product): ?>
-                <div class="product-card">
+                <div class="product-card is-preview">
                     <div class="product-image">
                         <img src="/<?= htmlspecialchars($product['image_path'] ?? '') ?>" alt="<?= htmlspecialchars($product['name']) ?>" loading="lazy" onerror="this.src='/images/placeholder.svg'">
                         <?php if (!$product['active']): ?>
@@ -68,8 +68,7 @@
                     </div>
                     <div class="product-info">
                         <h3 class="product-name"><?= htmlspecialchars($product['name']) ?></h3>
-                        <p class="product-price">€<?= number_format($product['base_price'], 2) ?></p>
-                        <a href="/product/<?= $product['id'] ?>" class="btn btn-block"><?= t('home.featured.view_details') ?></a>
+                        <p class="product-price">€<?= number_format($product['retail_price'] ?? $product['base_price'], 2) ?></p>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -135,7 +134,7 @@
         <div class="products-grid">
             <?php if (!empty($featuredProducts)): ?>
                 <?php foreach ($featuredProducts as $product): ?>
-                <div class="product-card">
+                <div class="product-card is-preview">
                     <div class="product-image">
                         <img src="/<?= htmlspecialchars($product['image_path'] ?? '') ?>" alt="<?= htmlspecialchars($product['name']) ?>" loading="lazy" onerror="this.src='/images/placeholder.svg'">
                         <?php if (!$product['active']): ?>
@@ -144,8 +143,7 @@
                     </div>
                     <div class="product-info">
                         <h3 class="product-name"><?= htmlspecialchars($product['name']) ?></h3>
-                        <p class="product-price">€<?= number_format($product['base_price'], 2) ?></p>
-                        <a href="/login" class="btn btn-block"><?= t('home.featured.view_details') ?></a>
+                        <p class="product-price">€<?= number_format($product['retail_price'] ?? $product['base_price'], 2) ?></p>
                     </div>
                 </div>
                 <?php endforeach; ?>

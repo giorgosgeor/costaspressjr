@@ -359,14 +359,15 @@ class CustomerController {
         $cost = $this->resolveSupplierCost($variantId, $productId, $sizeId, $colorId);
         if ($cost === null) return null;
         $category = $this->priceCategoryFor($productId);
-        // Print add-ons are marked up through the margin (passed as pre-margin cost).
+        // Print add-ons are flat euro amounts added on top of the marked-up
+        // garment price — the margin does not apply to them.
         $retail = Pricing::unitPrice($cost, $category, max(1, $quantity), $extraPrintCost);
         return round($retail + $premadePrice, 2);
     }
 
     /**
-     * Raw pre-margin euro cost of a custom design's print add-ons, derived from
-     * its view-keyed elements: front+back print and each printed sleeve.
+     * Flat euro cost of a custom design's print add-ons, derived from its
+     * view-keyed elements: front+back print and each printed sleeve.
      */
     private function printExtraCostFor($elements): float {
         if (!is_array($elements)) return 0.0;
@@ -1353,9 +1354,39 @@ class CustomerController {
             $hasOrders = (int)$stmt->fetchColumn() > 0;
         }
 
-        // Get featured products (active products, limit 4)
-        $stmt = $this->db->query("SELECT id, name, slug, base_price, image_path, active FROM products WHERE active = 1 ORDER BY id DESC LIMIT 4");
+        // Featured products: the best sellers, by units actually ordered.
+        // Cancelled orders don't count. Products without a mockup PNG are excluded
+        // — the card is all image, so one without artwork is just a broken tile.
+        // Ties (including everything at zero on a fresh install) fall back to
+        // newest first, so the section is never empty.
+        $stmt = $this->db->query("
+            SELECT p.id, p.name, p.slug, p.base_price, p.image_path, p.active,
+                   SUM(CASE WHEN o.status IS NOT NULL AND o.status <> 'cancelled'
+                            THEN oi.quantity ELSE 0 END) AS ordered_qty
+            FROM products p
+            LEFT JOIN order_items oi ON oi.product_id = p.id
+            LEFT JOIN orders o       ON o.id = oi.order_id
+            WHERE p.active = 1
+              AND p.image_path IS NOT NULL
+              AND p.image_path <> ''
+            GROUP BY p.id, p.name, p.slug, p.base_price, p.image_path, p.active
+            ORDER BY ordered_qty DESC, p.id DESC
+            LIMIT 4
+        ");
         $featuredProducts = $stmt->fetchAll();
+
+        // products.base_price is the SUPPLIER cost of the blank garment, not a
+        // customer price — printing it raw advertised a €2.14 t-shirt. Run it
+        // through the pricing engine for the single-unit retail price (larger
+        // orders drop into cheaper margin tiers).
+        foreach ($featuredProducts as &$fp) {
+            $fp['retail_price'] = Pricing::unitPrice(
+                (float)$fp['base_price'],
+                Pricing::categoryFor($fp['slug'] ?? '', $fp['name'] ?? ''),
+                1
+            );
+        }
+        unset($fp);
 
         require __DIR__ . '/../views/customer/home.php';
     }
