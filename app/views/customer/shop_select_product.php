@@ -220,19 +220,22 @@
               <?= htmlspecialchars($product['description'] ?? '') ?>
             </div>
             <?php
-              // Bulk-discount tiers derived from the product's base price.
-              // 500-qty pays cost; smaller orders carry a per-unit markup.
-              $base500 = (float)$product['base_price'];
-              $tiers = [
-                  ['qty' => t('shop.select.qty_min'), 'price' => $base500 * 1.50],
-                  ['qty' => '10',                    'price' => $base500 * 1.25],
-                  ['qty' => '25',                    'price' => $base500 * 1.10],
-                  ['qty' => '50',                    'price' => $base500 * 1.05],
-                  ['qty' => '100',                   'price' => $base500 * 1.03],
-                  ['qty' => '500',                   'price' => $base500],
-              ];
+              // Real quantity tiers straight from the pricing engine — the same
+              // maths add-to-cart charges. The old table multiplied the raw
+              // SUPPLIER cost by ad-hoc factors and headlined that cost to
+              // customers.
+              $cost     = (float)$product['base_price'];
+              $category = Pricing::categoryFor($product['slug'] ?? '', $product['name'] ?? '');
+              $tiers = [];
+              foreach ([1, 5, 15, 30, 50, 100] as $tq) {
+                  $tiers[] = [
+                      'qty'   => $tq === 1 ? t('shop.select.qty_min') : $tq . '+',
+                      'price' => Pricing::unitPrice($cost, $category, $tq),
+                  ];
+              }
+              $retailOne = $tiers[0]['price'];
             ?>
-            <div class="price-label">&euro;<?= number_format($base500, 2) ?><span class="price-ea"><?= t('shop.select.price_per_500') ?></span></div>
+            <div class="price-label">&euro;<?= number_format($retailOne, 2) ?><span class="price-ea"><?= t('shop.select.price_per_unit') ?></span></div>
             <div class="pricing-link-wrap">
               <a href="#" class="pricing-link" tabindex="0"><?= t('shop.select.pricing_details') ?></a>
               <div class="pricing-popup">

@@ -227,14 +227,16 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div id="deleteConfirmModal" style="display:none; position:fixed; z-index:40000; left:0; top:0; width:100vw; height:100vh; background:rgba(21,19,14,0.78); align-items:center; justify-content:center;">
-    <div style="background:var(--paper); border:3px solid var(--ink); max-width:420px; width:90vw; margin:auto; box-shadow:8px 8px 0 var(--spot); padding:2rem 1.6rem; text-align:center;">
-        <div style="font-size:3rem; margin-bottom:1rem; display:inline-block; transform:rotate(-6deg);">⚠️</div>
-        <h3 style="font-family:var(--font-display); font-size:1.6rem; letter-spacing:0.04em; margin-bottom:0.6rem; color:var(--ink); text-transform:uppercase;"><?= t('account.delete_modal.title') ?></h3>
-        <p style="color:var(--ink-soft); font-family:var(--font-type); margin-bottom:1.4rem; line-height:1.5;"><?= I18n::t('account.delete_modal.lead', ['name' => '<span id=\"deleteDesignNameText\"></span>']) ?><br><strong style="color:var(--ink);"><?= t('account.delete_modal.warning') ?></strong></p>
-        <div style="display:flex; gap:0.8rem; justify-content:center;">
-            <button onclick="closeDeleteModal()" style="flex:1; padding:12px 16px; background:var(--paper-2); color:var(--ink); border:2px solid var(--ink); font-family:var(--font-display); letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; font-size:0.95rem; box-shadow:3px 3px 0 var(--ink);"><?= t('account.delete_modal.cancel') ?></button>
-            <button id="confirmDeleteBtn" onclick="confirmDelete()" style="flex:1; padding:12px 16px; background:var(--spot); color:var(--paper); border:2px solid var(--ink); font-family:var(--font-display); letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; font-size:0.95rem; box-shadow:3px 3px 0 var(--ink);"><?= t('account.delete_modal.confirm') ?></button>
+<div id="deleteConfirmModal" class="confirm-overlay" style="z-index:40000;" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+    <div class="confirm-dialog">
+        <div class="confirm-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        </div>
+        <h3 id="deleteConfirmTitle" class="confirm-title"><?= t('account.delete_modal.title') ?></h3>
+        <p class="confirm-lead"><?= I18n::t('account.delete_modal.lead', ['name' => '<span id=\"deleteDesignNameText\"></span>']) ?><br><strong style="color:var(--ink);"><?= t('account.delete_modal.warning') ?></strong></p>
+        <div class="confirm-actions">
+            <button type="button" class="confirm-btn confirm-btn-secondary" onclick="closeDeleteModal()"><?= t('account.delete_modal.cancel') ?></button>
+            <button type="button" id="confirmDeleteBtn" class="confirm-btn confirm-btn-danger" onclick="confirmDelete()"><?= t('account.delete_modal.confirm') ?></button>
         </div>
     </div>
 </div>

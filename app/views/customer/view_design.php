@@ -3,7 +3,7 @@
 
 <!-- Interact.js for drag & resize (only loaded for non-fixed designs) -->
 <?php if (empty($design['is_fixed'])): ?>
-<script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+<script src="/js/vendor/interact.min.js"></script>
 <?php endif; ?>
 
 <section class="section design-section">
@@ -19,13 +19,17 @@
         <div class="design-page">
             <!-- Product Mockup Preview Column -->
             <div class="design-preview-column">
-                <!-- Front/Back Toggle -->
+                <!-- Placement switcher: dots (left) + current view name (right).
+                     The dots are the original side buttons restyled — same ids,
+                     data-side and .active handling, so existing JS is unchanged. -->
                 <div class="side-toggle" id="sideToggle">
-                    <label style="margin-right:10px;font-weight:500;"><?= t('view_design.placement') ?></label>
-                    <button type="button" class="side-btn active" data-side="front" id="chooseFrontBtn"><?= t('studio.view.front') ?></button>
-                    <button type="button" class="side-btn" data-side="back" id="chooseBackBtn" style="display:none;"><?= t('studio.view.back') ?></button>
-                    <button type="button" class="side-btn" data-side="left-sleeve" id="chooseLeftSleeveBtn" style="display:none;"><?= t('studio.view.left_sleeve') ?></button>
-                    <button type="button" class="side-btn" data-side="right-sleeve" id="chooseRightSleeveBtn" style="display:none;"><?= t('studio.view.right_sleeve') ?></button>
+                    <div class="side-dots" id="sideDots" role="tablist" aria-label="<?= t('view_design.placement') ?>">
+                        <button type="button" class="side-btn active" data-side="front" id="chooseFrontBtn" data-label="<?= t('studio.view.front') ?>" aria-label="<?= t('studio.view.front') ?>" title="<?= t('studio.view.front') ?>"></button>
+                        <button type="button" class="side-btn" data-side="back" id="chooseBackBtn" style="display:none;" data-label="<?= t('studio.view.back') ?>" aria-label="<?= t('studio.view.back') ?>" title="<?= t('studio.view.back') ?>"></button>
+                        <button type="button" class="side-btn" data-side="left-sleeve" id="chooseLeftSleeveBtn" style="display:none;" data-label="<?= t('studio.view.left_sleeve') ?>" aria-label="<?= t('studio.view.left_sleeve') ?>" title="<?= t('studio.view.left_sleeve') ?>"></button>
+                        <button type="button" class="side-btn" data-side="right-sleeve" id="chooseRightSleeveBtn" style="display:none;" data-label="<?= t('studio.view.right_sleeve') ?>" aria-label="<?= t('studio.view.right_sleeve') ?>" title="<?= t('studio.view.right_sleeve') ?>"></button>
+                    </div>
+                    <span class="side-current-label" id="sideCurrentLabel" aria-live="polite"><?= t('studio.view.front') ?></span>
                 </div>
                 <?php if (empty($design['is_fixed'])): ?>
                 <div class="second-design-option" style="margin: 10px 0 20px 0;">
@@ -87,10 +91,10 @@
                 <!-- Design controls (only for non-fixed designs) -->
                 <div class="design-controls">
                     <button type="button" class="control-btn" onclick="resetDesignPosition()" title="<?= t('view_design.reset') ?>">
-                        🔄 <?= t('view_design.reset') ?>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:5px;"><path d="M3 2v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L3 8"/></svg><?= t('view_design.reset') ?>
                     </button>
                     <button type="button" class="control-btn" onclick="centerDesign()" title="<?= t('view_design.center') ?>">
-                        ⊙ <?= t('view_design.center') ?>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:5px;"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg><?= t('view_design.center') ?>
                     </button>
                 </div>
                 <?php endif; ?>
@@ -147,7 +151,7 @@
                             </div>
                             <div class="product-option-info">
                                 <h3><?= htmlspecialchars($product['name']) ?></h3>
-                                <p class="product-base-price"><?= I18n::t('view_design.from_price', ['price' => number_format($product['base_price'] + $design['price'], 2)]) ?></p>
+                                <p class="product-base-price"><?= I18n::t('view_design.from_price', ['price' => number_format(($product['retail_price'] ?? $product['base_price']) + $design['price'], 2)]) ?></p>
                             </div>
                             <div class="product-option-check">
                                 <span class="checkmark">✓</span>
@@ -228,7 +232,7 @@ endforeach;
                 <a href="#" class="size-guide-link"
                    onclick="event.preventDefault(); openSizeGuide('<?= htmlspecialchars($product['size_chart_image']) ?>', '<?= htmlspecialchars($product['name']) ?>');"
                    style="margin-left:10px; font-size:0.82rem; color:var(--spot, #2A4FE0); text-decoration:none; font-weight:500;">
-                    📏 Size guide
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:4px;"><path d="M2 12h20"/><path d="M6 9v6M10 7v10M14 9v6M18 7v10"/></svg>Size guide
                 </a>
                 <?php endif; ?>
             </h4>
@@ -259,7 +263,7 @@ endforeach;
                         <div class="price-breakdown">
                             <div class="price-row">
                                 <span><?= t('view_design.price.base') ?></span>
-                                <span id="basePrice">€<?= number_format($availableProducts[0]['base_price'], 2) ?></span>
+                                <span id="basePrice">€<?= number_format($availableProducts[0]['retail_price'] ?? $availableProducts[0]['base_price'] ?? 0, 2) ?></span>
                             </div>
                             <div class="price-row">
                                 <span><?= t('view_design.price.design') ?></span>
@@ -271,7 +275,7 @@ endforeach;
                             </div>
                             <div class="price-row total">
                                 <span><?= t('view_design.price.total') ?></span>
-                                <span id="totalPrice">€<?= number_format($availableProducts[0]['base_price'] + $design['price'], 2) ?></span>
+                                <span id="totalPrice">€<?= number_format(($availableProducts[0]['retail_price'] ?? $availableProducts[0]['base_price'] ?? 0) + $design['price'], 2) ?></span>
                             </div>
                         </div>
 
@@ -285,7 +289,7 @@ endforeach;
                         </div>
 
                         <button type="button" class="btn btn-large btn-add-cart" onclick="addToCart()">
-                            🛒 <?= t('studio.cart.add') ?>
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-3px;margin-right:7px;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><?= t('studio.cart.add') ?>
                         </button>
                     </div>
                 <?php endif; ?>
@@ -368,37 +372,61 @@ endforeach;
     align-self: start;
 }
 
-/* Front/Back Toggle */
+/* Placement switcher: dots on the left, current view name on the right. */
 .side-toggle {
     display: flex;
-    gap: 5px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
     margin-bottom: 10px;
+    min-height: 26px;
+}
+
+.side-dots {
+    display: flex;
+    align-items: center;
+    gap: 9px;
 }
 
 .side-btn {
-    flex: 1;
-    padding: 10px 20px;
-    border: 2px solid #ddd;
-    background: white;
-    border-radius: 8px;
+    width: 11px;
+    height: 11px;
+    padding: 0;
+    border: 2px solid #bdbdbd;
+    background: transparent;
+    border-radius: 50%;
     cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
+    transition: background-color .18s, border-color .18s, transform .18s;
+    flex: 0 0 auto;
 }
 
 .side-btn:hover {
     border-color: #15130E;
+    transform: scale(1.15);
+}
+
+.side-btn:focus-visible {
+    outline: 2px solid #2d5fff;
+    outline-offset: 2px;
 }
 
 .side-btn.active {
     background: var(--ink);
-    color: white;
-    border-color: transparent;
-
+    border-color: var(--ink);
 }
 
 .side-btn.disabled {
-    opacity: 0.5;
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.side-current-label {
+    font-size: 0.86rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6b6b6b;
+    white-space: nowrap;
 }
 
 /* Product Mockup Styles */
@@ -1352,6 +1380,22 @@ document.querySelectorAll('.side-btn').forEach(btn => {
         } else {
             restoreDesignPosition();
         }
+    });
+});
+
+// Dots + swipe. The label follows .active on its own, so the handler above
+// needed no changes. Swipes starting on the design element are ignored so
+// dragging the artwork still works.
+// Deferred inside DOMContentLoaded: view-switcher.js is loaded with `defer`,
+// so it has not executed yet while this inline script is being parsed.
+document.addEventListener('DOMContentLoaded', function () {
+    if (!window.ViewSwitcher) return;
+    window.ViewSwitcher.init({
+        dots: '#sideDots',
+        dotSelector: '.side-btn',
+        label: '#sideCurrentLabel',
+        surface: '#mockupContainer',
+        ignore: '.design-element'
     });
 });
 

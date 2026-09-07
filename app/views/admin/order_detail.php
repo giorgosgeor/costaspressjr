@@ -77,6 +77,9 @@ if (!function_exists('adminOrderProductColorFilter')) {
         <div class="info-row"><span class="label">Email</span><span class="value"><?= htmlspecialchars($order['email'] ?? '—') ?></span></div>
         <div class="info-row"><span class="label">Phone</span><span class="value"><?= htmlspecialchars($order['phone'] ?? '—') ?></span></div>
         <div class="info-row"><span class="label">Order Date</span><span class="value"><?= htmlspecialchars($order['created_at']) ?></span></div>
+        <?php if (!empty($order['tracking_token'])): ?>
+        <div class="info-row"><span class="label">Tracking Number</span><span class="value" style="letter-spacing:0.08em;"><?= htmlspecialchars($order['tracking_token']) ?></span></div>
+        <?php endif; ?>
         <?php if (!empty($order['shipping_address'])): ?>
         <div class="info-row"><span class="label">Shipping Address</span><span class="value"><?= htmlspecialchars($order['shipping_address']) ?></span></div>
         <?php endif; ?>

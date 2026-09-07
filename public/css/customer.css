@@ -1729,20 +1729,28 @@
 }
 
 .shop-option-features li {
-    padding: 6px 0 6px 26px;
+    padding: 7px 0 7px 26px;
     position: relative;
     font-family: var(--font-type);
     font-size: 0.92rem;
     color: var(--ink-soft);
-    border-bottom: 1px dashed var(--ink-muted);
+    border-bottom: 1px solid var(--border);
 }
 
+/* Was a '✶' glyph in CSS *and* a '✓' baked into each translation string —
+   two markers on one row. Now a single SVG tick, drawn with a mask so it
+   still takes its colour from the palette. */
 .shop-option-features li::before {
-    content: '✶';
+    content: '';
     position: absolute;
-    left: 4px;
-    color: var(--spot);
-    font-size: 1rem;
+    left: 3px;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    transform: translateY(-50%);
+    background-color: var(--spot);
+    -webkit-mask: var(--check-mask) no-repeat center / contain;
+    mask: var(--check-mask) no-repeat center / contain;
 }
 
 .shop-option-features li:last-child { border-bottom: none; }
@@ -2039,3 +2047,116 @@
     .design-actions { flex-direction: column; }
     .design-actions .btn { width: 100%; }
 }
+
+/* ── Confirmation dialog ──────────────────────────────────────────────────
+   Was inline-styled with 3px ink borders, an 8px hard offset shadow and a
+   rotated emoji tile — a different visual language from the rest of the site.
+   Rebuilt on the shared tokens: soft shadow, standard radius, no rotation.
+   The overlay is hidden here and revealed by JS setting display:flex.        */
+.confirm-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 50000;
+    background: rgba(20, 20, 30, 0.55);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.confirm-dialog {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 50px rgba(20, 20, 30, 0.22), 0 4px 12px rgba(20, 20, 30, 0.10);
+    padding: 28px 26px 24px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+}
+
+.confirm-icon {
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 14px;
+    border-radius: var(--radius-pill);
+    background: rgba(220, 38, 38, 0.10);
+    color: var(--bad);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-title {
+    margin: 0 0 6px;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+}
+
+.confirm-lead {
+    margin: 0 0 22px;
+    color: var(--ink-soft);
+    font-size: 0.94rem;
+    line-height: 1.5;
+}
+
+.confirm-actions { display: flex; gap: 10px; }
+
+.confirm-btn {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    font-family: var(--font-body);
+    font-size: 0.94rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .15s, border-color .15s;
+}
+
+.confirm-btn-secondary {
+    background: var(--paper);
+    border-color: var(--border-strong);
+    color: var(--ink);
+}
+.confirm-btn-secondary:hover { background: var(--paper-soft); }
+
+.confirm-btn-danger {
+    background: var(--bad);
+    color: #fff;
+}
+.confirm-btn-danger:hover { background: #B91C1C; }
+
+/* Empty-state icon now holds an SVG rather than an emoji glyph. */
+.empty-state-icon {
+    color: var(--ink-muted);
+    margin-bottom: 12px;
+    line-height: 0;
+}
+
+/* Success-modal actions — matched to the shared button language. */
+.order-success-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 20px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color .15s, border-color .15s;
+}
+.order-success-action-primary {
+    background: var(--spot);
+    border-color: var(--spot);
+    color: #fff;
+}
+.order-success-action-primary:hover { background: var(--spot-hover); border-color: var(--spot-hover); color: #fff; }
+.order-success-action-secondary {
+    background: var(--paper);
+    color: var(--ink);
+}
+.order-success-action-secondary:hover { background: var(--paper-soft); color: var(--ink); }

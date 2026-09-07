@@ -7,6 +7,11 @@ class CustomerController {
         $this->db = $db;
     }
 
+    /** @see Auth::effectiveUserId() — kept as a thin wrapper for call sites here. */
+    private function effectiveUserId(bool $createGuest = false): ?int {
+        return Auth::effectiveUserId($this->db, $createGuest);
+    }
+
     /**
      * Random folder token for a cart item, used so the on-disk preview path
      * isn't a predictable function of the cart_item_id. Persists to
@@ -380,12 +385,6 @@ class CustomerController {
     }
 
     public function cartAdd(): void {
-        if (!Auth::check()) {
-            header('Content-Type: application/json');
-            http_response_code(401);
-            echo json_encode(['requireLogin' => true, 'redirect' => '/login']);
-            return;
-        }
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo 'Method Not Allowed';
@@ -397,7 +396,15 @@ class CustomerController {
             echo 'Invalid data';
             return;
         }
-        $userId = Auth::userId();
+        // Guests may buy without an account — a guest user row is created on
+        // first add-to-cart. Saving DESIGNS still requires a real login.
+        $userId = $this->effectiveUserId(true);
+        if (!$userId) {
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Could not start a shopping session. Please try again.']);
+            return;
+        }
         // Validate required fields
         $required = ['product_id', 'size_id', 'color_id', 'quantity'];
         foreach ($required as $field) {
@@ -417,11 +424,13 @@ class CustomerController {
             echo 'Invalid quantity';
             return;
         }
-        // Fetch custom design if design_id provided
+        // Fetch custom design if design_id provided. Owner-scoped: without the
+        // user_id predicate anyone could attach another customer's design to
+        // their own cart by guessing ids.
         $design = null;
         if (!empty($data['design_id'])) {
-            $stmt = $this->db->prepare("SELECT * FROM custom_designs WHERE id = ? LIMIT 1");
-            $stmt->execute([$data['design_id']]);
+            $stmt = $this->db->prepare("SELECT * FROM custom_designs WHERE id = ? AND user_id = ? LIMIT 1");
+            $stmt->execute([$data['design_id'], $userId]);
             $design = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$design) {
                 http_response_code(400);
@@ -642,10 +651,12 @@ class CustomerController {
     }
     
     public function cartSavePreviews(): void {
-        if (!Auth::check()) {
+        // Guests own carts too; a missing id just means the session died.
+        $userId = $this->effectiveUserId(false);
+        if (!$userId) {
             header('Content-Type: application/json');
-            http_response_code(401);
-            echo json_encode(['requireLogin' => true, 'redirect' => '/login']);
+            http_response_code(409);
+            echo json_encode(['error' => 'Your session has expired. Please refresh the page.']);
             return;
         }
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -662,9 +673,8 @@ class CustomerController {
             return;
         }
         
-        $userId = Auth::userId();
         $cartItemId = (int)$data['cart_item_id'];
-        
+
         // Verify this cart item belongs to the user's cart
         require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
@@ -737,10 +747,11 @@ class CustomerController {
     }
     
     public function cartRemove(): void {
-        if (!Auth::check()) {
+        $userId = $this->effectiveUserId(false);
+        if (!$userId) {
             header('Content-Type: application/json');
-            http_response_code(401);
-            echo json_encode(['requireLogin' => true, 'redirect' => '/login']);
+            http_response_code(409);
+            echo json_encode(['error' => 'Your session has expired. Please refresh the page.']);
             return;
         }
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -757,8 +768,7 @@ class CustomerController {
         }
         
         $cartItemId = (int)$data['cart_item_id'];
-        $userId = Auth::userId();
-        
+
         require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartId = $cartModel->getOrCreateCartId($userId);
@@ -810,10 +820,11 @@ class CustomerController {
     }
     
     public function cartUpdateQuantity(): void {
-        if (!Auth::check()) {
+        $userId = $this->effectiveUserId(false);
+        if (!$userId) {
             header('Content-Type: application/json');
-            http_response_code(401);
-            echo json_encode(['requireLogin' => true, 'redirect' => '/login']);
+            http_response_code(409);
+            echo json_encode(['error' => 'Your session has expired. Please refresh the page.']);
             return;
         }
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -831,7 +842,6 @@ class CustomerController {
         
         $cartItemId = (int)$data['cart_item_id'];
         $quantity = (int)$data['quantity'];
-        $userId = Auth::userId();
         
         if ($quantity < 1) {
             http_response_code(400);
@@ -934,16 +944,29 @@ class CustomerController {
 
     public function createPaymentIntent(): void {
         header('Content-Type: application/json');
-        if (!Auth::check()) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Login required']);
+        // Guests check out too. No guest row yet means no cart — nothing to pay.
+        $userId = $this->effectiveUserId(false);
+        if (!$userId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Cart is empty']);
             return;
         }
 
-        $userId = Auth::userId();
         require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartId    = $cartModel->getOrCreateCartId($userId);
+
+        // A NULL unit_price row would silently drop out of SUM() here while
+        // checkout() still counts the item — the charge would then never match
+        // the order total, and the mismatch only surfaces AFTER the customer
+        // has paid. Refuse to create the intent instead.
+        $bad = $this->db->prepare("SELECT COUNT(*) FROM cart_items WHERE cart_id = ? AND (unit_price IS NULL OR unit_price <= 0)");
+        $bad->execute([$cartId]);
+        if ((int)$bad->fetchColumn() > 0) {
+            http_response_code(409);
+            echo json_encode(['error' => 'An item in your cart has no valid price. Please remove it and add it again.']);
+            return;
+        }
 
         $stmt = $this->db->prepare("
             SELECT SUM((ci.unit_price + ci.custom_design_fee) * ci.quantity) AS total
@@ -974,10 +997,13 @@ class CustomerController {
     }
 
     public function checkout(): void {
-        if (!Auth::check()) {
+        // Guests place orders through their session's guest user row. No row
+        // means no cart was ever created — nothing to check out.
+        $userId = $this->effectiveUserId(false);
+        if (!$userId) {
             header('Content-Type: application/json');
-            http_response_code(401);
-            echo json_encode(['requireLogin' => true, 'redirect' => '/login']);
+            http_response_code(400);
+            echo json_encode(['error' => 'Cart is empty']);
             return;
         }
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -992,6 +1018,52 @@ class CustomerController {
             header('Content-Type: application/json');
             echo json_encode(['error' => 'Invalid request data']);
             return;
+        }
+
+        // Shipping address is mandatory — these are physical goods. Validate it
+        // FIRST, before touching Stripe, so a rejected order never follows a
+        // successful charge. Client sends structured fields; we store a
+        // formatted text block in orders.shipping_address.
+        $ship = is_array($data['shipping_address'] ?? null) ? $data['shipping_address'] : [];
+        $shipFields = [];
+        foreach (['name' => 100, 'phone' => 30, 'street' => 200, 'city' => 80, 'postal' => 16, 'country' => 60] as $key => $maxLen) {
+            $val = trim((string)($ship[$key] ?? ''));
+            // Strip control characters; keep everything printable (names and
+            // streets are free text in two alphabets here).
+            $val = preg_replace('/[\x00-\x1F\x7F]/u', ' ', $val);
+            if ($val === '' || mb_strlen($val) > $maxLen) {
+                http_response_code(422);
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Please provide a complete shipping address.']);
+                return;
+            }
+            $shipFields[$key] = $val;
+        }
+        $shippingAddress = $shipFields['name'] . "\n"
+            . $shipFields['street'] . "\n"
+            . $shipFields['city'] . ' ' . $shipFields['postal'] . ', ' . $shipFields['country'] . "\n"
+            . 'Tel: ' . $shipFields['phone'];
+
+        // Guests have no account email, so a contact email is required with the
+        // order. It rides along in the shipping_address block (always visible to
+        // the admin) and is also copied onto the guest user row when it doesn't
+        // collide with a registered account.
+        if (!Auth::check()) {
+            $guestEmail = trim((string)($ship['email'] ?? ''));
+            if (!filter_var($guestEmail, FILTER_VALIDATE_EMAIL) || mb_strlen($guestEmail) > 254) {
+                http_response_code(422);
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Please provide a valid email address for order updates.']);
+                return;
+            }
+            $shippingAddress .= "\n" . 'Email: ' . $guestEmail;
+            try {
+                $this->db->prepare("UPDATE users SET email = ? WHERE id = ? AND role = 'guest'")
+                    ->execute([$guestEmail, $userId]);
+            } catch (PDOException $e) {
+                // Duplicate of a registered email — keep the placeholder; the
+                // address block above still carries the contact email.
+            }
         }
 
         $paymentMethod = trim($data['payment_method'] ?? 'card');
@@ -1074,13 +1146,12 @@ class CustomerController {
             $billingZip = $charge['billing_details']['address']['postal_code'] ?? '';
         }
 
-        $userId = Auth::userId();
         require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartId = $cartModel->getOrCreateCartId($userId);
 
         $stmt = $this->db->prepare("
-            SELECT ci.*, 
+            SELECT ci.*,
                    p.base_price,
                    ps.size_name, 
                    ac.color_name,
@@ -1105,9 +1176,18 @@ class CustomerController {
         $totalPrice = 0.0;
         foreach ($cartItems as $item) {
             $qty = (int)($item['quantity'] ?? 0);
-            // Retail unit_price is authoritative; base_price (supplier cost) is
-            // only a fallback for legacy rows that never stored a unit_price.
-            $unitBase = (float)($item['unit_price'] ?? 0) ?: (float)($item['base_price'] ?? 0);
+            // unit_price (retail) is authoritative and must be present — the
+            // same rule createPaymentIntent() enforces before charging. A
+            // base_price fallback here would diverge from the charged amount
+            // (base_price is the raw supplier cost) and fail the order AFTER
+            // payment. Reject instead; the customer re-adds the item.
+            $unitBase = (float)($item['unit_price'] ?? 0);
+            if ($unitBase <= 0) {
+                http_response_code(409);
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'An item in your cart has no valid price. Please remove it and add it again.']);
+                return;
+            }
             $fee = (float)($item['custom_design_fee'] ?? 0);
             $totalProducts += $qty;
             $totalPrice += ($unitBase + $fee) * $qty;
@@ -1125,13 +1205,28 @@ class CustomerController {
             }
         }
 
-        $orderStatus = ($paymentMethod === 'card') ? 'paid' : 'pending';
+        // orders.status is the FULFILLMENT lifecycle:
+        //   ENUM('pending','processing','in-transit','delivered','cancelled')
+        // 'paid' is NOT a member — under STRICT_TRANS_TABLES inserting it threw,
+        // the transaction rolled back, and the customer was charged by Stripe
+        // with no order recorded. Every order starts at 'pending'; whether it is
+        // paid lives in order_payments.status.
+        $orderStatus = 'pending';
+
+        // Public tracking number (see database/add_order_tracking.php): the
+        // customer's key to /track-order — guests especially, who have no order
+        // history page. Unambiguous alphabet, 12 chars ≈ 59 random bits.
+        $trackingAlphabet = 'ABCDEFGHJKMNPQRSTVWXYZ23456789';
+        $trackingToken = '';
+        for ($i = 0; $i < 12; $i++) {
+            $trackingToken .= $trackingAlphabet[random_int(0, strlen($trackingAlphabet) - 1)];
+        }
 
         try {
             $this->db->beginTransaction();
 
-            $stmt = $this->db->prepare("INSERT INTO orders (user_id, status, total_price, total_products) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$userId, $orderStatus, $totalPrice, $totalProducts]);
+            $stmt = $this->db->prepare("INSERT INTO orders (user_id, status, tracking_token, total_price, total_products, shipping_address) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$userId, $orderStatus, $trackingToken, $totalPrice, $totalProducts, $shippingAddress]);
             $orderId = (int)$this->db->lastInsertId();
 
             $orderItemStmt = $this->db->prepare("
@@ -1150,7 +1245,8 @@ class CustomerController {
             ");
 
             foreach ($cartItems as $item) {
-                $unitBase = (float)($item['unit_price'] ?? 0) ?: (float)($item['base_price'] ?? 0);
+                // Validated > 0 in the totals pass above.
+                $unitBase = (float)($item['unit_price'] ?? 0);
                 $fee = (float)($item['custom_design_fee'] ?? 0);
                 $isCustom = !empty($item['is_custom_design']) || !empty($item['design_data']);
                 
@@ -1230,7 +1326,11 @@ class CustomerController {
             $_SESSION['cart_count'] = 0;
 
             header('Content-Type: application/json');
-            echo json_encode(['success' => true, 'order_id' => $orderId]);
+            echo json_encode([
+                'success' => true,
+                'order_id' => $orderId,
+                'tracking_number' => $trackingToken,
+            ]);
         } catch (PDOException $e) {
             $this->db->rollBack();
             error_log('Checkout error: ' . $e->getMessage());
@@ -1242,7 +1342,10 @@ class CustomerController {
     }
     
         public function cart(): void {
-        if (!Auth::check()) {
+        // Read path: never mint a guest row just for viewing — crawlers hit
+        // /cart constantly. No session user of either kind = empty cart.
+        $userId = $this->effectiveUserId(false);
+        if (!$userId) {
             $cartItems = [];
             $cartTotal = 0;
             require __DIR__ . '/../views/customer/cart.php';
@@ -1250,7 +1353,7 @@ class CustomerController {
         }
         require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
-        $cartId = $cartModel->getOrCreateCartId(Auth::userId());
+        $cartId = $cartModel->getOrCreateCartId($userId);
         $stmt = $this->db->prepare("
             SELECT ci.*,
                    p.name AS product_name,
@@ -1417,7 +1520,11 @@ class CustomerController {
                 (SELECT p.base_price FROM products p
                  JOIN design_products dp ON dp.product_id = p.id
                  WHERE dp.design_id = d.id AND p.active = 1
-                 ORDER BY dp.id ASC LIMIT 1) AS product_base_price
+                 ORDER BY dp.id ASC LIMIT 1) AS product_base_price,
+                (SELECT p.name FROM products p
+                 JOIN design_products dp ON dp.product_id = p.id
+                 WHERE dp.design_id = d.id AND p.active = 1
+                 ORDER BY dp.id ASC LIMIT 1) AS product_name
             FROM premade_designs d
             JOIN design_sections s ON d.section_id = s.id
             WHERE s.slug = 'anime' AND d.active = 1
@@ -1432,8 +1539,9 @@ class CustomerController {
     public function customProduct(): void {
         $id = $_SESSION['selected_product_id'] ?? null;
         if (!$id) {
-            http_response_code(400);
-            echo "No product ID provided";
+            // Direct hit without picking a product first — send them to the
+            // picker rather than a bare 400.
+            header('Location: /shop/select_product');
             return;
         }
         // Get product details
@@ -1545,6 +1653,19 @@ class CustomerController {
         }
         unset($product);
 
+        // base_price is the SUPPLIER cost — attach the qty-1 retail price for
+        // the initial render. The page's JS recomputes with Pricing.unitPrice
+        // (pricing.js) as quantity/product change; this keeps the first paint
+        // consistent with those later updates.
+        foreach ($availableProducts as &$product) {
+            $product['retail_price'] = Pricing::unitPrice(
+                (float)$product['base_price'],
+                Pricing::categoryFor($product['slug'] ?? '', $product['name'] ?? ''),
+                1
+            );
+        }
+        unset($product);
+
         require __DIR__ . '/../views/customer/view_design.php';
     }
         
@@ -1651,8 +1772,10 @@ class CustomerController {
                    ac.color_name    AS color_name,
                    ps.size_name     AS size,
                    ps.size_order,
-                   COALESCE(ps.price_modifier, 0) AS price_modifier
+                   COALESCE(ps.price_modifier, 0) AS price_modifier,
+                   COALESCE(pv.unit_price, p.base_price + COALESCE(ps.price_modifier, 0)) AS supplier_cost
             FROM product_variants pv
+            JOIN products p               ON p.id = pv.product_id
             LEFT JOIN available_colors ac ON ac.id = pv.color_id
             LEFT JOIN product_sizes   ps ON ps.id = pv.size_id
             WHERE pv.product_id = ?
@@ -1663,6 +1786,16 @@ class CustomerController {
         ");
         $stmt->execute([$id]);
         $variants = $stmt->fetchAll();
+
+        // Attach customer-facing prices. supplier_cost mirrors the exact
+        // expression resolveSupplierCost() uses at add-to-cart, so the price
+        // shown per size equals the price charged for qty 1.
+        $category = Pricing::categoryFor($product['slug'] ?? '', $product['name'] ?? '');
+        $product['retail_price'] = Pricing::unitPrice((float)$product['base_price'], $category, 1);
+        foreach ($variants as &$v) {
+            $v['retail_price'] = Pricing::unitPrice((float)$v['supplier_cost'], $category, 1);
+        }
+        unset($v);
 
         require __DIR__ . '/../views/customer/product.php';
     }
@@ -1728,6 +1861,48 @@ class CustomerController {
         }
 
         require __DIR__ . '/../views/customer/info/' . $allowed[$slug];
+    }
+
+    /**
+     * GET /track-order[?code=CP-XXXX...] — public order status lookup by
+     * tracking number. Works for guests and accounts alike; the token itself
+     * (12 chars, ~59 random bits) is the capability, so no login and no email
+     * cross-check is needed. Only status-level info is shown — never the
+     * shipping address or contact details.
+     */
+    public function trackOrder(): void {
+        $trackQuery  = trim((string)($_GET['code'] ?? ''));
+        $trackResult = null;
+
+        if ($trackQuery !== '') {
+            // Accept "cp-abcd-..." style input: strip separators, uppercase.
+            $code = strtoupper((string)preg_replace('/[^A-Za-z0-9]/', '', $trackQuery));
+            $order = null;
+            if (strlen($code) >= 8 && strlen($code) <= 16) {
+                $stmt = $this->db->prepare("
+                    SELECT id, status, tracking_token, total_price, total_products, created_at, updated_at
+                    FROM orders
+                    WHERE tracking_token = ?
+                    LIMIT 1
+                ");
+                $stmt->execute([$code]);
+                $order = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+                if ($order) {
+                    $itemsStmt = $this->db->prepare("
+                        SELECT oi.quantity, oi.size_name, oi.color_name, p.name AS product_name
+                        FROM order_items oi
+                        LEFT JOIN products p ON p.id = oi.product_id
+                        WHERE oi.order_id = ?
+                        ORDER BY oi.id
+                    ");
+                    $itemsStmt->execute([(int)$order['id']]);
+                    $order['items'] = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+                }
+            }
+            $trackResult = ['query' => $trackQuery, 'order' => $order];
+        }
+
+        require __DIR__ . '/../views/customer/info/track_order.php';
     }
 
     public function cookieConsent(): void {

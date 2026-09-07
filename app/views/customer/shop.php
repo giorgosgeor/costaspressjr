@@ -19,7 +19,7 @@
             <!-- Anime Section -->
             <a href="/shop/premade/anime" class="category-card">
                 <div class="category-image anime-bg">
-                    <div class="category-icon">🎌</div>
+                    <div class="category-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>
                 </div>
                 <div class="category-info">
                     <h3><?= t('shop.premade.anime_title') ?></h3>

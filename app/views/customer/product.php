@@ -27,7 +27,7 @@
                 <?php if (!empty($product['description'])): ?>
                 <p class="product-type-label"><?= htmlspecialchars($product['description']) ?></p>
                 <?php endif; ?>
-                <p class="product-price-large">€<span id="product-price"><?= number_format($product['base_price'], 2) ?></span></p>
+                <p class="product-price-large">€<span id="product-price"><?= number_format($product['retail_price'] ?? $product['base_price'], 2) ?></span></p>
                 
                 <form action="/cart/add" method="post" class="product-form">
                     <?= Csrf::field() ?>
@@ -56,7 +56,9 @@
                             <option value=""><?= t('product.select_size') ?></option>
                             <?php 
                             foreach ($variants as $v) {
-                                echo '<option value="' . $v['id'] . '" data-color="' . htmlspecialchars($v['color']) . '" data-price="' . $v['price_modifier'] . '">' . htmlspecialchars($v['size']) . '</option>';
+                                // data-retail is the customer qty-1 price for this
+                                // variant, computed server-side by the Pricing engine.
+                                echo '<option value="' . $v['id'] . '" data-color="' . htmlspecialchars($v['color']) . '" data-retail="' . number_format((float)($v['retail_price'] ?? 0), 2, '.', '') . '">' . htmlspecialchars($v['size']) . '</option>';
                             }
                             ?>
                         </select>
@@ -152,11 +154,12 @@ startDesigningBtn.addEventListener('click', function() {
     }
 });
 
-// Update price when size changes
+// Update price when size changes — data-retail carries the server-computed
+// customer price for the variant (never expose the raw supplier cost here).
 sizeSelect?.addEventListener('change', function() {
-    const basePrice = <?= $product['base_price'] ?>;
-    const modifier = parseFloat(this.options[this.selectedIndex].dataset.price) || 0;
-    document.getElementById('product-price').textContent = (basePrice + modifier).toFixed(2);
+    const fallback = <?= json_encode(number_format((float)($product['retail_price'] ?? $product['base_price']), 2, '.', '')) ?>;
+    const retail = this.options[this.selectedIndex].dataset.retail;
+    document.getElementById('product-price').textContent = parseFloat(retail || fallback).toFixed(2);
 });
 </script>
 

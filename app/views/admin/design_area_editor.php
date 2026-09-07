@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($title) ?> - Admin</title>
     <link rel="stylesheet" href="/css/design_area_editor.css">
-    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <script src="/js/vendor/interact.min.js"></script>
 </head>
 <body>
 

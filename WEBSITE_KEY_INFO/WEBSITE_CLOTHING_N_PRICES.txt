@@ -1,0 +1,104 @@
+#13:  prices:             INFO:     *BIG= 3XL AND UP       
+WHITE 2.14                #13:T-SHIRT(MAIN T-SHIRT)/100% COTTON
+*BIG   2.81               #10:FEMALE VERSION #13
+COLOR 2.74                #6:TANK TOP/100% COTTON
+CBIG   2.93               #2:FEMALE TANK TOP/100% COTTON
+                          #69:V-NECK T-SHIRT/100% COTTON
+#10:  prices:             #69a:FEMALE VERSION #69
+NORM  2.88                #180:POLO T-SHIRT/100% COTTON
+BIG   3.52                #180a:FEMALE POLO T-SHIRT/100% COTTON
+                          #35a:LONG SLEEVE/100% COTTON
+#6:   prices:             #35b:SAME WITH 35a JUST MORE COLORS
+WHITE 3.24                #18:FEMALE LONG SLEEVE/100% COTTON
+COLOR 4.32                #32:HOODIE/NO HOOD/80% COTTON 20%POLYESTER
+                          #32a:SAME WITH 32/MORE COLORS
+#2:   prices:             #32b:SAME WITH 32/MORE COLORS   
+COLOR 4.32                #002:PRIMARY HOODIE/NO HOOD(CHEAPER/LESS COLORS THAN 32)
+                          #34:PRIMARY HOODIE/NO HOOD WITH ZIP/80% COTTON 20% POLYESTER
+#69:  prices:             #003:PRIMARY HOODIE WITH HOOD/80% COTTON 20% POLYESTER
+NORM  5.05                #29/29a/29b:HOODIE WITH HOOD/MORE COLORS/MORE EXPENSIVE
+                          #30:HOODIE WITH HOOD/ZIP/80% COTTON 20% POLYESTER
+#69a: prices:             #31:FEMALE VERSION #30
+NORM  5.05                #99:CAPS WITH FOAM IN THE FRONT/MESH IN THE BACK/100% POLYESTER
+                          #100:CAPS DIFFERENT STYLE/100% COTTON
+#180: prices:             #85:CAPS DIFFERENT STYLE/100% COTTON
+NORM  7.50
+
+#180a: prices:           
+NORM   7.50             
+
+#35a: prices:
+WHITE 3.61
+BIG   4.75
+COLOR 4.89
+CBIG   6.12
+
+#35b: prices:
+NORM  6.91
+BIG   8.64
+
+#18:  prices:
+WHITE 4.82
+BIG   5.97
+COLOR 5.26
+CBIG  5.97
+
+#32: prices:
+NORM 13.83
+
+#32a: prices:
+NORM  13.83
+BIG   15.65
+
+#32b: prices:
+NORM  12.97
+
+#002: prices:
+NORM  10.81
+BIG   12.25
+
+#34: prices:
+NORM 25.20
+
+#003: prices:
+NORM  14.40
+BIG   16.57
+
+#29: prices:
+NORM 18.43
+
+#29a: prices:
+NORM  18.43
+BIG   20.83
+
+#29b: prices:
+NORM  16.90
+
+#30:  prices:
+NORM  23.04
+BIG   27.36
+
+#31: prices:
+NORM  23.04
+BIG   27.36
+
+#99: prices:
+NORM 3.61
+
+#100: prices:
+NORM  3.61
+
+#85: prices:
+NORM 3.21
+
+
+
+
+
+
+
+
+
+
+
+

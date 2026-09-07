@@ -35,7 +35,11 @@
     # Stripe.js loads from js.stripe.com, mounts its card fields in iframes from
     # js.stripe.com / hooks.stripe.com, and talks to api.stripe.com. Those hosts
     # must be allowlisted or the entire card-payment flow is blocked in the browser.
-    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com; form-action 'self'; frame-ancestors 'none'; base-uri 'self';"
+    # Google Fonts (Inter) is loaded from fonts.googleapis.com (CSS) and
+    # fonts.gstatic.com (woff2) by the customer layout — both must be allowed
+    # or every page falls back to system fonts. interact.js is self-hosted
+    # under /js/vendor/ so no CDN entry is needed for scripts.
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com; form-action 'self'; frame-ancestors 'none'; base-uri 'self';"
 </IfModule>
 
 # Default charset

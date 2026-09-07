@@ -1,8 +1,6 @@
 <?php
-if (!Auth::check()) {
-    header('Location: /login');
-    exit;
-}
+// No login gate: guests shop too. The controller resolves the effective user
+// (account or session guest) and passes an empty cart when there is neither.
 
 $title = t('cart.title', false);
 $extraCss = ['/css/cart.css'];
@@ -76,7 +74,7 @@ function getCartProductColorFilter($hex) {
 
 <section class="section cart-section">
     <div class="container">
-        <h1>🛒 <?= t('cart.title') ?></h1>
+        <h1><?= t('cart.title') ?></h1>
 
         <?php if (!empty($cartItems)): ?>
         <div class="cart-container">
@@ -139,13 +137,13 @@ function getCartProductColorFilter($hex) {
                             <?php if (!empty($item['premade_design_name'])): ?>
                             <span class="badge-premade"><?= I18n::t('cart.item.design_label', ['name' => htmlspecialchars($item['premade_design_name'])]) ?></span>
                             <?php elseif ($isCustom): ?>
-                            <span class="badge-custom">✨ Custom</span>
+                            <span class="badge-custom"><?= t('cart.item.custom') ?></span>
                             <?php endif; ?>
                         </h3>
                         <div class="cart-item-meta">
                             <?php if (!empty($item['size_name'])): ?>
                             <span class="cart-item-meta-item">
-                                📏 <?= htmlspecialchars($item['size_name']) ?>
+                                <?= t('cart.item.size_label') ?> <?= htmlspecialchars($item['size_name']) ?>
                             </span>
                             <?php endif; ?>
                             <?php if (!empty($item['color_name'])): ?>
@@ -156,7 +154,7 @@ function getCartProductColorFilter($hex) {
                             <?php endif; ?>
                             <?php if (!empty($item['custom_design_fee']) && $item['custom_design_fee'] > 0): ?>
                             <span class="cart-item-meta-item">
-                                🎨 Design fee: +€<?= number_format($item['custom_design_fee'], 2) ?>
+                                <?= t('cart.item.design_fee') ?> +€<?= number_format($item['custom_design_fee'], 2) ?>
                             </span>
                             <?php endif; ?>
                         </div>
@@ -173,7 +171,7 @@ function getCartProductColorFilter($hex) {
                             <button class="qty-btn" onclick="updateQuantity(<?= $item['id'] ?>, 1)">+</button>
                         </div>
                         <button class="btn-danger-outline" onclick="removeFromCart(<?= $item['id'] ?>)">
-                            🗑️ <?= t('cart.item.remove') ?>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:5px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg><?= t('cart.item.remove') ?>
                         </button>
                     </div>
                 </div>
@@ -206,7 +204,9 @@ function getCartProductColorFilter($hex) {
         </div>
         <?php else: ?>
         <div class="empty-state">
-            <div class="empty-state-icon">🛒</div>
+            <div class="empty-state-icon" aria-hidden="true">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            </div>
             <h2><?= t('cart.empty.title') ?></h2>
             <p><?= t('cart.empty.lead') ?></p>
             <a href="/shop" class="btn-primary-gradient" style="padding: 14px 32px; font-size: 1.1rem;"><?= t('cart.empty.button') ?></a>
@@ -369,13 +369,53 @@ function getCartProductColorFilter($hex) {
                 </div>
             </div>
 
+            <!-- Shipping address — required; stored on the order for fulfilment -->
+            <div class="review-order-summary" style="margin-top:14px;">
+                <div class="review-label" style="margin-bottom:10px;"><?= t('checkout.shipping.title') ?></div>
+                <div class="checkout-field">
+                    <label for="shipName"><?= t('checkout.shipping.name') ?></label>
+                    <input id="shipName" type="text" autocomplete="shipping name" placeholder="<?= t('checkout.shipping.name_placeholder') ?>" required maxlength="100" style="width:100%;">
+                </div>
+                <div class="checkout-field">
+                    <label for="shipPhone"><?= t('checkout.shipping.phone') ?></label>
+                    <input id="shipPhone" type="tel" autocomplete="tel" placeholder="<?= t('checkout.shipping.phone_placeholder') ?>" required maxlength="30" style="width:100%;">
+                </div>
+                <div class="checkout-field">
+                    <label for="shipStreet"><?= t('checkout.shipping.street') ?></label>
+                    <input id="shipStreet" type="text" autocomplete="shipping street-address" placeholder="<?= t('checkout.shipping.street_placeholder') ?>" required maxlength="200" style="width:100%;">
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <div class="checkout-field" style="flex:2;">
+                        <label for="shipCity"><?= t('checkout.shipping.city') ?></label>
+                        <input id="shipCity" type="text" autocomplete="shipping address-level2" required maxlength="80" style="width:100%;">
+                    </div>
+                    <div class="checkout-field" style="flex:1;">
+                        <label for="shipPostal"><?= t('checkout.shipping.postal') ?></label>
+                        <input id="shipPostal" type="text" autocomplete="shipping postal-code" required maxlength="16" style="width:100%;">
+                    </div>
+                </div>
+                <div class="checkout-field">
+                    <label for="shipCountry"><?= t('checkout.shipping.country') ?></label>
+                    <input id="shipCountry" type="text" autocomplete="shipping country-name" value="Cyprus" required maxlength="60" style="width:100%;">
+                </div>
+                <?php if (!Auth::check()): ?>
+                <!-- Guests have no account email — collect one for order contact -->
+                <div class="checkout-field">
+                    <label for="shipEmail"><?= t('checkout.shipping.email') ?></label>
+                    <input id="shipEmail" type="email" autocomplete="email" placeholder="<?= t('checkout.shipping.email_placeholder') ?>" required maxlength="254" style="width:100%;">
+                    <small style="display:block;color:var(--ink-soft,#666);margin-top:3px;font-size:0.82rem;"><?= t('checkout.shipping.email_note') ?></small>
+                </div>
+                <?php endif; ?>
+                <div id="shippingError" style="display:none;color:#dc3545;font-size:0.9rem;margin-top:4px;"><?= t('checkout.shipping.required') ?></div>
+            </div>
+
             <div class="checkout-agreement">
                 <label class="checkout-checkbox-label">
                     <input type="checkbox" id="agreeTerms">
                     <span class="checkmark"></span>
                     <span><?= t('checkout.review.terms', false,
-                        ['terms' => '<a href="/info/terms" target="_blank">' . t('checkout.review.terms_link', false) . '</a>',
-                         'privacy' => '<a href="/info/privacy" target="_blank">' . t('checkout.review.privacy_link', false) . '</a>']) ?></span>
+                        ['terms' => '<a href="/terms" target="_blank">' . t('checkout.review.terms_link', false) . '</a>',
+                         'privacy' => '<a href="/privacy" target="_blank">' . t('checkout.review.privacy_link', false) . '</a>']) ?></span>
                 </label>
             </div>
 
@@ -413,14 +453,16 @@ function getCartProductColorFilter($hex) {
 </div>
 
 <!-- Remove Item Confirmation Modal -->
-<div id="removeConfirmOverlay" style="display:none;position:fixed;inset:0;z-index:50000;background:rgba(21,19,14,0.78);align-items:center;justify-content:center;" onclick="if(event.target===this)closeRemoveConfirm()">
-    <div style="background:var(--paper);border:3px solid var(--ink);padding:30px 26px;max-width:400px;width:90%;box-shadow:8px 8px 0 var(--spot);text-align:center;">
-        <div style="width:56px;height:56px;background:var(--spot);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.6rem;color:var(--paper);transform:rotate(-4deg);">🗑️</div>
-        <h3 style="margin:0 0 8px;font-family:var(--font-display);font-size:1.6rem;letter-spacing:0.04em;color:var(--ink);text-transform:uppercase;"><?= t('cart.remove.title') ?></h3>
-        <p style="margin:0 0 22px;color:var(--ink-soft);font-family:var(--font-type);font-size:0.95rem;"><?= t('cart.remove.lead') ?></p>
-        <div style="display:flex;gap:12px;">
-            <button onclick="closeRemoveConfirm()" style="flex:1;padding:11px;border:2px solid var(--ink);background:var(--paper-2);color:var(--ink);font-family:var(--font-display);font-size:0.95rem;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;box-shadow:3px 3px 0 var(--ink);"><?= t('cart.remove.cancel') ?></button>
-            <button id="confirmRemoveBtn" onclick="confirmRemove()" style="flex:1;padding:11px;border:2px solid var(--ink);background:var(--spot);color:var(--paper);font-family:var(--font-display);font-size:0.95rem;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;box-shadow:3px 3px 0 var(--ink);"><?= t('cart.remove.confirm') ?></button>
+<div id="removeConfirmOverlay" class="confirm-overlay" onclick="if(event.target===this)closeRemoveConfirm()" role="dialog" aria-modal="true" aria-labelledby="removeConfirmTitle">
+    <div class="confirm-dialog">
+        <div class="confirm-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </div>
+        <h3 id="removeConfirmTitle" class="confirm-title"><?= t('cart.remove.title') ?></h3>
+        <p class="confirm-lead"><?= t('cart.remove.lead') ?></p>
+        <div class="confirm-actions">
+            <button type="button" class="confirm-btn confirm-btn-secondary" onclick="closeRemoveConfirm()"><?= t('cart.remove.cancel') ?></button>
+            <button type="button" id="confirmRemoveBtn" class="confirm-btn confirm-btn-danger" onclick="confirmRemove()"><?= t('cart.remove.confirm') ?></button>
         </div>
     </div>
 </div>
@@ -662,16 +704,23 @@ function selectPaymentMethod(method) {
         cardForm.style.display = 'none';
         altForm.style.display = 'block';
 
+        // One neutral "you'll be redirected" mark for every off-site method.
+        // These were coloured emoji standing in for brand logos (a blue circle
+        // for Revolut, an apple for Apple Pay), which read as placeholders.
+        const REDIRECT_ICON =
+            '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+            ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>' +
+            '<polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
         const messages = {
-            revolut: { icon: '🔵', text: 'You will be redirected to Revolut to authorize your payment securely.' },
-            paypal: { icon: '🅿️', text: 'You will be redirected to PayPal to complete your payment securely.' },
-            gcash: { icon: '💚', text: 'You will be redirected to GCash to complete your payment securely.' },
-            applepay: { icon: '🍎', text: 'Confirm payment with Apple Pay using Face ID or Touch ID.' },
-            googlepay: { icon: '🔷', text: 'Confirm payment with Google Pay securely.' }
+            revolut:   'You will be redirected to Revolut to authorise your payment.',
+            paypal:    'You will be redirected to PayPal to complete your payment.',
+            gcash:     'You will be redirected to GCash to complete your payment.',
+            applepay:  'Confirm payment with Apple Pay using Face ID or Touch ID.',
+            googlepay: 'Confirm payment with Google Pay.'
         };
-        const msg = messages[method] || { icon: '💳', text: 'You will be redirected to complete your payment.' };
-        altIcon.textContent = msg.icon;
-        altText.textContent = msg.text;
+        altIcon.innerHTML = REDIRECT_ICON;
+        altText.textContent = messages[method] || 'You will be redirected to complete your payment.';
     }
 }
 
@@ -747,6 +796,50 @@ function goBackToPayment() {
 }
 
 // ==================== Submit Order ====================
+// Collect + validate the shipping address. Returns the object, or null (and
+// highlights the missing fields) when incomplete.
+function collectShippingAddress() {
+    const fields = ['shipName', 'shipPhone', 'shipStreet', 'shipCity', 'shipPostal', 'shipCountry'];
+    const values = {};
+    let ok = true;
+    for (const id of fields) {
+        const el = document.getElementById(id);
+        const v = (el.value || '').trim();
+        values[id] = v;
+        el.style.borderColor = v ? '' : '#dc3545';
+        if (!v) ok = false;
+    }
+    document.getElementById('shippingError').style.display = ok ? 'none' : '';
+    if (!ok) {
+        document.getElementById('shipName').closest('.review-order-summary').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return null;
+    }
+    const address = {
+        name:    values.shipName,
+        phone:   values.shipPhone,
+        street:  values.shipStreet,
+        city:    values.shipCity,
+        postal:  values.shipPostal,
+        country: values.shipCountry,
+    };
+
+    // Guest checkout renders an email field; logged-in users don't have one.
+    const emailEl = document.getElementById('shipEmail');
+    if (emailEl) {
+        const email = (emailEl.value || '').trim();
+        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        emailEl.style.borderColor = emailOk ? '' : '#dc3545';
+        if (!emailOk) {
+            document.getElementById('shippingError').style.display = '';
+            emailEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return null;
+        }
+        address.email = email;
+    }
+
+    return address;
+}
+
 async function submitOrder() {
     const agreeCheckbox = document.getElementById('agreeTerms');
     if (!agreeCheckbox.checked) {
@@ -755,6 +848,11 @@ async function submitOrder() {
         setTimeout(() => { agreeCheckbox.parentElement.style.color = ''; }, 2000);
         return;
     }
+
+    // Shipping address is required BEFORE any charge is attempted, so a
+    // validation failure can never leave a paid-but-unplaceable order.
+    const shippingAddress = collectShippingAddress();
+    if (!shippingAddress) return;
 
     const confirmBtn = document.getElementById('confirmCheckout');
     confirmBtn.disabled = true;
@@ -796,22 +894,23 @@ async function submitOrder() {
             const orderRes  = await jsonPost('/checkout', {
                 payment_method: 'card',
                 stripe_payment_intent_id: paymentIntent.id,
+                shipping_address: shippingAddress,
             });
             const orderData = await orderRes.json();
 
             if (orderData.success) {
                 closeCheckoutModal();
-                showOrderSuccess(orderData.order_id);
+                showOrderSuccess(orderData.order_id, orderData.tracking_number);
             } else {
                 alert(orderData.error || window.I18N.t('checkout.errors.generic'));
             }
         } else {
             // Non-card methods (future: Revolut, PayPal, etc.)
-            const orderRes  = await jsonPost('/checkout', { payment_method: selectedPaymentMethod });
+            const orderRes  = await jsonPost('/checkout', { payment_method: selectedPaymentMethod, shipping_address: shippingAddress });
             const orderData = await orderRes.json();
             if (orderData.success) {
                 closeCheckoutModal();
-                showOrderSuccess(orderData.order_id);
+                showOrderSuccess(orderData.order_id, orderData.tracking_number);
             } else {
                 alert(orderData.error || window.I18N.t('checkout.errors.generic'));
             }
@@ -825,9 +924,19 @@ async function submitOrder() {
     }
 }
 
-function showOrderSuccess(orderId) {
+function showOrderSuccess(orderId, trackingNumber) {
     const i18n = window.I18N || {};
     const _t = (k, p) => i18n.t ? i18n.t(k, p) : k;
+    const isLoggedIn = <?= Auth::check() ? 'true' : 'false' ?>;
+    // Guests have no order-history page — their tracking number IS the record,
+    // so surface it prominently and link the tracker instead of /account.
+    const trackingBlock = trackingNumber ? `
+            <p style="margin:10px 0 2px;font-size:0.85rem;">${_t('checkout.success.tracking')}</p>
+            <div class="order-id-display" style="letter-spacing:0.12em;">${trackingNumber}</div>
+            <p style="font-size:0.8rem;">${_t('checkout.success.tracking_note')}</p>` : '';
+    const secondAction = isLoggedIn
+        ? `<a href="/account" class="order-success-action order-success-action-primary">${_t('checkout.success.view')}</a>`
+        : `<a href="/track-order?code=${encodeURIComponent(trackingNumber || '')}" class="order-success-action order-success-action-primary">${_t('info.track.search_btn')}</a>`;
     const overlay = document.createElement('div');
     overlay.className = 'order-success-overlay';
     overlay.innerHTML = `
@@ -838,10 +947,11 @@ function showOrderSuccess(orderId) {
             <h2>${_t('checkout.success.title')}</h2>
             <p>${_t('checkout.success.thanks')}</p>
             <div class="order-id-display">${_t('checkout.success.order_id', {id: orderId || ''})}</div>
+            ${trackingBlock}
             <p style="font-size:0.85rem;">${_t('checkout.success.email')}</p>
             <div class="order-success-actions">
-                <a href="/shop" style="background:var(--paper-2);color:var(--ink);border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);">${_t('checkout.success.continue')}</a>
-                <a href="/account" style="background:var(--ink);color:var(--paper);border:2px solid var(--ink);box-shadow:3px 3px 0 var(--spot);">${_t('checkout.success.view')}</a>
+                <a href="/shop" class="order-success-action order-success-action-secondary">${_t('checkout.success.continue')}</a>
+                ${secondAction}
             </div>
         </div>
     `;

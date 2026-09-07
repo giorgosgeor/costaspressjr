@@ -7,12 +7,6 @@ class CustomDesignController {
 
     // POST /custom-design/save
     public function save(): void {
-        if (!Auth::check()) {
-            header('Content-Type: application/json');
-            http_response_code(401);
-            echo json_encode(['requireLogin' => true, 'redirect' => '/login']);
-            return;
-        }
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo 'Method Not Allowed';
@@ -24,7 +18,29 @@ class CustomDesignController {
             echo 'Missing design name or data';
             return;
         }
-        $userId = Auth::userId();
+
+        // Two kinds of save share this endpoint:
+        //  - The "Save Design" library feature: accounts only. Guests get the
+        //    requireLogin response and the studio redirects them to log in.
+        //  - cart_flow: the internal save that backs Add to Cart (cart items
+        //    reference a design row). Guests may buy without an account, so
+        //    this path runs under the session's guest user row.
+        if (Auth::check()) {
+            $userId = Auth::userId();
+        } elseif (!empty($data['cart_flow'])) {
+            $userId = Auth::effectiveUserId($this->db, true);
+            if (!$userId) {
+                header('Content-Type: application/json');
+                http_response_code(500);
+                echo json_encode(['error' => 'Could not start a shopping session. Please try again.']);
+                return;
+            }
+        } else {
+            header('Content-Type: application/json');
+            http_response_code(401);
+            echo json_encode(['requireLogin' => true, 'redirect' => '/login']);
+            return;
+        }
         require_once __DIR__ . '/../models/CustomDesign.php';
         $customDesignModel = new \CustomDesign($this->db);
         $designId = $customDesignModel->save($data, $userId);
@@ -80,18 +96,12 @@ class CustomDesignController {
     
     // POST /custom-design/save-previews
     public function savePreviews(): void {
-        if (!Auth::check()) {
-            header('Content-Type: application/json');
-            http_response_code(401);
-            echo json_encode(['requireLogin' => true, 'redirect' => '/login']);
-            return;
-        }
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo 'Method Not Allowed';
             return;
         }
-        
+
         $data = json_decode(file_get_contents('php://input'), true);
         if (!$data || empty($data['design_id']) || empty($data['previews'])) {
             http_response_code(400);
@@ -99,9 +109,17 @@ class CustomDesignController {
             echo json_encode(['error' => 'Missing design_id or previews']);
             return;
         }
-        
+
         $designId = (int)$data['design_id'];
-        $userId = Auth::userId();
+        // Guests own cart_flow designs; the ownership check below is what
+        // actually gates access, for accounts and guests alike.
+        $userId = Auth::effectiveUserId($this->db, false);
+        if (!$userId) {
+            header('Content-Type: application/json');
+            http_response_code(401);
+            echo json_encode(['requireLogin' => true, 'redirect' => '/login']);
+            return;
+        }
         
         // Verify ownership
         $stmt = $this->db->prepare("SELECT id, user_id FROM custom_designs WHERE id = ?");

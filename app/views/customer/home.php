@@ -1,6 +1,37 @@
 <?php $title = t('home.landing.welcome', false); ?>
 <?php require __DIR__ . '/../layouts/customer_header.php'; ?>
 
+<script>
+// Featured product cards open the customiser with that product preselected —
+// the same handshake the product picker uses (/shop/set_selected_product
+// stores the id in the session, /shop/custom_product reads it back). Works
+// for guests too: designing no longer requires an account.
+document.addEventListener('DOMContentLoaded', function () {
+    function openProduct(card) {
+        var productId = card.getAttribute('data-product-id');
+        if (!productId) return;
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        fetch('/shop/set_selected_product', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': meta ? meta.getAttribute('content') : ''
+            },
+            body: JSON.stringify({ product_id: productId })
+        }).then(function (res) {
+            if (res.ok) window.location.href = '/shop/custom_product';
+        }).catch(function () {});
+    }
+    document.querySelectorAll('.product-card.featured-product').forEach(function (card) {
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', function () { openProduct(card); });
+        card.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProduct(card); }
+        });
+    });
+});
+</script>
+
 <?php if (!Auth::check()): ?>
 <!-- Landing Section for Unauthenticated Users -->
 <section class="landing-section">
@@ -59,7 +90,7 @@
         <div class="products-grid">
             <?php if (!empty($featuredProducts)): ?>
                 <?php foreach ($featuredProducts as $product): ?>
-                <div class="product-card is-preview">
+                <div class="product-card featured-product" data-product-id="<?= (int)$product['id'] ?>" role="link" tabindex="0" aria-label="<?= htmlspecialchars($product['name']) ?>">
                     <div class="product-image">
                         <img src="/<?= htmlspecialchars($product['image_path'] ?? '') ?>" alt="<?= htmlspecialchars($product['name']) ?>" loading="lazy" onerror="this.src='/images/placeholder.svg'">
                         <?php if (!$product['active']): ?>
@@ -134,7 +165,7 @@
         <div class="products-grid">
             <?php if (!empty($featuredProducts)): ?>
                 <?php foreach ($featuredProducts as $product): ?>
-                <div class="product-card is-preview">
+                <div class="product-card featured-product" data-product-id="<?= (int)$product['id'] ?>" role="link" tabindex="0" aria-label="<?= htmlspecialchars($product['name']) ?>">
                     <div class="product-image">
                         <img src="/<?= htmlspecialchars($product['image_path'] ?? '') ?>" alt="<?= htmlspecialchars($product['name']) ?>" loading="lazy" onerror="this.src='/images/placeholder.svg'">
                         <?php if (!$product['active']): ?>

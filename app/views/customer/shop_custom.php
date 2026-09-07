@@ -21,7 +21,7 @@
                 <a id="studioSizeGuideLink" href="#"
                    onclick="event.preventDefault(); if (window.currentProduct && window.currentProduct.sizeChartImage) openSizeGuide(window.currentProduct.sizeChartImage, window.currentProduct.name || 'Product');"
                    style="display:none; font-size:0.8rem; color:#2A4FE0; text-decoration:none; font-weight:500;">
-                    📏 Size guide
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:4px;"><path d="M2 12h20"/><path d="M6 9v6M10 7v10M14 9v6M18 7v10"/></svg>Size guide
                 </a>
             </label>
             <div id="cartSizeOptions" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
@@ -718,7 +718,7 @@ function showCartSuccessNotification() {
             </div>
             <div style="margin-bottom:1.1rem;display:flex;align-items:center;gap:8px;">
                 <input id="saveDesignPrivacy" type="checkbox" style="width:18px;height:18px;">
-                <label for="saveDesignPrivacy" style="font-size:0.98rem;"><?= t('studio.save_modal.privacy', false, ['link' => '<a href="/info/privacy" style="color:#2d5fff;" target="_blank">' . t('studio.save_modal.privacy_link', false) . '</a>']) ?></label>
+                <label for="saveDesignPrivacy" style="font-size:0.98rem;"><?= t('studio.save_modal.privacy', false, ['link' => '<a href="/privacy" style="color:#2d5fff;" target="_blank">' . t('studio.save_modal.privacy_link', false) . '</a>']) ?></label>
             </div>
             <button id="saveDesignModalBtn" type="button" style="width:100%;background:#eee;color:#aaa;font-size:1.13rem;font-weight:600;padding:12px 0;border:none;border-radius:8px;cursor:not-allowed;margin-bottom:1.2rem;"><?= t('studio.save_modal.save_new') ?></button>
         </div>
@@ -819,10 +819,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Generates preview images for each view using Canvas API
     // options: { colorHex: string, cartItemId: number|null }
+    // options.returnOnly — render the previews and hand them back WITHOUT
+    // posting them. Used before a design exists server-side (the login-bounce
+    // save), where there is no designId to attach them to yet.
     window.generateAndSavePreviews = async function generateAndSavePreviews(designId, options = {}) {
-        if (!designId || !window.currentProduct) {
+        const returnOnly = !!options.returnOnly;
+        if ((!designId && !returnOnly) || !window.currentProduct) {
             console.warn('Cannot generate previews: missing designId or product');
-            return;
+            return returnOnly ? {} : undefined;
         }
         
         const colorHexToUse = options.colorHex || currentColorHex;
@@ -1099,6 +1103,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
+        // Caller wants the images, not a save (no design row exists yet).
+        if (returnOnly) return previews;
+
         // Send previews to server
         if (Object.keys(previews).length > 0) {
             try {
@@ -1122,6 +1129,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
+
+    // Front-view snapshot as a data URL, for the save-then-login bounce: the
+    // payload is stashed in sessionStorage and replayed after login. This was
+    // previously only defined in public/js/shop_custom.js, which is never
+    // loaded — so the `typeof` guard at the call site always failed and the
+    // preview was silently lost.
+    window.captureCurrentFrontPreview = async function captureCurrentFrontPreview() {
+        try {
+            const previews = await window.generateAndSavePreviews(null, { returnOnly: true });
+            return (previews && previews.front) ? previews.front : null;
+        } catch (e) {
+            console.warn('Front preview capture failed:', e);
+            return null;
+        }
+    };
     
     // Update Design button handler (for editing existing designs)
     document.getElementById('updateDesignBtn').addEventListener('click', function() {
@@ -1299,43 +1321,100 @@ document.addEventListener('DOMContentLoaded', function() {
         })();
     });
 
-    // Add to Cart button handler - opens Add to Cart modal with size/color selection
-    document.getElementById('addToCartNowBtn').addEventListener('click', function() {
-        if (!window.savedDesignId) {
-            alert(window.I18N.t('studio.not_saved'));
-            return;
-        }
-        
-        // Calculate design fee
+    // Shared: open the size/color/quantity modal for an already-saved design.
+    function openCartModalForDesign(designId, designName) {
+        // Raw pre-margin print add-ons (front+back = €3, each sleeve = €1). These
+        // are marked up through the margin in updateCartPrices().
         const frontCount = (typeof elements !== 'undefined' && elements['front']) ? elements['front'].length : 0;
         const backCount = (typeof elements !== 'undefined' && elements['back']) ? elements['back'].length : 0;
         const leftSleeveCount = (typeof elements !== 'undefined' && elements['left-sleeve']) ? elements['left-sleeve'].length : 0;
         const rightSleeveCount = (typeof elements !== 'undefined' && elements['right-sleeve']) ? elements['right-sleeve'].length : 0;
-        // Raw pre-margin print add-ons (front+back = €3, each sleeve = €1). These
-        // are marked up through the margin in updateCartPrices().
         let designFee = 0;
-        if (frontCount > 0 && backCount > 0) {
-            designFee += 3.0;
-        }
-        if (leftSleeveCount > 0) {
-            designFee += 1.0;
-        }
-        if (rightSleeveCount > 0) {
-            designFee += 1.0;
-        }
-        
+        if (frontCount > 0 && backCount > 0) designFee += 3.0;
+        if (leftSleeveCount > 0) designFee += 1.0;
+        if (rightSleeveCount > 0) designFee += 1.0;
+
         const productName = window.currentProduct ? window.currentProduct.name : 'Custom Product';
         const basePrice = window.currentProduct ? window.currentProduct.basePrice : 0;
-        const designName = document.getElementById('saveDesignName') ? document.getElementById('saveDesignName').value : 'Your Design';
-        
+
         openAddToCartModal(
-            window.savedDesignId,
+            designId,
             window.currentProduct ? window.currentProduct.id : null,
             productName,
             designName,
             basePrice,
             designFee
         );
+    }
+
+    // Add to Cart button handler (saved-design modal) - design already saved
+    document.getElementById('addToCartNowBtn').addEventListener('click', function() {
+        if (!window.savedDesignId) {
+            alert(window.I18N.t('studio.not_saved'));
+            return;
+        }
+        const designName = document.getElementById('saveDesignName') ? document.getElementById('saveDesignName').value : 'Your Design';
+        openCartModalForDesign(window.savedDesignId, designName);
+    });
+
+    // Direct Add to Cart (studio toolbar) — works for guests. The cart needs a
+    // design row to reference, so the design is saved silently first: cart_flow
+    // lets the server accept the save under the session's guest user row. The
+    // explicit "Save Design" library flow still requires a real login.
+    document.getElementById('addToCartDirectBtn')?.addEventListener('click', async function() {
+        const btn = this;
+        if (!window.currentProduct) {
+            alert(window.I18N.t('studio.not_saved'));
+            return;
+        }
+        const hasAny = typeof elements !== 'undefined' &&
+            ['front', 'back', 'left-sleeve', 'right-sleeve'].some(v => (elements[v] || []).length > 0);
+        if (!hasAny) {
+            alert(window.I18N.t('studio.cart.error_empty_design'));
+            return;
+        }
+
+        // Re-use the already-saved design when nothing needs re-saving is not
+        // trivial to detect, so save a fresh snapshot each time the direct
+        // button is used — the cart item then references exactly what's on
+        // screen right now.
+        let allElements = [];
+        Object.keys(elements).forEach(view => {
+            allElements = allElements.concat(elements[view].map(el => ({...el, view})));
+        });
+        const _da = document.getElementById('designArea');
+        const autoName = (window.currentProduct.name || 'Custom') + ' ' + new Date().toISOString().slice(0, 10);
+        const designData = {
+            cart_flow: true,
+            name: autoName.slice(0, 25),
+            product_id: window.currentProduct.id,
+            size_id: null, color_id: null,
+            elements: allElements,
+            color_hex: currentColorHex,
+            editorDAWidth:  _da ? _da.offsetWidth  : 225,
+            editorDAHeight: _da ? _da.offsetHeight : 300
+        };
+
+        btn.disabled = true;
+        try {
+            const resp = await fetch('/custom-design/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(designData)
+            });
+            const parsed = await resp.json().catch(() => null);
+            if (!parsed || !parsed.id) {
+                alert((parsed && parsed.error) || window.I18N.t('studio.cart.error_generic'));
+                return;
+            }
+            window.savedDesignId = parsed.id;
+            openCartModalForDesign(parsed.id, designData.name);
+        } catch (e) {
+            console.error('Direct add-to-cart save failed:', e);
+            alert(window.I18N.t('studio.cart.error_generic'));
+        } finally {
+            btn.disabled = false;
+        }
     });
     
     // Go to Checkout button handler
@@ -1583,7 +1662,7 @@ function closeDesignSavedModal() {
 <?php require __DIR__ . '/../layouts/customer_header.php'; ?>
 
 <!-- Interact.js for drag & resize -->
-<script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+<script src="/js/vendor/interact.min.js"></script>
 
 <section class="section custom-design-section">
     <div class="container">
@@ -1607,12 +1686,17 @@ function closeDesignSavedModal() {
         <div class="custom-studio-layout">
             <!-- Preview Area (visually on right via CSS order) -->
             <div class="studio-preview">
-                <!-- View Toggle (Front/Back/Sleeves) -->
+                <!-- Placement switcher: dots (left) + current view name (right).
+                     The dots are the original view buttons restyled — same ids,
+                     data-view and .active handling, so existing JS is unchanged. -->
                 <div class="view-toggle" id="viewToggle">
-                    <button type="button" class="view-btn active" data-view="front"><?= t('studio.view.front') ?></button>
-                    <button type="button" class="view-btn" data-view="back"><?= t('studio.view.back') ?></button>
-                    <button type="button" class="view-btn" data-view="left-sleeve" id="leftSleeveBtn" style="display: none;"><?= t('studio.view.left_sleeve') ?></button>
-                    <button type="button" class="view-btn" data-view="right-sleeve" id="rightSleeveBtn" style="display: none;"><?= t('studio.view.right_sleeve') ?></button>
+                    <div class="view-dots" id="viewDots" role="tablist" aria-label="<?= t('view_design.placement') ?>">
+                        <button type="button" class="view-btn active" data-view="front" data-label="<?= t('studio.view.front') ?>" aria-label="<?= t('studio.view.front') ?>" title="<?= t('studio.view.front') ?>"></button>
+                        <button type="button" class="view-btn" data-view="back" data-label="<?= t('studio.view.back') ?>" aria-label="<?= t('studio.view.back') ?>" title="<?= t('studio.view.back') ?>"></button>
+                        <button type="button" class="view-btn" data-view="left-sleeve" id="leftSleeveBtn" style="display: none;" data-label="<?= t('studio.view.left_sleeve') ?>" aria-label="<?= t('studio.view.left_sleeve') ?>" title="<?= t('studio.view.left_sleeve') ?>"></button>
+                        <button type="button" class="view-btn" data-view="right-sleeve" id="rightSleeveBtn" style="display: none;" data-label="<?= t('studio.view.right_sleeve') ?>" aria-label="<?= t('studio.view.right_sleeve') ?>" title="<?= t('studio.view.right_sleeve') ?>"></button>
+                    </div>
+                    <span class="view-current-label" id="viewCurrentLabel" aria-live="polite"><?= t('studio.view.front') ?></span>
                 </div>
 
                 <div class="mockup-container" id="mockupContainer">
@@ -2018,9 +2102,10 @@ updateImageRotation = function() {
                             <div class="whats-next-label"><?= t('studio.action.change_product') ?></div>
                         </div>
                     </div>
-                    <!-- Save Design Button -->
-                    <div style="display:flex; justify-content:center; margin-top:18px; margin-bottom:18px;">
+                    <!-- Save Design + Add to Cart Buttons -->
+                    <div style="display:flex; justify-content:center; gap:12px; margin-top:18px; margin-bottom:18px;">
                         <button id="saveDesignBtn" class="img-edit-btn" style="background:#2d5fff; color:#fff; font-weight:600; font-size:16px; padding:10px 32px; border-radius:8px;" onclick="openSaveDesignModal()"><?= t('studio.save_design') ?></button>
+                        <button id="addToCartDirectBtn" class="img-edit-btn" style="background:#1f9d55; color:#fff; font-weight:600; font-size:16px; padding:10px 32px; border-radius:8px;"><?= t('studio.saved.add_to_cart') ?></button>
                     </div>
                     <!-- Change Color Modal -->
                     <div id="changeColorModal" class="change-color-modal" style="display:none;" onclick="if(event.target === this) closeChangeColorModal();">
@@ -2401,32 +2486,56 @@ updateImageRotation = function() {
     max-width: 220px;
 }
 
+/* Placement switcher: dots on the left, current view name on the right. */
 .view-toggle {
     display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+    min-height: 26px;
+}
+
+.view-dots {
+    display: flex;
+    align-items: center;
+    gap: 9px;
 }
 
 .view-btn {
-    padding: 0.5rem 1rem;
-    border: 2px solid #ddd;
-    background: #fff;
-    border-radius: 6px;
+    width: 11px;
+    height: 11px;
+    padding: 0;
+    border: 2px solid #bdbdbd;
+    background: transparent;
+    border-radius: 50%;
     cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
+    transition: background-color .18s, border-color .18s, transform .18s;
+    flex: 0 0 auto;
 }
 
 .view-btn:hover {
     border-color: #15130E;
+    transform: scale(1.15);
+}
+
+.view-btn:focus-visible {
+    outline: 2px solid #2d5fff;
+    outline-offset: 2px;
 }
 
 .view-btn.active {
     background: #15130E;
-    color: #fff;
     border-color: #15130E;
+}
+
+.view-current-label {
+    font-size: 0.86rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6b6b6b;
+    white-space: nowrap;
 }
 
 .mockup-container {
@@ -3462,6 +3571,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.view-btn').forEach(btn => {
         btn.addEventListener('click', () => switchView(btn.dataset.view));
     });
+
+    // Dots + swipe. The label tracks .active on its own, so switchView() needs
+    // no changes. Swipes that start on a design element are ignored so dragging
+    // artwork still works.
+    if (window.ViewSwitcher) {
+        window.ViewSwitcher.init({
+            dots: '#viewDots',
+            dotSelector: '.view-btn',
+            label: '#viewCurrentLabel',
+            surface: '#mockupContainer',
+            ignore: '.design-element'
+        });
+    }
     
     // Add image button
     // Removed: addImageBtn/addTextBtn/imageUpload event listeners

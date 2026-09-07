@@ -43,7 +43,14 @@
                     $backW    = $bposSize * 0.5;
 
                     $hasBack = !empty($design['back_image_path']) && !empty($design['product_back_image_path']);
-                    $fromPrice = ($design['product_base_price'] ?? 0) + $design['price'];
+                    // product_base_price is the SUPPLIER cost — convert to the
+                    // qty-1 retail price before adding the design fee, matching
+                    // what add-to-cart will actually charge.
+                    $fromPrice = Pricing::unitPrice(
+                        (float)($design['product_base_price'] ?? 0),
+                        Pricing::categoryFor('', (string)($design['product_name'] ?? '')),
+                        1
+                    ) + $design['price'];
                 ?>
                 <div class="flip-card">
                     <a href="/shop/design/<?= $design['id'] ?>" class="flip-card-inner" title="<?= htmlspecialchars($design['name']) ?>">
@@ -112,8 +119,11 @@
 
 <style>
 /* ===== ANIME PAGE BACKGROUND ===== */
+/* Flat ink surface, matching .dark-page elsewhere. Previously a four-stop
+   navy/purple diagonal gradient in colours that appear nowhere else in the
+   palette — it read as decoration rather than as part of the brand. */
 .anime-page {
-    background: linear-gradient(160deg, #1a3a6e 0%, #1b3560 35%, #1e3d72 60%, #2a2d7a 100%);
+    background: var(--ink);
     min-height: 100vh;
     padding-top: 40px;
     padding-bottom: 60px;

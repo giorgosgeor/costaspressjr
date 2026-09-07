@@ -42,6 +42,10 @@
     --font-type:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
+    /* Tick glyph used as a CSS mask for feature lists, so the marker is a real
+       icon that inherits the palette rather than a text character in the copy. */
+    --check-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+
     /* Rounded corners (modest) */
     --radius:      10px;
     --radius-sm:   6px;

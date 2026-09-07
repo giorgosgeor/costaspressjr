@@ -50,10 +50,11 @@ class AuthController {
         $this->clearAttempts($identifier);
 
         Auth::login($user['id'], $user['role']);
-        // Ensure user has a cart
+        // Ensure user has a cart, then pull in anything they added as a guest
         require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartModel->getOrCreateCartId($user['id']);
+        $this->mergeGuestCart((int)$user['id']);
 
         if ($user['role'] === 'admin') {
             header('Location: /admin');
@@ -111,6 +112,68 @@ class AuthController {
         }
     }
 
+    /**
+     * A guest who built a cart and then logs in (or registers) keeps that
+     * cart: move the guest cart's items into the account's cart and drop the
+     * session's guest binding. cart_item_uploads reference cart_item_id, so
+     * they travel with the rows automatically.
+     */
+    private function mergeGuestCart(int $userId): void {
+        $guestId = (int)($_SESSION['guest_user_id'] ?? 0);
+        unset($_SESSION['guest_user_id']);
+        if ($guestId <= 0 || $guestId === $userId) return;
+
+        try {
+            $stmt = $this->db->prepare("SELECT id FROM carts WHERE user_id = ? LIMIT 1");
+            $stmt->execute([$guestId]);
+            $guestCart = (int)$stmt->fetchColumn();
+            if (!$guestCart) return;
+
+            require_once __DIR__ . '/../models/Cart.php';
+            $cartModel = new \Cart($this->db);
+            $userCart = $cartModel->getOrCreateCartId($userId);
+
+            $this->db->prepare("UPDATE cart_items SET cart_id = ? WHERE cart_id = ?")
+                ->execute([$userCart, $guestCart]);
+
+            $stmt = $this->db->prepare("SELECT COALESCE(SUM(quantity), 0) FROM cart_items WHERE cart_id = ?");
+            $stmt->execute([$userCart]);
+            $_SESSION['cart_count'] = (int)$stmt->fetchColumn();
+        } catch (PDOException $e) {
+            error_log('Guest cart merge failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Generic throttle for endpoints that send email (forgot-password, resend
+     * verification). Reuses login_attempts with a namespaced identifier so no
+     * new table is needed. Limits: 3 sends per identifier and 10 per IP, per
+     * rate window. Returns true when the caller should be blocked.
+     */
+    private function isMailRateLimited(string $namespace, string $identifier): bool {
+        // login_attempts.identifier is varchar(191) — truncate so a long email
+        // can't make the INSERT throw under STRICT_TRANS_TABLES.
+        $key = mb_substr($namespace . ':' . mb_strtolower($identifier), 0, 191);
+        try {
+            $since = gmdate('Y-m-d H:i:s', time() - self::WINDOW_SECONDS);
+
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip_hash = ? AND identifier LIKE ? AND created_at > ?");
+            $stmt->execute([$this->ipHash(), $namespace . ':%', $since]);
+            if ((int)$stmt->fetchColumn() >= 10) return true;
+
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM login_attempts WHERE identifier = ? AND created_at > ?");
+            $stmt->execute([$key, $since]);
+            if ((int)$stmt->fetchColumn() >= 3) return true;
+
+            $this->db->prepare("INSERT INTO login_attempts (ip_hash, identifier) VALUES (?, ?)")
+                ->execute([$this->ipHash(), $key]);
+            return false;
+        } catch (PDOException $e) {
+            error_log('Mail rate-limit check failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     /** Only allow same-site relative paths (no protocol, no external hosts) */
     private function safeRedirect(string $url): string {
         $url = trim($url);
@@ -152,6 +215,7 @@ class AuthController {
         require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartModel->getOrCreateCartId($userId);
+        $this->mergeGuestCart($userId);
 
         $this->sendVerificationEmail($userId, $email, $username);
 
@@ -247,7 +311,8 @@ class AuthController {
         $stmt->execute([$userId]);
         $user = $stmt->fetch();
 
-        if ($user && $user['email_verified_at'] === null) {
+        if ($user && $user['email_verified_at'] === null
+            && !$this->isMailRateLimited('resend', (string)$user['email'])) {
             $this->sendVerificationEmail((int)$userId, (string)$user['email'], (string)$user['username']);
         }
 
@@ -326,6 +391,14 @@ class AuthController {
 
         // Always show success to prevent email enumeration
         $success = 'If that email is registered you will receive a reset link shortly.';
+
+        // Throttle BEFORE sending: without this the endpoint is an anonymous
+        // mail cannon (bombing a victim's inbox / burning SMTP quota). The
+        // response stays identical either way, so nothing is leaked.
+        if ($this->isMailRateLimited('forgot', $email)) {
+            require __DIR__ . '/../views/auth/forgot_password.php';
+            return;
+        }
 
         if ($user) {
             try {

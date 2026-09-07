@@ -40,6 +40,8 @@ $currentLocale   = I18n::locale();
     <script src="<?= htmlspecialchars(Asset::url('/js/pricing.js')) ?>" defer></script>
     <!-- Exact mockup tint chains for colours the generic filter formula renders badly -->
     <script src="<?= htmlspecialchars(Asset::url('/js/color-tint.js')) ?>" defer></script>
+    <!-- Placement switcher: dots + swipe (studio and premade design pages) -->
+    <script src="<?= htmlspecialchars(Asset::url('/js/view-switcher.js')) ?>" defer></script>
 </head>
 <body>
     <a href="#main-content" class="skip-link"><?= t('header.skip_to_content') ?></a>
@@ -88,23 +90,25 @@ $currentLocale   = I18n::locale();
             </nav>
 
             <div class="header-actions">
+                <?php
+                // The cart is visible to everyone — guests can shop without an
+                // account, so their cart must be reachable too.
+                $cartCount = (int)($_SESSION['cart_count'] ?? 0);
+                if ($cartCount > 0) {
+                    $cartAria = $cartCount === 1
+                        ? I18n::t('header.cart_aria_count_one', ['count' => $cartCount])
+                        : I18n::t('header.cart_aria_count_many', ['count' => $cartCount]);
+                } else {
+                    $cartAria = I18n::t('header.cart_aria');
+                }
+                ?>
+                <a href="/cart" class="cart-link" aria-label="<?= htmlspecialchars($cartAria) ?>">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <?php if ($cartCount > 0): ?>
+                    <span class="cart-count" id="cart-count" aria-hidden="true"><?= $cartCount ?></span>
+                    <?php endif; ?>
+                </a>
                 <?php if (Auth::check()): ?>
-                    <?php
-                    $cartCount = (int)($_SESSION['cart_count'] ?? 0);
-                    if ($cartCount > 0) {
-                        $cartAria = $cartCount === 1
-                            ? I18n::t('header.cart_aria_count_one', ['count' => $cartCount])
-                            : I18n::t('header.cart_aria_count_many', ['count' => $cartCount]);
-                    } else {
-                        $cartAria = I18n::t('header.cart_aria');
-                    }
-                    ?>
-                    <a href="/cart" class="cart-link" aria-label="<?= htmlspecialchars($cartAria) ?>">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                        <?php if ($cartCount > 0): ?>
-                        <span class="cart-count" id="cart-count" aria-hidden="true"><?= $cartCount ?></span>
-                        <?php endif; ?>
-                    </a>
                     <a href="/account" class="btn btn-sm"><?= t('header.my_account') ?></a>
                     <form method="post" action="/logout" class="logout-form">
                         <?= Csrf::field() ?>

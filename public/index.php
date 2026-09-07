@@ -112,7 +112,7 @@ $router->get('/faq',         function () use ($customerController) { $customerCo
 $router->get('/shipping',    function () use ($customerController) { $customerController->infoPage('shipping'); });
 $router->get('/returns',     function () use ($customerController) { $customerController->infoPage('returns'); });
 $router->get('/sizing',      function () use ($customerController) { $customerController->infoPage('sizing'); });
-$router->get('/track-order', function () use ($customerController) { $customerController->infoPage('track-order'); });
+$router->get('/track-order', [$customerController, 'trackOrder']);
 $router->post('/shop/set_selected_product', function() use ($customerController) {
 	$customerController->setSelectedProduct();
 });

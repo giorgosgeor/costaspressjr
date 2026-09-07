@@ -413,6 +413,12 @@
             <?= isset($odStatusKeys[$order['status']]) ? t($odStatusKeys[$order['status']]) : htmlspecialchars(ucfirst($order['status'])) ?>
         </span>
     </div>
+    <?php if (!empty($order['tracking_token'])): ?>
+    <p style="margin:2px 0 12px;color:var(--ink-soft,#666);font-size:0.92rem;">
+        <?= t('info.track.result_number') ?>:
+        <a href="/track-order?code=<?= urlencode($order['tracking_token']) ?>" style="letter-spacing:0.08em;font-weight:600;"><?= htmlspecialchars($order['tracking_token']) ?></a>
+    </p>
+    <?php endif; ?>
 
     <!-- Status Timeline -->
     <div class="order-timeline">
