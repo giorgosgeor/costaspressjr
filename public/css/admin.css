@@ -668,3 +668,149 @@
     border-color: var(--ink);
 }
 .btn-position:hover { background: #1f3fcc; }
+
+/* ============================================================
+   ORDER ITEM — PRODUCTION FILES & SPECIFICATION
+   The artwork the customer uploaded (downloadable at full
+   resolution) and the exact text spec, so an order can be
+   printed without guessing. Both were fetched but never shown.
+   ============================================================ */
+.production-section {
+    margin: 4px 22px 20px;
+    padding: 16px 18px;
+    border: 1px solid var(--border, #e5e5ea);
+    border-radius: 10px;
+    background: var(--paper-soft, #f7f7f9);
+}
+
+.production-section > h4 {
+    margin: 0 0 14px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-muted, #8a8a95);
+}
+
+.prod-block + .prod-block { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border, #e5e5ea); }
+
+.prod-block-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--ink, #1a1a1f);
+    margin-bottom: 10px;
+}
+
+.prod-count {
+    display: inline-block;
+    min-width: 18px;
+    padding: 1px 6px;
+    margin-left: 6px;
+    border-radius: 9999px;
+    background: var(--ink, #1a1a1f);
+    color: #fff;
+    font-size: 0.72rem;
+    text-align: center;
+}
+
+.prod-uploads { display: flex; flex-wrap: wrap; gap: 14px; }
+
+.prod-upload {
+    display: flex;
+    gap: 12px;
+    padding: 10px;
+    border: 1px solid var(--border, #e5e5ea);
+    border-radius: 8px;
+    background: #fff;
+    min-width: 320px;
+    flex: 1 1 320px;
+}
+
+.prod-thumb {
+    width: 92px;
+    height: 92px;
+    flex: 0 0 92px;
+    border: 1px solid var(--border, #e5e5ea);
+    border-radius: 6px;
+    background: #fff repeating-conic-gradient(#eee 0% 25%, #fff 0% 50%) 50% / 14px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.prod-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; }
+.prod-missing { font-size: 0.72rem; color: #dc2626; text-align: center; padding: 4px; }
+
+.prod-meta { flex: 1; min-width: 0; }
+
+.prod-filename {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink, #1a1a1f);
+    margin-bottom: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.prod-specs {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 10px;
+    margin: 0 0 10px;
+    font-size: 0.78rem;
+}
+.prod-specs dt { color: var(--ink-muted, #8a8a95); }
+.prod-specs dd { margin: 0; color: var(--ink-soft, #4a4a55); font-variant-numeric: tabular-nums; }
+
+.prod-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 6px;
+    background: var(--ink, #1a1a1f);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+.prod-download:hover { background: #000; color: #fff; }
+
+.prod-text-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.prod-text-table th {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border, #e5e5ea);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted, #8a8a95);
+    white-space: nowrap;
+}
+.prod-text-table td {
+    padding: 8px;
+    border-bottom: 1px solid var(--border, #e5e5ea);
+    color: var(--ink-soft, #4a4a55);
+    vertical-align: middle;
+}
+.prod-text-table tr:last-child td { border-bottom: none; }
+.prod-text-value { font-size: 1rem; color: var(--ink, #1a1a1f); max-width: 220px; word-break: break-word; }
+
+.prod-copy {
+    padding: 5px 10px;
+    border: 1px solid var(--border-strong, #d4d4da);
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.prod-copy:hover { border-color: var(--ink, #1a1a1f); }
+.prod-copy.copied { background: var(--ok, #16a34a); border-color: var(--ok, #16a34a); color: #fff; }
+
+@media (max-width: 720px) {
+    .prod-upload { min-width: 0; flex-basis: 100%; }
+    .prod-text-table { display: block; overflow-x: auto; }
+}

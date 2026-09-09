@@ -7,6 +7,21 @@ class CustomerController {
         $this->db = $db;
     }
 
+    /**
+     * Date $days business days from today, formatted for display.
+     * Used for delivery estimates so the page never shows a frozen literal date.
+     */
+    private function businessDaysFromNow(int $days): string {
+        $d = new DateTimeImmutable('today');
+        while ($days > 0) {
+            $d = $d->modify('+1 day');
+            if ((int)$d->format('N') < 6) {   // 6 = Sat, 7 = Sun
+                $days--;
+            }
+        }
+        return $d->format('D, j M');
+    }
+
     /** @see Auth::effectiveUserId() — kept as a thin wrapper for call sites here. */
     private function effectiveUserId(bool $createGuest = false): ?int {
         return Auth::effectiveUserId($this->db, $createGuest);
@@ -71,8 +86,9 @@ class CustomerController {
         
         // Get saved designs with product info
         $stmt = $this->db->prepare("
-            SELECT cd.*, p.name as product_name, p.image_path as product_image, 
-                   p.back_image_path as product_back_image, p.base_price
+            SELECT cd.*, p.name as product_name, p.image_path as product_image,
+                   p.back_image_path as product_back_image, p.base_price, p.active AS product_active,
+                   p.da_front_x, p.da_front_y, p.da_front_w, p.da_front_h
             FROM custom_designs cd
             LEFT JOIN products p ON cd.product_id = p.id
             WHERE cd.user_id = ?
@@ -448,6 +464,22 @@ class CustomerController {
                 http_response_code(400);
                 echo 'Invalid premade_design_id';
                 return;
+            }
+            // Placement is per garment. Override the design-level coordinates
+            // with this product's own, so the cart/order snapshot records where
+            // the print actually goes on the item being bought.
+            if (!empty($data['product_id'])) {
+                $stmt = $this->db->prepare("
+                    SELECT design_pos_x, design_pos_y, design_pos_size,
+                           design_pos_back_x, design_pos_back_y, design_pos_back_size
+                    FROM design_products WHERE design_id = ? AND product_id = ? LIMIT 1
+                ");
+                $stmt->execute([$premadeDesign['id'], $data['product_id']]);
+                if ($link = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    foreach ($link as $col => $val) {
+                        if ($val !== null) $premadeDesign[$col] = $val;
+                    }
+                }
             }
         }
         require_once __DIR__ . '/../models/Cart.php';
@@ -1506,32 +1538,46 @@ class CustomerController {
 
     public function shopAnime(): void {
 
-        // Get anime designs with first associated product images and base price
+        // Each card previews the design on its first associated product. That
+        // link row is resolved once (dpf) so the image, price and PLACEMENT all
+        // describe the same garment — placement is per product, so a position
+        // taken from a different one would put the print in the wrong spot.
         $stmt = $this->db->prepare("
             SELECT d.*,
-                (SELECT p.image_path FROM products p
-                 JOIN design_products dp ON dp.product_id = p.id
-                 WHERE dp.design_id = d.id AND p.active = 1
-                 ORDER BY dp.id ASC LIMIT 1) AS product_image_path,
-                (SELECT p.back_image_path FROM products p
-                 JOIN design_products dp ON dp.product_id = p.id
-                 WHERE dp.design_id = d.id AND p.active = 1
-                 ORDER BY dp.id ASC LIMIT 1) AS product_back_image_path,
-                (SELECT p.base_price FROM products p
-                 JOIN design_products dp ON dp.product_id = p.id
-                 WHERE dp.design_id = d.id AND p.active = 1
-                 ORDER BY dp.id ASC LIMIT 1) AS product_base_price,
-                (SELECT p.name FROM products p
-                 JOIN design_products dp ON dp.product_id = p.id
-                 WHERE dp.design_id = d.id AND p.active = 1
-                 ORDER BY dp.id ASC LIMIT 1) AS product_name
+                   pf.image_path      AS product_image_path,
+                   pf.back_image_path AS product_back_image_path,
+                   pf.base_price      AS product_base_price,
+                   pf.name            AS product_name,
+                   dpf.design_pos_x         AS link_pos_x,
+                   dpf.design_pos_y         AS link_pos_y,
+                   dpf.design_pos_size      AS link_pos_size,
+                   dpf.design_pos_back_x    AS link_pos_back_x,
+                   dpf.design_pos_back_y    AS link_pos_back_y,
+                   dpf.design_pos_back_size AS link_pos_back_size
             FROM premade_designs d
             JOIN design_sections s ON d.section_id = s.id
+            LEFT JOIN design_products dpf ON dpf.id = (
+                SELECT dp.id FROM design_products dp
+                JOIN products p ON p.id = dp.product_id
+                WHERE dp.design_id = d.id AND p.active = 1
+                ORDER BY dp.id ASC LIMIT 1
+            )
+            LEFT JOIN products pf ON pf.id = dpf.product_id
             WHERE s.slug = 'anime' AND d.active = 1
             ORDER BY d.name
         ");
         $stmt->execute();
         $designs = $stmt->fetchAll();
+
+        // Where that product has its own placement, it wins over the design's.
+        foreach ($designs as &$d) {
+            foreach (['x', 'y', 'size', 'back_x', 'back_y', 'back_size'] as $k) {
+                if (isset($d["link_pos_$k"])) {
+                    $d["design_pos_$k"] = $d["link_pos_$k"];
+                }
+            }
+        }
+        unset($d);
 
         require __DIR__ . '/../views/customer/shop_anime.php';
     }
@@ -1591,6 +1637,12 @@ class CustomerController {
         // $stmt = $this->db->prepare("SELECT image_path FROM product_images WHERE product_id = ? ORDER BY sort_order");
         // $stmt->execute([$id]);
         // $thumbnails = array_column($stmt->fetchAll(), 'image_path');
+
+        // Delivery estimate. Was a hard-coded "Mon, Feb 2" in the view, shown to
+        // every customer forever. The shipping page states items print in 3–5
+        // business days, so quote the far end of that window, skipping weekends.
+        $deliveryEstimate = $this->businessDaysFromNow(5);
+
         require __DIR__ . '/../views/customer/custom_product.php';
     }
 
@@ -1620,11 +1672,21 @@ class CustomerController {
         // Skip products that don't have a mockup image yet — the design page
         // can't render a preview without one, and selecting them would leave
         // the previous product's image on screen.
+        // The placement columns come off the LINK row: the same design sits in a
+        // different spot on a tee than on a hoodie. Fall back to the design's own
+        // position for links the admin hasn't positioned yet.
         $stmt = $this->db->prepare("
             SELECT p.*,
-                   (SELECT COUNT(*) FROM product_sizes WHERE product_id = p.id) as size_count
+                   (SELECT COUNT(*) FROM product_sizes WHERE product_id = p.id) as size_count,
+                   COALESCE(dp.design_pos_x,         d.design_pos_x,         0)  AS design_pos_x,
+                   COALESCE(dp.design_pos_y,         d.design_pos_y,         0)  AS design_pos_y,
+                   COALESCE(dp.design_pos_size,      d.design_pos_size,      55) AS design_pos_size,
+                   COALESCE(dp.design_pos_back_x,    d.design_pos_back_x,    0)  AS design_pos_back_x,
+                   COALESCE(dp.design_pos_back_y,    d.design_pos_back_y,    0)  AS design_pos_back_y,
+                   COALESCE(dp.design_pos_back_size, d.design_pos_back_size, 55) AS design_pos_back_size
             FROM products p
             JOIN design_products dp ON p.id = dp.product_id
+            JOIN premade_designs d  ON d.id = dp.design_id
             WHERE dp.design_id = ?
               AND p.active = 1
               AND p.image_path IS NOT NULL
@@ -1678,9 +1740,22 @@ class CustomerController {
             $userId = Auth::userId();
             
             // Fetch the design (only if it belongs to the current user)
+            // Carries the design's OWN product data — base price, slug and the
+            // design-area boxes. The editor previously looked the product up in
+            // productsData, which only lists active products that have artwork,
+            // so opening a design whose product was later deactivated silently
+            // failed and nothing rendered. Everything the editor needs now
+            // travels with the design itself.
             $stmt = $this->db->prepare("
-                SELECT cd.*, p.name as product_name, p.image_path, p.back_image_path,
+                SELECT cd.*, p.name as product_name, p.slug as product_slug,
+                       p.base_price, p.size_chart_image,
+                       p.image_path, p.back_image_path,
                        p.left_sleeve_image_path, p.right_sleeve_image_path,
+                       p.active AS product_active,
+                       p.da_front_x, p.da_front_y, p.da_front_w, p.da_front_h,
+                       p.da_back_x,  p.da_back_y,  p.da_back_w,  p.da_back_h,
+                       p.da_lsleeve_x, p.da_lsleeve_y, p.da_lsleeve_w, p.da_lsleeve_h,
+                       p.da_rsleeve_x, p.da_rsleeve_y, p.da_rsleeve_w, p.da_rsleeve_h,
                        ac.color_hex as saved_color_hex, ac.color_name
                 FROM custom_designs cd
                 LEFT JOIN products p ON cd.product_id = p.id

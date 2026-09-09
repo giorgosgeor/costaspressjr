@@ -2,11 +2,35 @@
 let currentSide = 'front';
 let newBackImageSrc = '';
 
+// Switching product also switches placement: the same design can sit
+// differently on every garment, so each product's own saved coordinates are
+// loaded here and the form is retargeted at that design/product link.
 function loadProductImage() {
     const select = document.getElementById('productSelect');
     if (!select) return;
     const opt = select.options[select.selectedIndex];
+
+    const productIdField = document.getElementById('productId');
+    if (productIdField) productIdField.value = opt.value;
+
+    const num = (v, fallback) => {
+        const n = parseFloat(v);
+        return isNaN(n) ? fallback : n;
+    };
+    positions.front = {
+        x:    num(opt.dataset.x, 0),
+        y:    num(opt.dataset.y, 0),
+        size: num(opt.dataset.size, 55)
+    };
+    positions.back = {
+        x:    num(opt.dataset.backX, 0),
+        y:    num(opt.dataset.backY, 0),
+        size: num(opt.dataset.backSize, 55)
+    };
+
     updateProductImage(opt.dataset.front, opt.dataset.back);
+    applyPosition(positions[currentSide]);
+    updateHiddenInputs();
 }
 
 function updateProductImage(frontPath, backPath) {

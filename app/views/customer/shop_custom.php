@@ -1701,7 +1701,9 @@ function closeDesignSavedModal() {
 
                 <div class="mockup-container" id="mockupContainer">
                     <!-- Product image -->
-                    <img src="" alt="Product" class="mockup-product" id="mockupProduct">
+                    <!-- Hidden until a product is chosen: an empty src renders a
+                         broken-image icon next to its alt text. -->
+                    <img src="" alt="" class="mockup-product" id="mockupProduct" style="display:none;">
                     <div class="mockup-placeholder" id="mockupPlaceholder"><?= t('studio.placeholder') ?></div>
                     
                     <!-- Design area -->
@@ -2102,10 +2104,12 @@ updateImageRotation = function() {
                             <div class="whats-next-label"><?= t('studio.action.change_product') ?></div>
                         </div>
                     </div>
-                    <!-- Save Design + Add to Cart Buttons -->
-                    <div style="display:flex; justify-content:center; gap:12px; margin-top:18px; margin-bottom:18px;">
-                        <button id="saveDesignBtn" class="img-edit-btn" style="background:#2d5fff; color:#fff; font-weight:600; font-size:16px; padding:10px 32px; border-radius:8px;" onclick="openSaveDesignModal()"><?= t('studio.save_design') ?></button>
-                        <button id="addToCartDirectBtn" class="img-edit-btn" style="background:#1f9d55; color:#fff; font-weight:600; font-size:16px; padding:10px 32px; border-radius:8px;"><?= t('studio.saved.add_to_cart') ?></button>
+                    <!-- Save Design + Add to Cart. Stacked, full width: this
+                         column is only 220px wide, so side-by-side buttons wrap
+                         their labels onto three lines each. -->
+                    <div class="studio-actions">
+                        <button id="addToCartDirectBtn" class="studio-action studio-action-primary"><?= t('studio.saved.add_to_cart') ?></button>
+                        <button id="saveDesignBtn" class="studio-action studio-action-secondary" onclick="openSaveDesignModal()"><?= t('studio.save_design') ?></button>
                     </div>
                     <!-- Change Color Modal -->
                     <div id="changeColorModal" class="change-color-modal" style="display:none;" onclick="if(event.target === this) closeChangeColorModal();">
@@ -2486,14 +2490,19 @@ updateImageRotation = function() {
     max-width: 220px;
 }
 
-/* Placement switcher: dots on the left, current view name on the right. */
+/* Placement switcher: dots on the left, current view name on the right.
+   Constrained to the mockup's own width — .studio-preview is full-width, so
+   without this the label is flung to the far edge of the page, nowhere near
+   the garment it labels. */
 .view-toggle {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    margin-bottom: 0.6rem;
+    margin: 0 auto 0.6rem;
     min-height: 26px;
+    max-width: 560px;
+    width: 100%;
 }
 
 .view-dots {
@@ -2538,11 +2547,65 @@ updateImageRotation = function() {
     white-space: nowrap;
 }
 
+/* Desktop only: larger dots and a grab cursor on the mockup.
+   `pointer: fine` targets mouse/trackpad and leaves touch devices alone. */
+@media (pointer: fine) {
+    .view-btn, .side-btn { width: 15px; height: 15px; }
+    .view-dots, .side-dots { gap: 12px; }
+    .mockup-container { cursor: grab; }
+    .mockup-container.is-grabbable { cursor: grabbing; }
+    .mockup-container .design-element { cursor: move; }
+}
+
+
+/* Primary studio actions — stacked so labels never wrap in the 220px column. */
+.studio-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 18px 0;
+}
+
+.studio-action {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm, 6px);
+    font-family: inherit;
+    font-size: 0.98rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color .15s, border-color .15s;
+}
+
+.studio-action-primary {
+    background: var(--spot-3, #16A34A);
+    color: #fff;
+}
+.studio-action-primary:hover { background: #15803D; }
+
+.studio-action-secondary {
+    background: var(--paper, #fff);
+    border-color: var(--border-strong, #D4D4DA);
+    color: var(--ink, #1A1A1F);
+}
+.studio-action-secondary:hover { background: var(--paper-soft, #F4F4F6); }
+
+.studio-action:disabled { opacity: .55; cursor: not-allowed; }
+
 .mockup-container {
     position: relative;
     background: #ffffff;
     border-radius: 12px;
     aspect-ratio: 1;
+    /* Capped and centred: this sits in the 1fr grid column, so on a wide
+       screen an uncapped square grew to ~1100px and left the studio looking
+       mostly empty. Matches .view-toggle's width so the dots line up with
+       the garment they control. */
+    max-width: 560px;
+    width: 100%;
+    margin: 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3308,10 +3371,39 @@ function loadExistingDesign(designData) {
     
     console.log('[DEBUG] Loading design:', designData);
     
-    // Find and select the product
-    const product = productsData.find(p => String(p.id) === String(designData.product_id));
+    // Prefer the live catalogue entry, but fall back to the product data the
+    // design itself carries. productsData only lists ACTIVE products that have
+    // artwork, so a design whose product was later deactivated used to hit the
+    // early return here and render nothing at all — and the studio's
+    // first-product fallback then filled the empty editor with an unrelated
+    // garment, which is why the wrong product appeared.
+    let product = productsData.find(p => String(p.id) === String(designData.product_id));
+    if (!product && designData.image_path) {
+        product = {
+            id: designData.product_id,
+            name: designData.product_name || 'Product',
+            slug: designData.product_slug || '',
+            base_price: designData.base_price || 0,
+            size_chart_image: designData.size_chart_image || '',
+            image_path: designData.image_path,
+            back_image_path: designData.back_image_path || '',
+            left_sleeve_image_path: designData.left_sleeve_image_path || '',
+            right_sleeve_image_path: designData.right_sleeve_image_path || '',
+            da_front_x: designData.da_front_x, da_front_y: designData.da_front_y,
+            da_front_w: designData.da_front_w, da_front_h: designData.da_front_h,
+            da_back_x:  designData.da_back_x,  da_back_y:  designData.da_back_y,
+            da_back_w:  designData.da_back_w,  da_back_h:  designData.da_back_h,
+            da_lsleeve_x: designData.da_lsleeve_x, da_lsleeve_y: designData.da_lsleeve_y,
+            da_lsleeve_w: designData.da_lsleeve_w, da_lsleeve_h: designData.da_lsleeve_h,
+            da_rsleeve_x: designData.da_rsleeve_x, da_rsleeve_y: designData.da_rsleeve_y,
+            da_rsleeve_w: designData.da_rsleeve_w, da_rsleeve_h: designData.da_rsleeve_h
+        };
+        console.warn('[studio] product %s is no longer listed; using the data stored with the design',
+                     designData.product_id);
+    }
     if (!product) {
-        console.error('[DEBUG] Product not found for design:', designData.product_id);
+        console.error('[studio] cannot load design %s: product %s has no artwork',
+                      designData.id, designData.product_id);
         return;
     }
     
@@ -3722,6 +3814,49 @@ document.addEventListener('mousedown', function(e) {
         console.log('[DEBUG] Loading existing design:', loadDesignData);
         loadExistingDesign(loadDesignData);
     }
+
+    // Fall back to the first available product. There are no `.product-choice`
+    // cards on this page any more, so nothing else selects a product on a cold
+    // visit — the studio opened showing "Select a product" and an empty frame.
+    // Guests now enter the studio directly, so this is the first screen they
+    // see; it has to be usable immediately. Runs last so a session handoff, a
+    // saved studio snapshot or a loaded design all take precedence.
+    setTimeout(function () {
+        // Never override an explicit intent. If the page was opened with
+        // ?load=<design>, that design owns the editor — even if it failed to
+        // render, substituting an unrelated product here would be worse than
+        // showing nothing, because the customer would be editing (and could
+        // buy) a garment they never chose.
+        if (loadDesignData) return;
+        if (window.currentProduct || !Array.isArray(productsData) || !productsData.length) return;
+        var p = productsData[0];
+        window.currentProduct = {
+            id: p.id,
+            name: p.name,
+            basePrice: parseFloat(p.base_price),
+            imagePath: p.image_path,
+            backImagePath: p.back_image_path || '',
+            leftSleeveImagePath: p.left_sleeve_image_path || '',
+            rightSleeveImagePath: p.right_sleeve_image_path || '',
+            sizeChartImage: p.size_chart_image || '',
+            da_front_x: p.da_front_x, da_front_y: p.da_front_y,
+            da_front_w: p.da_front_w, da_front_h: p.da_front_h,
+            da_back_x:  p.da_back_x,  da_back_y:  p.da_back_y,
+            da_back_w:  p.da_back_w,  da_back_h:  p.da_back_h,
+            da_lsleeve_x: p.da_lsleeve_x, da_lsleeve_y: p.da_lsleeve_y,
+            da_lsleeve_w: p.da_lsleeve_w, da_lsleeve_h: p.da_lsleeve_h,
+            da_rsleeve_x: p.da_rsleeve_x, da_rsleeve_y: p.da_rsleeve_y,
+            da_rsleeve_w: p.da_rsleeve_w, da_rsleeve_h: p.da_rsleeve_h
+        };
+        var ls = document.getElementById('leftSleeveBtn');
+        var rs = document.getElementById('rightSleeveBtn');
+        if (ls) ls.style.display = window.currentProduct.leftSleeveImagePath ? '' : 'none';
+        if (rs) rs.style.display = window.currentProduct.rightSleeveImagePath ? '' : 'none';
+        try { initStudioColorPanel(p.id); } catch (e) {}
+        updateMockupImage();
+        applyDesignArea();
+        updateSummary();
+    }, 120);
 });
 
 function selectProduct(el) {
@@ -4688,6 +4823,17 @@ function deleteElement(id) {
     };
 
     function restoreStudioState() {
+        // Opening a specific saved design (?load=<id>) beats any snapshot.
+        // Without this the sequence was: loadExistingDesign() sets the design's
+        // real product and colour, then this ran 60ms later on a timer and
+        // replaced BOTH with whatever was last in localStorage — so editing a
+        // saved Female Tank Top showed a Female T-Shirt, in the previously used
+        // colour (often black). The design's own data must win.
+        if (typeof loadDesignData !== 'undefined' && loadDesignData) {
+            dbg('editing a saved design, skipping restore');
+            return false;
+        }
+
         // If the user just arrived from /shop/select_product with a fresh
         // pick, sessionStorage holds the selection. Don't overwrite that
         // with an older localStorage snapshot — they wanted a fresh start.
@@ -4724,8 +4870,14 @@ function deleteElement(id) {
             if (rsBtn) rsBtn.style.display = s.product.rightSleeveImagePath ? '' : 'none';
         } catch (e) {}
 
-        // Restore primitives BEFORE calling render functions that read them
-        if (s.view) currentView = s.view;
+        // Restore primitives BEFORE calling render functions that read them.
+        // The VIEW is deliberately not restored: it used to be assigned here
+        // directly, which bypassed switchView() and so never moved the .active
+        // dot — the label read FRONT while the mockup showed the back, and the
+        // first dot click appeared to do nothing because it was "switching" to
+        // the view already marked active. The studio now always opens on the
+        // front, which is also what customers expect.
+        currentView = 'front';
         if (s.colorHex) currentColorHex = s.colorHex;
 
         // Restore design elements per view

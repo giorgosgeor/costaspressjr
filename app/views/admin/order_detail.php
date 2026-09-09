@@ -326,6 +326,129 @@ $viewLabels = [
     <?php else: ?>
         <div style="padding:10px 22px 18px; color:#aaa; font-size:0.9rem;">Standard product — no custom design.</div>
     <?php endif; ?>
+
+    <?php
+        // ── Production details ────────────────────────────────────────────
+        // Everything needed to actually print this item: the customer's own
+        // artwork files (downloadable at full resolution) and the exact
+        // specification of any text they added. Both were already being
+        // fetched by the controller but never shown, so there was no way to
+        // get the source files or reproduce the type.
+        $itemUploads = $item['uploads'] ?? [];
+        $itemTexts   = $item['texts'] ?? [];
+        // The two tables spell sleeve placements differently
+        // (uploads use 'left-sleeve', texts use 'left_sleeve').
+        $placementLabel = function ($p) {
+            $p = str_replace('_', '-', (string)$p);
+            return [
+                'front' => 'Front', 'back' => 'Back',
+                'left-sleeve' => 'Left sleeve', 'right-sleeve' => 'Right sleeve',
+            ][$p] ?? ucfirst($p);
+        };
+    ?>
+    <?php if ($itemUploads || $itemTexts): ?>
+    <div class="production-section">
+        <h4>Production files &amp; specification</h4>
+
+        <?php if ($itemUploads): ?>
+        <div class="prod-block">
+            <div class="prod-block-title">Customer artwork <span class="prod-count"><?= count($itemUploads) ?></span></div>
+            <div class="prod-uploads">
+                <?php foreach ($itemUploads as $up):
+                    $raw = (string)($up['stored_file_path'] ?? '');
+                    $web = '/' . ltrim(preg_replace('#^public/#', '', $raw), '/');
+                    // app/views/admin -> three levels up reaches the project root.
+                    $abs = __DIR__ . '/../../../public/' . ltrim(preg_replace('#^public/#', '', $raw), '/');
+                    $exists = is_file($abs);
+                    $bytes  = $exists ? filesize($abs) : 0;
+                    $dim    = $exists ? @getimagesize($abs) : false;
+                    $orig   = $up['original_filename'] ?: basename($raw);
+                ?>
+                <div class="prod-upload">
+                    <div class="prod-thumb">
+                        <?php if ($exists): ?>
+                            <img src="<?= htmlspecialchars($web) ?>" alt="" loading="lazy"
+                                 onclick="openPreviewModal('<?= htmlspecialchars($web) ?>', '<?= htmlspecialchars($orig) ?>')">
+                        <?php else: ?>
+                            <span class="prod-missing">file missing</span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="prod-meta">
+                        <div class="prod-filename" title="<?= htmlspecialchars($orig) ?>"><?= htmlspecialchars($orig) ?></div>
+                        <dl class="prod-specs">
+                            <dt>Placement</dt><dd><?= htmlspecialchars($placementLabel($up['placement'] ?? 'front')) ?></dd>
+                            <?php if ($dim): ?>
+                            <dt>Source size</dt><dd><?= (int)$dim[0] ?> × <?= (int)$dim[1] ?> px</dd>
+                            <?php endif; ?>
+                            <?php if ($bytes): ?>
+                            <dt>File</dt><dd><?= number_format($bytes / 1024, 0) ?> KB</dd>
+                            <?php endif; ?>
+                            <dt>Placed at</dt><dd><?= (int)($up['position_x'] ?? 0) ?>, <?= (int)($up['position_y'] ?? 0) ?></dd>
+                            <dt>Printed size</dt><dd><?= (int)($up['width'] ?? 0) ?> × <?= (int)($up['height'] ?? 0) ?></dd>
+                        </dl>
+                        <?php if ($exists): ?>
+                        <a class="prod-download" href="<?= htmlspecialchars($web) ?>"
+                           download="<?= htmlspecialchars($orig) ?>">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download original
+                        </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($itemTexts): ?>
+        <div class="prod-block">
+            <div class="prod-block-title">Text to print <span class="prod-count"><?= count($itemTexts) ?></span></div>
+            <table class="prod-text-table">
+                <thead>
+                    <tr><th>Text</th><th>Font</th><th>Size</th><th>Colour</th><th>Style</th><th>Placement</th><th>Position</th><th></th></tr>
+                </thead>
+                <tbody>
+                <?php foreach ($itemTexts as $tx):
+                    $styles = [];
+                    if (!empty($tx['is_bold']))      $styles[] = 'Bold';
+                    if (!empty($tx['is_italic']))    $styles[] = 'Italic';
+                    if (!empty($tx['is_underline'])) $styles[] = 'Underline';
+                    $spec = sprintf(
+                        "%s | %s %spx | %s | %s | %s | x:%d y:%d",
+                        $tx['text_content'] ?? '',
+                        $tx['font_family'] ?? 'Arial',
+                        (int)($tx['font_size'] ?? 24),
+                        $tx['text_color'] ?? '#000000',
+                        $styles ? implode('+', $styles) : 'Regular',
+                        $placementLabel($tx['placement'] ?? 'front'),
+                        (int)($tx['position_x'] ?? 0), (int)($tx['position_y'] ?? 0)
+                    );
+                ?>
+                    <tr>
+                        <td class="prod-text-value"
+                            style="font-family:<?= htmlspecialchars($tx['font_family'] ?? 'Arial') ?>;
+                                   color:<?= htmlspecialchars($tx['text_color'] ?? '#000') ?>;
+                                   <?= !empty($tx['is_bold']) ? 'font-weight:700;' : '' ?>
+                                   <?= !empty($tx['is_italic']) ? 'font-style:italic;' : '' ?>
+                                   <?= !empty($tx['is_underline']) ? 'text-decoration:underline;' : '' ?>"><?= htmlspecialchars($tx['text_content'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($tx['font_family'] ?? 'Arial') ?></td>
+                        <td><?= (int)($tx['font_size'] ?? 24) ?> px</td>
+                        <td>
+                            <span class="color-chip" style="background:<?= htmlspecialchars($tx['text_color'] ?? '#000') ?>"></span>
+                            <?= htmlspecialchars($tx['text_color'] ?? '#000000') ?>
+                        </td>
+                        <td><?= $styles ? htmlspecialchars(implode(', ', $styles)) : '—' ?></td>
+                        <td><?= htmlspecialchars($placementLabel($tx['placement'] ?? 'front')) ?></td>
+                        <td><?= (int)($tx['position_x'] ?? 0) ?>, <?= (int)($tx['position_y'] ?? 0) ?></td>
+                        <td><button type="button" class="prod-copy" data-spec="<?= htmlspecialchars($spec, ENT_QUOTES, 'UTF-8') ?>">Copy</button></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
 </div>
 <?php endforeach; ?>
 

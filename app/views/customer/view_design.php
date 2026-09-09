@@ -141,7 +141,13 @@
                              data-product-back-image="<?= htmlspecialchars($product['back_image_path'] ?? '') ?>"
                              data-left-sleeve-image="<?= htmlspecialchars($product['left_sleeve_image_path'] ?? '') ?>"
                              data-right-sleeve-image="<?= htmlspecialchars($product['right_sleeve_image_path'] ?? '') ?>"
-                             data-size-chart="<?= htmlspecialchars($product['size_chart_image'] ?? '') ?>">
+                             data-size-chart="<?= htmlspecialchars($product['size_chart_image'] ?? '') ?>"
+                             data-pos-x="<?= (float)($product['design_pos_x'] ?? 0) ?>"
+                             data-pos-y="<?= (float)($product['design_pos_y'] ?? 0) ?>"
+                             data-pos-size="<?= (float)($product['design_pos_size'] ?? 55) ?>"
+                             data-pos-back-x="<?= (float)($product['design_pos_back_x'] ?? 0) ?>"
+                             data-pos-back-y="<?= (float)($product['design_pos_back_y'] ?? 0) ?>"
+                             data-pos-back-size="<?= (float)($product['design_pos_back_size'] ?? 55) ?>">
                             <div class="product-option-image">
                                 <?php if (!empty($product['image_path'])): ?>
                                     <img src="/<?= htmlspecialchars($product['image_path']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" loading="lazy">
@@ -428,6 +434,17 @@ endforeach;
     color: #6b6b6b;
     white-space: nowrap;
 }
+
+/* Desktop only: larger dots and a grab cursor on the mockup.
+   `pointer: fine` targets mouse/trackpad and leaves touch devices alone. */
+@media (pointer: fine) {
+    .view-btn, .side-btn { width: 15px; height: 15px; }
+    .view-dots, .side-dots { gap: 12px; }
+    .mockup-container { cursor: grab; }
+    .mockup-container.is-grabbable { cursor: grabbing; }
+    .mockup-container .design-element { cursor: move; }
+}
+
 
 /* Product Mockup Styles */
 .mockup-container {
@@ -1299,15 +1316,19 @@ endforeach;
 <script>
 const designPrice = <?= $design['price'] ?>;
 const isFixedDesign = <?= !empty($design['is_fixed']) ? 'true' : 'false' ?>;
-const savedDesignPos = {
-    x: <?= (float)($design['design_pos_x'] ?? 0) ?>,
-    y: <?= (float)($design['design_pos_y'] ?? 0) ?>,
-    size: <?= (float)($design['design_pos_size'] ?? 55) ?>
+// Placement is per garment — these track the SELECTED product and are rewritten
+// when the shopper picks a different one (see the .product-option handler).
+// $availableProducts already carries the link-row position, or the design's own
+// as a fallback.
+let savedDesignPos = {
+    x: <?= (float)($availableProducts[0]['design_pos_x'] ?? $design['design_pos_x'] ?? 0) ?>,
+    y: <?= (float)($availableProducts[0]['design_pos_y'] ?? $design['design_pos_y'] ?? 0) ?>,
+    size: <?= (float)($availableProducts[0]['design_pos_size'] ?? $design['design_pos_size'] ?? 55) ?>
 };
-const savedDesignPosBack = {
-    x: <?= (float)($design['design_pos_back_x'] ?? 0) ?>,
-    y: <?= (float)($design['design_pos_back_y'] ?? 0) ?>,
-    size: <?= (float)($design['design_pos_back_size'] ?? 55) ?>
+let savedDesignPosBack = {
+    x: <?= (float)($availableProducts[0]['design_pos_back_x'] ?? $design['design_pos_back_x'] ?? 0) ?>,
+    y: <?= (float)($availableProducts[0]['design_pos_back_y'] ?? $design['design_pos_back_y'] ?? 0) ?>,
+    size: <?= (float)($availableProducts[0]['design_pos_back_size'] ?? $design['design_pos_back_size'] ?? 55) ?>
 };
 const frontDesignImage = '<?= addslashes($design['image_path'] ?? '') ?>';
 const backDesignImage = '<?= addslashes($design['back_image_path'] ?? '') ?>';
@@ -1338,9 +1359,24 @@ document.querySelectorAll('.product-option').forEach(option => {
         currentProductLeftSleeveImage = this.dataset.leftSleeveImage || '';
         currentProductRightSleeveImage = this.dataset.rightSleeveImage || '';
 
+        // The design's placement belongs to the design/product pair, so it moves
+        // with the product the shopper just picked.
+        const num = (v, fb) => { const n = parseFloat(v); return isNaN(n) ? fb : n; };
+        savedDesignPos = {
+            x:    num(this.dataset.posX, 0),
+            y:    num(this.dataset.posY, 0),
+            size: num(this.dataset.posSize, 55)
+        };
+        savedDesignPosBack = {
+            x:    num(this.dataset.posBackX, 0),
+            y:    num(this.dataset.posBackY, 0),
+            size: num(this.dataset.posBackSize, 55)
+        };
+
         // Update mockup
         updateMockupProduct();
         updateViewButtons();
+        if (isFixedDesign) applyFixedDesignForSide(currentSide);
         
         // Show correct customization panel
         document.querySelectorAll('.product-customization').forEach(panel => {

@@ -2160,3 +2160,247 @@
     color: var(--ink);
 }
 .order-success-action-secondary:hover { background: var(--paper-soft); color: var(--ink); }
+
+/* ============================================================
+   VOLUME PRICING WIDGET (public/js/price-tiers.js)
+   Unit price + line total for the chosen quantity, the tier
+   ladder, and a nudge toward the next discount band.
+   ============================================================ */
+.price-tiers {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--paper-2);
+    padding: 14px 16px;
+    margin: 16px 0;
+}
+
+.price-tiers-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.price-tiers-unit {
+    font-family: var(--font-display);
+    font-size: 1.65rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    line-height: 1.1;
+}
+
+.price-tiers-total {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+}
+
+.price-tiers-unit small,
+.price-tiers-total small {
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    margin-left: 5px;
+}
+
+.price-tiers-hint {
+    margin: 10px 0 0;
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    line-height: 1.45;
+}
+
+.price-tiers-save {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 1px 7px;
+    border-radius: var(--radius-pill);
+    background: rgba(22, 163, 74, 0.12);
+    color: var(--ok);
+    font-weight: 600;
+    font-size: 0.82rem;
+}
+
+.price-tiers-details { margin-top: 12px; }
+
+.price-tiers-details summary {
+    cursor: pointer;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--spot);
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.price-tiers-details summary::-webkit-details-marker { display: none; }
+.price-tiers-details summary::after {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) translate(-1px, -1px);
+    transition: transform .18s;
+}
+.price-tiers-details[open] summary::after {
+    transform: rotate(-135deg) translate(-2px, -2px);
+}
+
+.price-tiers-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 0.88rem;
+}
+
+.price-tiers-table th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    padding: 0 0 6px;
+    border-bottom: 1px solid var(--border);
+}
+
+.price-tiers-table td {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink-soft);
+}
+
+.price-tiers-table tbody tr:last-child td { border-bottom: none; }
+.price-tiers-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+
+.price-tier-row.is-active td {
+    color: var(--ink);
+    font-weight: 700;
+}
+.price-tier-row.is-active td:first-child::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--spot);
+    margin-right: 7px;
+    vertical-align: 1px;
+}
+
+/* Quantity row that drives the volume-pricing widget. */
+.price-qty-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+}
+.price-qty-row label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+}
+.qty-input {
+    width: 56px;
+    height: 36px;
+    border: none;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--ink);
+    background: var(--paper);
+    -moz-appearance: textfield;
+}
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.qty-input:focus { outline: 2px solid var(--spot); outline-offset: -2px; }
+
+/* ============================================================
+   PRODUCT PICKER TOOLBAR (filter chips + sort)
+   ============================================================ */
+.picker-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 4px 0 10px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.picker-filters { display: flex; flex-wrap: wrap; gap: 7px; }
+
+.picker-chip {
+    padding: 7px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
+    background: var(--paper);
+    color: var(--ink-soft);
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .15s, border-color .15s, color .15s;
+}
+.picker-chip:hover { border-color: var(--ink); color: var(--ink); }
+.picker-chip.is-active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+}
+.picker-chip:focus-visible { outline: 2px solid var(--spot); outline-offset: 2px; }
+
+.picker-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted);
+}
+.picker-sort select {
+    padding: 7px 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    cursor: pointer;
+}
+.picker-sort select:focus-visible { outline: 2px solid var(--spot); outline-offset: 1px; }
+
+.picker-count {
+    margin: 0 0 14px;
+    font-size: 0.84rem;
+    color: var(--ink-muted);
+}
+
+/* Volume price shown directly on the picker card. */
+.price-bulk {
+    margin-top: 2px;
+    font-size: 0.84rem;
+    color: var(--ok);
+    text-align: center;
+}
+.price-bulk strong { font-weight: 700; }
+
+@media (max-width: 640px) {
+    .picker-toolbar { flex-direction: column; align-items: stretch; }
+    .picker-sort { justify-content: space-between; }
+}

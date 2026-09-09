@@ -420,6 +420,37 @@ class AdminController {
             $stmt = $this->db->prepare("SELECT * FROM order_item_texts WHERE order_item_id = ? ORDER BY id");
             $stmt->execute([$item['id']]);
             $item['texts'] = $stmt->fetchAll();
+
+            // Fall back to the DESIGN's own artwork and text when the per-order
+            // copies are absent. Checkout copies cart_item_uploads into
+            // order_item_uploads, but nothing has ever populated the cart-side
+            // table — so for every existing custom order those two tables are
+            // empty and the files are only reachable through design_id. Without
+            // this the admin has no way to obtain the artwork to print.
+            if (!empty($item['design_id'])) {
+                if (empty($item['uploads'])) {
+                    $stmt = $this->db->prepare("
+                        SELECT id, original_filename, stored_file_path,
+                               view_placement AS placement,
+                               position_x, position_y, width, height
+                        FROM custom_design_uploads WHERE design_id = ? ORDER BY layer_order, id
+                    ");
+                    $stmt->execute([$item['design_id']]);
+                    $item['uploads'] = $stmt->fetchAll();
+                    $item['uploads_from_design'] = !empty($item['uploads']);
+                }
+                if (empty($item['texts'])) {
+                    $stmt = $this->db->prepare("
+                        SELECT id, text_content, font_family, font_size, text_color,
+                               is_bold, is_italic, is_underline,
+                               view_placement AS placement, position_x, position_y
+                        FROM custom_design_texts WHERE design_id = ? ORDER BY layer_order, id
+                    ");
+                    $stmt->execute([$item['design_id']]);
+                    $item['texts'] = $stmt->fetchAll();
+                    $item['texts_from_design'] = !empty($item['texts']);
+                }
+            }
             
             // Parse preview_images JSON from order_items
             $item['parsed_previews'] = [];
@@ -927,11 +958,21 @@ class AdminController {
             return;
         }
 
-        // Get associated products
+        // Associated products, each carrying its OWN placement for this design.
+        // Placement lives on the link row so one design can sit differently on
+        // every garment; the design-level columns are only the fallback for a
+        // link that has never been positioned.
         $stmt = $this->db->prepare("
-            SELECT p.id, p.name, p.image_path, p.back_image_path
+            SELECT p.id, p.name, p.image_path, p.back_image_path,
+                   COALESCE(dp.design_pos_x,         d.design_pos_x,         0)  AS pos_x,
+                   COALESCE(dp.design_pos_y,         d.design_pos_y,         0)  AS pos_y,
+                   COALESCE(dp.design_pos_size,      d.design_pos_size,      55) AS pos_size,
+                   COALESCE(dp.design_pos_back_x,    d.design_pos_back_x,    0)  AS pos_back_x,
+                   COALESCE(dp.design_pos_back_y,    d.design_pos_back_y,    0)  AS pos_back_y,
+                   COALESCE(dp.design_pos_back_size, d.design_pos_back_size, 55) AS pos_back_size
             FROM products p
             JOIN design_products dp ON p.id = dp.product_id
+            JOIN premade_designs d  ON d.id = dp.design_id
             WHERE dp.design_id = ? AND p.active = 1
             ORDER BY p.name
         ");
@@ -953,27 +994,41 @@ class AdminController {
             $this->handleBackDesignImageUpload($designId);
         }
 
-        $stmt = $this->db->prepare("
-            UPDATE premade_designs SET
-                design_pos_x = ?,
-                design_pos_y = ?,
-                design_pos_size = ?,
-                design_pos_back_x = ?,
-                design_pos_back_y = ?,
-                design_pos_back_size = ?
-            WHERE id = ?
-        ");
-        $stmt->execute([
+        $pos = [
             (float)($_POST['design_pos_x'] ?? 0),
             (float)($_POST['design_pos_y'] ?? 0),
             (float)($_POST['design_pos_size'] ?? 55),
             (float)($_POST['design_pos_back_x'] ?? 0),
             (float)($_POST['design_pos_back_y'] ?? 0),
             (float)($_POST['design_pos_back_size'] ?? 55),
-            $designId
-        ]);
+        ];
+        $productId = (int)($_POST['product_id'] ?? 0);
 
-        header('Location: /admin/premade/position/' . $designId . '?saved=1');
+        if ($productId > 0) {
+            // Placement is per garment: write it to this design/product link
+            // only, leaving the design's other products untouched.
+            $stmt = $this->db->prepare("
+                UPDATE design_products SET
+                    design_pos_x = ?, design_pos_y = ?, design_pos_size = ?,
+                    design_pos_back_x = ?, design_pos_back_y = ?, design_pos_back_size = ?
+                WHERE design_id = ? AND product_id = ?
+            ");
+            $stmt->execute(array_merge($pos, [$designId, $productId]));
+        } else {
+            // No product chosen (a design with no products linked yet) — fall
+            // back to the design-level values, which seed any future link.
+            $stmt = $this->db->prepare("
+                UPDATE premade_designs SET
+                    design_pos_x = ?, design_pos_y = ?, design_pos_size = ?,
+                    design_pos_back_x = ?, design_pos_back_y = ?, design_pos_back_size = ?
+                WHERE id = ?
+            ");
+            $stmt->execute(array_merge($pos, [$designId]));
+        }
+
+        $back = '/admin/premade/position/' . $designId . '?saved=1'
+              . ($productId > 0 ? '&product=' . $productId : '');
+        header('Location: ' . $back);
     }
 
     private function handleBackDesignImageUpload(int $designId): void {

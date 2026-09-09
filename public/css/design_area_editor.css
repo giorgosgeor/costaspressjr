@@ -19,6 +19,9 @@ body { background: var(--paper); margin: 0; }
     margin: 0;
     font-family: var(--font-display);
     font-size: 1.3rem;
+    /* style.css sets a colour on bare h1, which beats the light colour this
+       dark bar passes down by inheritance — so state it here. */
+    color: var(--paper);
 }
 
 .dae-header a {
@@ -61,21 +64,26 @@ body { background: var(--paper); margin: 0; }
 
 .view-tabs { display: flex; gap: 6px; }
 
+/* These were white text on a white border, sitting on a white page — the tabs
+   worked but were invisible, so the back and sleeve views looked unreachable. */
 .view-tab {
-    padding: 6px 14px;
-    border: 2px solid var(--paper);
-    background: transparent;
-    color: var(--paper);
-    font-family: var(--font-display);
+    padding: 7px 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--paper);
+    color: var(--ink-soft);
+    font-family: var(--font-body);
     font-size: 0.85rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: all .12s;
+    transition: background-color .12s, border-color .12s, color .12s;
 }
-.view-tab:hover { background: var(--paper); color: var(--ink); }
+.view-tab:hover { border-color: var(--ink); color: var(--ink); }
+.view-tab:focus-visible { outline: 2px solid var(--spot); outline-offset: 2px; }
 .view-tab.active {
-    background: var(--spot);
+    background: var(--ink);
+    border-color: var(--ink);
     color: var(--paper);
-    box-shadow: var(--stamp-sm);
 }
 
 .mockup-wrap {

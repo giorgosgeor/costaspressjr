@@ -46,34 +46,40 @@
         return tiers[tiers.length - 1][2];
     }
 
-    // Raw (uncapped) per-unit garment price at a quantity's tier.
+    // Per-unit garment price at a quantity's tier — the spec formula:
+    //   PRICE = (SUPPLIER + ERROR + COST_OF_PRINT) / (1 - PROFIT_MARGIN)
+    // Flat across a whole band, because the margin is flat across it.
     function rawGarmentUnit(supplierCost, category, quantity) {
         var margin = marginFor(category, quantity);
         return ((parseFloat(supplierCost) || 0) + ERROR + COST_OF_PRINT) / (1 - margin);
     }
 
-    // Garment total, guaranteed monotonic: a smaller order is never charged more
-    // than a larger one (mirrors Pricing::garmentTotal in PHP).
-    function garmentTotal(supplierCost, category, quantity) {
+    // Spec has no total cap, so there is none here. A quantity at the top of a
+    // band can therefore cost more in total than the first quantity of the next
+    // band; price-tiers.js surfaces a "order N+ and pay X each" prompt so the
+    // customer can see that, without changing what is charged.
+    /**
+     * @param {number} extraPrintCost flat euro total of the print add-ons
+     *        (front+back 3, each sleeve 1). Same 4th parameter as
+     *        Pricing::unitPrice() in PHP.
+     *
+     * This used to take (frontAndBack, sleeves) instead, but every caller was
+     * already passing the flat euro total into the boolean slot — so one sleeve
+     * (1.00) and two sleeves (2.00) both silently billed as 3.00, and
+     * front+back plus a sleeve (4.00) billed as 3.00. The quoted price then
+     * disagreed with what the server charged.
+     */
+    function unitPrice(supplierCost, category, quantity, extraPrintCost) {
         var qty = Math.max(1, quantity | 0);
-        var total = rawGarmentUnit(supplierCost, category, qty) * qty;
-        var tiers = TIERS[category] || TIERS.tshirt;
-        for (var i = 0; i < tiers.length; i++) {
-            var start = tiers[i][0];
-            if (start > qty) {
-                var cand = rawGarmentUnit(supplierCost, category, start) * start;
-                if (cand < total) total = cand;
-            }
-        }
-        return total;
+        var price = rawGarmentUnit(supplierCost, category, qty)
+                  + Math.max(0, parseFloat(extraPrintCost) || 0);
+        return Math.round(price * 100) / 100;
     }
 
-    function unitPrice(supplierCost, category, quantity, frontAndBack, sleeves) {
-        var qty = Math.max(1, quantity | 0);
-        var price = garmentTotal(supplierCost, category, qty) / qty;
-        if (frontAndBack) price += FRONT_AND_BACK_EXTRA;
-        price += Math.max(0, sleeves || 0) * SLEEVE_EXTRA;
-        return Math.round(price * 100) / 100;
+    /** Flat euro cost of the print add-ons. Mirrors Pricing::printExtraCost(). */
+    function printExtraCost(frontAndBack, sleeves) {
+        return (frontAndBack ? FRONT_AND_BACK_EXTRA : 0)
+             + Math.max(0, sleeves || 0) * SLEEVE_EXTRA;
     }
 
     global.Pricing = {
@@ -83,6 +89,7 @@
         SLEEVE_EXTRA: SLEEVE_EXTRA,
         categoryFor: categoryFor,
         marginFor: marginFor,
-        unitPrice: unitPrice
+        unitPrice: unitPrice,
+        printExtraCost: printExtraCost
     };
 })(window);

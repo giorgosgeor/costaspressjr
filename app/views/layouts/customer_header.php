@@ -42,6 +42,8 @@ $currentLocale   = I18n::locale();
     <script src="<?= htmlspecialchars(Asset::url('/js/color-tint.js')) ?>" defer></script>
     <!-- Placement switcher: dots + swipe (studio and premade design pages) -->
     <script src="<?= htmlspecialchars(Asset::url('/js/view-switcher.js')) ?>" defer></script>
+    <!-- Live quantity → price ladder (reads the same tiers the server charges) -->
+    <script src="<?= htmlspecialchars(Asset::url('/js/price-tiers.js')) ?>" defer></script>
 </head>
 <body>
     <a href="#main-content" class="skip-link"><?= t('header.skip_to_content') ?></a>

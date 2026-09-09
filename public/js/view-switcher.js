@@ -60,6 +60,15 @@
         Array.prototype.forEach.call(all(), function (d) {
             observer.observe(d, { attributes: true, attributeFilter: ['class', 'style'] });
         });
+
+        // Always open on the first (front) view. Restored state used to leave
+        // the dots and the mockup disagreeing — the label said FRONT while the
+        // back image was showing — and the first click then looked like a no-op
+        // because it targeted the view already flagged active.
+        var first = visibleDots(all())[0];
+        if (first && !first.classList.contains('active')) {
+            first.click();
+        }
         syncLabel();
 
         function step(dir) {
@@ -71,15 +80,27 @@
             vis[next].click();
         }
 
-        // ---- swipe ----
+        // ---- swipe (touch) and drag (mouse) ----
+        // Same gesture on both: the mockup is the natural thing to throw
+        // left/right, and on desktop a mouse drag is the obvious equivalent of
+        // the phone swipe.
         if (surface) {
             var x0 = null, y0 = null, tracking = false;
             var IGNORE = opts.ignore || '.design-element';
+            var THRESHOLD = 45;          // px of horizontal travel to count
+            var H_BIAS = 1.5;            // must be this much more horizontal than vertical
+
+            function startsOnDesign(target) {
+                return target && target.closest && target.closest(IGNORE);
+            }
+            function finish(dx, dy) {
+                if (Math.abs(dx) < THRESHOLD || Math.abs(dx) < Math.abs(dy) * H_BIAS) return;
+                step(dx < 0 ? 1 : -1);
+            }
 
             surface.addEventListener('touchstart', function (e) {
                 // Don't hijack a drag of the design itself.
-                if (e.target.closest && e.target.closest(IGNORE)) { tracking = false; return; }
-                if (e.touches.length !== 1) { tracking = false; return; }
+                if (startsOnDesign(e.target) || e.touches.length !== 1) { tracking = false; return; }
                 tracking = true;
                 x0 = e.touches[0].clientX;
                 y0 = e.touches[0].clientY;
@@ -89,13 +110,32 @@
                 if (!tracking || x0 === null) return;
                 tracking = false;
                 var t = e.changedTouches[0];
-                var dx = t.clientX - x0;
-                var dy = t.clientY - y0;
+                finish(t.clientX - x0, t.clientY - y0);
                 x0 = y0 = null;
-                // Horizontal intent only, and far enough to be deliberate.
-                if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-                step(dx < 0 ? 1 : -1);
             }, { passive: true });
+
+            // Mouse drag. Left button only, and never when the gesture starts on
+            // a design element — those are dragged with interact.js.
+            surface.addEventListener('mousedown', function (e) {
+                if (e.button !== 0 || startsOnDesign(e.target)) { tracking = false; return; }
+                tracking = true;
+                x0 = e.clientX;
+                y0 = e.clientY;
+                surface.classList.add('is-grabbable');
+            });
+
+            document.addEventListener('mouseup', function (e) {
+                if (!tracking || x0 === null) return;
+                tracking = false;
+                surface.classList.remove('is-grabbable');
+                finish(e.clientX - x0, e.clientY - y0);
+                x0 = y0 = null;
+            });
+
+            // Stop a drag across the image from selecting the alt text/image.
+            surface.addEventListener('dragstart', function (e) {
+                if (!startsOnDesign(e.target)) e.preventDefault();
+            });
         }
 
         // ---- keyboard: arrows move between views when a dot has focus ----

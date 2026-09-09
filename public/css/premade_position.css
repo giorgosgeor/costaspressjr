@@ -17,6 +17,9 @@ body { background: var(--paper); }
     margin: 0;
     font-family: var(--font-display);
     font-size: 1.3rem;
+    /* style.css sets a colour on bare h1, which beats the light colour this
+       dark bar passes down by inheritance — so state it here. */
+    color: var(--paper);
 }
 .pe-header .back-link {
     color: var(--paper);
@@ -69,23 +72,27 @@ body { background: var(--paper); }
 
 .pe-side-toggle { display: flex; gap: 6px; }
 
+/* Same problem as the design-area editor: white on white, invisible. */
 .pe-side-btn {
     padding: 8px 22px;
-    border: 2px solid var(--paper);
-    background: transparent;
-    color: var(--paper);
-    font-family: var(--font-display);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--paper);
+    color: var(--ink-soft);
+    font-family: var(--font-body);
     font-size: 0.9rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: all .12s;
+    transition: background-color .12s, border-color .12s, color .12s;
 }
 
-.pe-side-btn:hover { background: var(--paper); color: var(--ink); }
+.pe-side-btn:hover { border-color: var(--ink); color: var(--ink); }
+.pe-side-btn:focus-visible { outline: 2px solid var(--spot); outline-offset: 2px; }
 
 .pe-side-btn.active {
-    background: var(--spot);
+    background: var(--ink);
+    border-color: var(--ink);
     color: var(--paper);
-    box-shadow: var(--stamp-sm);
 }
 
 .pe-mockup-container {

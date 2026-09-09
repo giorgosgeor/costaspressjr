@@ -183,9 +183,28 @@
                 
                 </style>
                 </div>
+                <!-- Price. This page previously showed none at all — a customer
+                     arriving from a featured card had no idea what it cost. The
+                     widget also surfaces the volume ladder, computed with the
+                     same engine the server charges with. -->
+                <div class="price-qty-row">
+                    <label for="tierQty"><?= t('pricing.qty') ?></label>
+                    <div class="quantity-controls">
+                        <button type="button" class="qty-btn" id="tierQtyMinus" aria-label="-">&minus;</button>
+                        <input type="number" id="tierQty" class="qty-input" value="1" min="1" max="1000" inputmode="numeric">
+                        <button type="button" class="qty-btn" id="tierQtyPlus" aria-label="+">+</button>
+                    </div>
+                </div>
+                <div class="price-tiers"
+                     id="productPriceTiers"
+                     data-supplier-cost="<?= htmlspecialchars((string)($product['base_price'] ?? 0)) ?>"
+                     data-product-name="<?= htmlspecialchars($product['name'] ?? '') ?>"
+                     data-product-slug="<?= htmlspecialchars($product['slug'] ?? '') ?>"
+                     data-quantity="1"></div>
+
                 <button id="startDesigningBtn" class="btn btn-primary" style="margin-top:18px;min-width:180px;"><?= t('custom_product.start') ?></button>
 				<div style="margin-top:18px;color:#555;font-size:1em;">
-					<b><?= t('custom_product.delivery') ?></b> <?= t('custom_product.delivery_expected') ?> <span id="deliveryDate">Mon, Feb 2</span> &bull;
+					<b><?= t('custom_product.delivery') ?></b> <?= t('custom_product.delivery_expected') ?> <span id="deliveryDate"><?= htmlspecialchars($deliveryEstimate ?? '') ?></span> &bull;
 				</div>
 			</div>
             <!-- Size Matrix Modal -->
@@ -509,6 +528,33 @@ document.addEventListener('DOMContentLoaded', function() {
         else       { sessionStorage.removeItem('custom_size'); }
         window.location.href = '/shop/custom';
     });
+});
+
+// ── Volume-pricing widget ────────────────────────────────────────────────
+// Drives the live unit price / line total / tier ladder from the quantity
+// stepper. All arithmetic happens in price-tiers.js via window.Pricing, so
+// the figures match what checkout charges.
+document.addEventListener('DOMContentLoaded', function () {
+    var box   = document.getElementById('productPriceTiers');
+    var input = document.getElementById('tierQty');
+    if (!box || !input || !window.PriceTiers) return;
+
+    function apply() {
+        var q = Math.max(1, Math.min(1000, parseInt(input.value, 10) || 1));
+        input.value = q;
+        window.PriceTiers.update(box, { quantity: q });
+    }
+    input.addEventListener('input', apply);
+    input.addEventListener('change', apply);
+    var minus = document.getElementById('tierQtyMinus');
+    var plus  = document.getElementById('tierQtyPlus');
+    if (minus) minus.addEventListener('click', function () {
+        input.value = Math.max(1, (parseInt(input.value, 10) || 1) - 1); apply();
+    });
+    if (plus) plus.addEventListener('click', function () {
+        input.value = Math.min(1000, (parseInt(input.value, 10) || 1) + 1); apply();
+    });
+    apply();
 });
 </script>
 <?php require __DIR__ . '/../partials/size_guide_modal.php'; ?>

@@ -101,38 +101,28 @@ final class Pricing
         return $tiers[count($tiers) - 1][2];
     }
 
-    /** The raw (uncapped) per-unit price for a fully-loaded unit cost. */
+    /**
+     * Per-unit garment price for a fully-loaded unit cost — the spec formula,
+     * verbatim:
+     *
+     *     PRICE = COST / (1 - PROFIT_MARGIN)
+     *
+     * The margin is flat across a whole quantity band, so the per-unit price is
+     * flat across that band too.
+     *
+     * Note the consequence, which is inherent to the supplied tier table rather
+     * than to this code: because a band change is a step, a quantity at the top
+     * of a band can cost more in TOTAL than the first quantity of the next band
+     * (29 x 10.35 = 300.15 against 30 x 9.00 = 270.00). An earlier version
+     * capped the total to remove that, but the cap is not in the spec and it
+     * made the per-unit price slide within a band, so it has been removed. The
+     * customiser surfaces a "order N+ and pay X each" prompt instead, which
+     * informs without altering what is charged.
+     */
     private static function rawUnit(float $unitCost, string $category, int $quantity): float
     {
         $margin = self::marginFor($category, $quantity);
         return $unitCost / (1 - $margin);
-    }
-
-    /**
-     * The order total for a fully-loaded unit cost, guaranteed monotonic: a
-     * smaller order is never charged more than a larger one. When crossing into
-     * a cheaper tier would make a bigger order cost less overall, the smaller
-     * order is capped at that better total ("you may as well order the higher
-     * quantity"). Print add-ons must already be baked into $unitCost so they are
-     * capped together with the garment and cannot reintroduce the anomaly.
-     */
-    private static function cappedTotal(float $unitCost, string $category, int $quantity): float
-    {
-        $qty = max(1, $quantity);
-        $total = self::rawUnit($unitCost, $category, $qty) * $qty;
-
-        // Totals rise within a tier, so the only cheaper totals sit at the
-        // start quantity of a higher-volume (lower-margin) tier.
-        $tiers = self::TIERS[$category] ?? self::TIERS['tshirt'];
-        foreach ($tiers as [$min, , ]) {
-            if ($min > $qty) {
-                $candidate = self::rawUnit($unitCost, $category, $min) * $min;
-                if ($candidate < $total) {
-                    $total = $candidate;
-                }
-            }
-        }
-        return $total;
     }
 
     /** Flat euro cost of the print add-ons (front+back, sleeves). Not marked up. */
@@ -165,17 +155,16 @@ final class Pricing
     ): float {
         $qty = max(1, $quantity);
 
+        // Spec, line by line:
+        //   COST_PER_TSHIRT  = SUPPLIER + ERROR(1) + COST_OF_PRINT(1)
+        //   PRICE_PER_TSHIRT = COST / (1 - PROFIT_MARGIN)
         // The margin applies to the GARMENT only. Print add-ons are flat euro
-        // amounts added to the base price (sleeves €1 each, front+back €3) and
-        // are NOT marked up — dividing them by (1 - margin) turned a €3 add-on
-        // into €10 at the top tier. Matches public/js/pricing.js, which is what
-        // the customer is quoted in the customiser.
+        // amounts on top of the base price ("SLEEVES ARE 1 EURO EXTRA EACH",
+        // "FRONT AND BACK PRINT IS 3 EURO EXTRA TO BASE PRICE"), so they are
+        // added after the division, never marked up through it.
         $unitCost    = $supplierCost + self::ERROR + self::COST_OF_PRINT;
-        $garmentUnit = self::cappedTotal($unitCost, $category, $qty) / $qty;
+        $garmentUnit = self::rawUnit($unitCost, $category, $qty);
 
-        // Adding a flat per-unit amount preserves monotonicity: the capped
-        // garment total is already non-decreasing in quantity, and extras * qty
-        // is strictly increasing, so a smaller order still never costs more.
         return round($garmentUnit + max(0.0, $extraPrintCost), 2);
     }
 
