@@ -169,34 +169,8 @@ function applyColorTint(hex) {
     if (!hex.startsWith('#')) hex = '#' + hex;
     const img = document.getElementById('mainProductImage');
     if (!img) return;
-    const hsl = hexToHSL(hex);
-    const hexLower = hex.toLowerCase();
-    const isWhite = hexLower === '#ffffff' || hexLower === '#fff' || hsl.l > 95;
-    const isVeryLight = hsl.l > 85;
-    const isBlack = hexLower === '#000000' || hexLower === '#000' || hsl.l < 10;
-    const isGray = hsl.s < 10;
-    if (isWhite) {
-        img.style.filter = 'saturate(0) brightness(2) contrast(0.8)';
-    } else if (isBlack) {
-        img.style.filter = 'saturate(0) brightness(0.4) contrast(1.2)';
-    } else if (isGray) {
-        const brightness = 0.2 + (hsl.l / 100) * 1.5;
-        img.style.filter = `saturate(0) brightness(${brightness})`;
-    } else {
-        const hueRotate = hsl.h - 50;
-        const isReddish = hsl.h <= 20 || hsl.h >= 340;
-        let saturate = (hsl.s / 100) * 2 + 0.5;
-        if (isReddish) saturate = (hsl.s / 100) * 3 + 1;
-        let brightness;
-        if (hsl.l < 30) {
-            brightness = 0.3 + (hsl.l / 100) * 0.7;
-        } else if (hsl.l < 50) {
-            brightness = 0.5 + (hsl.l / 100) * 0.6;
-        } else {
-            brightness = 0.6 + (hsl.l / 100) * 0.5;
-        }
-        img.style.filter = `sepia(1) saturate(${saturate}) hue-rotate(${hueRotate}deg) brightness(${brightness})`;
-    }
+    // Delegated to the one implementation in color-tint.js.
+    img.style.filter = window.CostasTint.filterFor(hex);
 }
 
 function hexToHSL(H) {

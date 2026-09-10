@@ -2,21 +2,66 @@
 <?php require __DIR__ . '/../layouts/customer_header.php'; ?>
 
 
+<?php
+    // Sidebar entries. Each drives one .tab-content panel below; `icon` is the
+    // path data for a 20px stroked SVG so the nav needs no icon font.
+    $accountNav = [
+        'overview'  => ['label' => t('account.tabs.overview', false),  'icon' => '<path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],
+        'designs'   => ['label' => t('account.tabs.designs', false),   'icon' => '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'],
+        'uploads'   => ['label' => t('account.tabs.uploads', false),   'icon' => '<path d="M12 15V4"/><path d="m7 9 5-5 5 5"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/>'],
+        'favorites' => ['label' => t('account.tabs.favorites', false), 'icon' => '<path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1z"/>'],
+        'orders'    => ['label' => t('account.tabs.orders', false),    'icon' => '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/>'],
+        'profile'   => ['label' => t('account.tabs.profile', false),   'icon' => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 4.6 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 11.5 4a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9 2 2 0 1 1 0 4z"/>'],
+    ];
+?>
 <section class="account-page">
-<div class="account-container">
+<div class="account-container account-layout">
+
+    <nav class="account-nav" aria-label="<?= t('account.nav_label') ?>">
+        <?php foreach ($accountNav as $key => $item): ?>
+        <button class="account-tab<?= $key === 'overview' ? ' active' : '' ?>" data-tab="<?= $key ?>" type="button">
+            <svg class="account-tab-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true"><?= $item['icon'] ?></svg>
+            <span class="account-tab-label"><?= htmlspecialchars($item['label']) ?></span>
+        </button>
+        <?php endforeach; ?>
+    </nav>
+
+    <div class="account-main">
+
+    <?php // I18n::t interpolates raw, so the username is escaped before it goes in. ?>
     <div class="account-header">
-        <h1><?= t('account.title') ?></h1>
-        <p><?= I18n::t('account.welcome_back', ['name' => $user['username'] ?? 'User']) ?></p>
+        <h1><?= I18n::t('account.welcome_back', ['name' => htmlspecialchars($user['username'] ?? 'User')]) ?></h1>
     </div>
 
-    <div class="account-tabs">
-        <button class="account-tab active" data-tab="designs"><?= t('account.tabs.designs') ?></button>
-        <button class="account-tab" data-tab="orders"><?= t('account.tabs.orders') ?></button>
-        <button class="account-tab" data-tab="profile"><?= t('account.tabs.profile') ?></button>
-    </div>
+    <!-- Overview Tab -->
+    <div id="tab-overview" class="tab-content active">
+        <p class="account-lead"><?= t('account.overview.lead') ?></p>
+        <div class="account-stats">
+            <?php
+                $stats = [
+                    ['designs',   count($savedDesigns), t('account.tabs.designs', false)],
+                    ['orders',    count($orders),       t('account.tabs.orders', false)],
+                    ['favorites', count($favorites),    t('account.tabs.favorites', false)],
+                    ['uploads',   count($uploads),      t('account.tabs.uploads', false)],
+                ];
+                foreach ($stats as [$target, $count, $label]):
+            ?>
+            <button class="account-stat" type="button" data-goto="<?= $target ?>">
+                <span class="account-stat-value"><?= (int)$count ?></span>
+                <span class="account-stat-label"><?= htmlspecialchars($label) ?></span>
+            </button>
+            <?php endforeach; ?>
+        </div>
 
-    <!-- Saved Designs Tab -->
-    <div id="tab-designs" class="tab-content active">
+        <?php // A short strip of the newest designs, then straight through to the full tab. ?>
+        <div class="account-section-head">
+            <h2><?= t('account.tabs.designs') ?></h2>
+            <?php if (!empty($savedDesigns)): ?>
+            <button class="account-viewall" type="button" data-goto="designs"><?= t('account.view_all') ?></button>
+            <?php endif; ?>
+        </div>
         <?php if (empty($savedDesigns)): ?>
             <div class="account-empty-state">
                 <h3><?= t('account.no_designs.title') ?></h3>
@@ -25,190 +70,49 @@
             </div>
         <?php else: ?>
             <div class="designs-grid">
-                <?php foreach ($savedDesigns as $design): 
-                    $colorHex = $design['color_hex'] ?? '#000000';
-                    // Default to black if no color or empty
-                    if (empty($colorHex)) {
-                        $colorHex = '#000000';
-                    }
-                    
-                    // Calculate CSS filter for product colorization (same as shop_custom.php)
-                    $hex = ltrim($colorHex, '#');
-                    $r = hexdec(substr($hex, 0, 2)) / 255;
-                    $g = hexdec(substr($hex, 2, 2)) / 255;
-                    $b = hexdec(substr($hex, 4, 2)) / 255;
-                    $max = max($r, $g, $b);
-                    $min = min($r, $g, $b);
-                    $l = ($max + $min) / 2;
-                    $s = 0;
-                    $h = 0;
-                    if ($max !== $min) {
-                        $d = $max - $min;
-                        $s = $l > 0.5 ? $d / (2 - $max - $min) : $d / ($max + $min);
-                        if ($max === $r) $h = (($g - $b) / $d + ($g < $b ? 6 : 0)) / 6;
-                        elseif ($max === $g) $h = (($b - $r) / $d + 2) / 6;
-                        else $h = (($r - $g) / $d + 4) / 6;
-                    }
-                    $hsl = ['h' => $h * 360, 's' => $s * 100, 'l' => $l * 100];
-                    
-                    $isBlack = strtolower($colorHex) === '#000000' || strtolower($colorHex) === '#000' || $hsl['l'] < 10;
-                    $isWhite = strtolower($colorHex) === '#ffffff' || strtolower($colorHex) === '#fff' || $hsl['l'] > 95;
-                    $isGray = $hsl['s'] < 10;
-                    
-                    if ($isWhite) {
-                        $productFilter = 'saturate(0) brightness(2) contrast(0.8)';
-                    } elseif ($isBlack) {
-                        $productFilter = 'saturate(0) brightness(0.65) contrast(1.1)';
-                    } elseif ($isGray) {
-                        $brightness = 0.2 + ($hsl['l'] / 100) * 1.5;
-                        $productFilter = "saturate(0) brightness({$brightness})";
-                    } else {
-                        $hueRotate = $hsl['h'] - 50;
-                        $isReddish = $hsl['h'] <= 20 || $hsl['h'] >= 340;
-                        $saturate = ($hsl['s'] / 100) * 2 + 0.5;
-                        if ($isReddish) $saturate = ($hsl['s'] / 100) * 3 + 1;
-                        if ($hsl['l'] < 30) {
-                            $brightness = 0.3 + ($hsl['l'] / 100) * 0.7;
-                        } elseif ($hsl['l'] < 50) {
-                            $brightness = 0.5 + ($hsl['l'] / 100) * 0.6;
-                        } else {
-                            $brightness = 0.6 + ($hsl['l'] / 100) * 0.5;
-                        }
-                        $productFilter = "sepia(1) saturate({$saturate}) hue-rotate({$hueRotate}deg) brightness({$brightness})";
-                    }
-                    
-                    $savedPreviews = !empty($design['preview_images']) ? json_decode($design['preview_images'], true) : [];
-                    $frontPreviewPath = $savedPreviews['front'] ?? null;
-                    $frontDesignPreviewPath = $savedPreviews['front_design'] ?? null;
+                <?php foreach (array_slice($savedDesigns, 0, 3) as $design): ?>
+                    <?php include __DIR__ . '/_design_card.php'; ?>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
 
-                    // Element coordinates are in EDITOR pixels, relative to the print
-                    // area as it was sized when the design was saved. That size is
-                    // recorded in elements_json._meta — use it, because the estimate
-                    // below is only a fallback for designs saved before _meta existed.
-                    // Getting this wrong scales every element (411x548 read as 225x300
-                    // misplaces and shrinks everything by ~1.8x).
-                    $metaDAW = null; $metaDAH = null;
-                    if (!empty($design['elements_json'])) {
-                        $ej = json_decode($design['elements_json'], true);
-                        if (isset($ej['_meta']['editorDAWidth'])  && $ej['_meta']['editorDAWidth']  > 0) $metaDAW = (float)$ej['_meta']['editorDAWidth'];
-                        if (isset($ej['_meta']['editorDAHeight']) && $ej['_meta']['editorDAHeight'] > 0) $metaDAH = (float)$ej['_meta']['editorDAHeight'];
-                    }
+        <div class="account-section-head">
+            <h2><?= t('account.tabs.orders') ?></h2>
+            <?php if (!empty($orders)): ?>
+            <button class="account-viewall" type="button" data-goto="orders"><?= t('account.view_all') ?></button>
+            <?php endif; ?>
+        </div>
+        <?php if (empty($orders)): ?>
+            <div class="account-empty-state">
+                <h3><?= t('account.no_orders.title') ?></h3>
+                <p><?= t('account.no_orders.lead') ?></p>
+                <a href="/shop" class="btn btn-primary"><?= t('account.no_orders.button') ?></a>
+            </div>
+        <?php else: ?>
+            <div class="account-recent-orders">
+                <?php foreach (array_slice($orders, 0, 3) as $o): ?>
+                <a href="/orders/view?id=<?= (int)$o['id'] ?>" class="account-recent-order">
+                    <span class="account-recent-order-id"><?= I18n::t('account.order_number', ['id' => htmlspecialchars($o['id'])]) ?></span>
+                    <span class="account-recent-order-date"><?= date('M j, Y', strtotime($o['created_at'])) ?></span>
+                    <span class="account-recent-order-total">&euro;<?= number_format((float)$o['total_price'], 2) ?></span>
+                </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
 
-                    // Compute editor design-area dimensions from the product image's natural size.
-                    // In the editor: #designArea = 45% wide × 60% tall of the rendered mockup image.
-                    // With object-fit:contain in a square ~510px container:
-                    //   editorDAW = 0.45 × rendered_imgW ≈ 225 (fixed baseline)
-                    //   editorDAH = 0.60 × rendered_imgH = 300 × (naturalH / naturalW)
-                    $phpEditorDAW = 225;
-                    $phpEditorDAH = 300;
-                    if (!empty($design['product_image'])) {
-                        $imgPath = ltrim($design['product_image'], '/');
-                        // Strip 'public/' prefix if already present, then rebuild absolute path
-                        if (strpos($imgPath, 'public/') === 0) $imgPath = substr($imgPath, 7);
-                        // app/views/customer -> three levels up reaches the project root.
-                        $fullImgPath = __DIR__ . '/../../../public/' . $imgPath;
-                        $dim = @getimagesize($fullImgPath);
-                        if ($dim && $dim[0] > 0 && $dim[1] > 0) {
-                            $phpEditorDAH = round(300 * ($dim[1] / $dim[0]), 2);
-                        }
-                    }
-                ?>
-                    <?php
-                        // Compose the card live: current product image + the design's
-                        // own front elements, positioned as percentages of the print
-                        // area. The stored composite previews are NOT used here —
-                        // they were rendered against the previous product artwork, so
-                        // they showed a garment that no longer matches the one you get
-                        // when you open the design. Designs saved before previews
-                        // existed had none at all and showed a blank garment.
-                        $daX = (float)($design['da_front_x'] ?? 27.5);
-                        $daY = (float)($design['da_front_y'] ?? 25);
-                        $daW = (float)($design['da_front_w'] ?? 45);
-                        $daH = (float)($design['da_front_h'] ?? 60);
-                        $frontUploads = array_values(array_filter($design['uploads'] ?? [], function ($u) {
-                            return ($u['view_placement'] ?? 'front') === 'front' && !empty($u['stored_file_path']);
-                        }));
-                        $frontTexts = array_values(array_filter($design['texts'] ?? [], function ($t) {
-                            return ($t['view_placement'] ?? 'front') === 'front' && !empty($t['text_content']);
-                        }));
-                        // Scale against the print-area size recorded WITH the design,
-                        // never the current estimate. The product artwork was replaced
-                        // (different pixel sizes and framing), so anything derived from
-                        // today's image would misplace designs saved against the old art.
-                        $refW = $metaDAW ?: $phpEditorDAW;
-                        $refH = $metaDAH ?: $phpEditorDAH;
-                        $pct = function ($v, $of) { return $of > 0 ? ($v / $of) * 100 : 0; };
-                    ?>
-                    <div class="design-card" data-design-id="<?= $design['id'] ?>">
-                        <div class="design-card-image" style="position:relative; background:#fff; overflow:hidden;">
-                            <?php if (!empty($design['product_image'])): ?>
-                                <img src="/<?= htmlspecialchars(ltrim($design['product_image'], '/')) ?>"
-                                     alt="<?= htmlspecialchars($design['product_name'] ?? '') ?>" loading="lazy"
-                                     style="width:100%; height:100%; object-fit:contain; filter:<?= $productFilter ?>;">
-                                <?php if ($frontUploads || $frontTexts): ?>
-                                <div style="position:absolute; left:<?= $daX ?>%; top:<?= $daY ?>%; width:<?= $daW ?>%; height:<?= $daH ?>%; overflow:hidden; pointer-events:none; container-type:inline-size;">
-                                    <?php foreach ($frontUploads as $u):
-                                        $src = ltrim((string)$u['stored_file_path'], '/');
-                                        if (strpos($src, 'public/') === 0) $src = substr($src, 7);
-                                    ?>
-                                    <img src="/<?= htmlspecialchars($src) ?>" alt="" loading="lazy"
-                                         style="position:absolute;
-                                                left:<?= round($pct((float)($u['position_x'] ?? 0), $refW), 3) ?>%;
-                                                top:<?= round($pct((float)($u['position_y'] ?? 0), $refH), 3) ?>%;
-                                                width:<?= round($pct((float)($u['width'] ?? $phpEditorDAW), $refW), 3) ?>%;
-                                                height:<?= round($pct((float)($u['height'] ?? $phpEditorDAH), $refH), 3) ?>%;
-                                                object-fit:contain;">
-                                    <?php endforeach; ?>
-                                    <?php foreach ($frontTexts as $tx): ?>
-                                    <div style="position:absolute;
-                                                left:<?= round($pct((float)($tx['position_x'] ?? 0), $refW), 3) ?>%;
-                                                top:<?= round($pct((float)($tx['position_y'] ?? 0), $refH), 3) ?>%;
-                                                font-size:<?= round($pct((float)($tx['font_size'] ?? 24), $refW), 3) ?>cqw;
-                                                color:<?= htmlspecialchars($tx['text_color'] ?? '#000') ?>;
-                                                font-family:<?= htmlspecialchars($tx['font_family'] ?? 'inherit') ?>;
-                                                white-space:nowrap; line-height:1;"><?= htmlspecialchars($tx['text_content']) ?></div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <?php endif; ?>
-                            <?php else: ?>
-                                <span style="color:#aaa;"><?= t('account.no_preview') ?></span>
-                            <?php endif; ?>
-                        </div>
-                        <div class="design-card-body">
-                            <div class="design-card-title"><?= htmlspecialchars($design['name']) ?></div>
-                            <div class="design-card-product"><?= htmlspecialchars($design['product_name'] ?? t('custom.title', false)) ?></div>
-                            <div class="design-card-date"><?= I18n::t('account.created', ['date' => date('M j, Y', strtotime($design['created_at']))]) ?></div>
-                            <div class="design-card-actions">
-                                <button class="btn btn-primary" onclick="addDesignToCart(<?= htmlspecialchars(json_encode([
-                                    'id' => $design['id'],
-                                    'productId' => $design['product_id'],
-                                    'productName' => $design['product_name'] ?? 'Custom Product',
-                                    'designName' => $design['name'],
-                                    'basePrice' => $design['base_price'] ?? 0,
-                                    'productImage' => '/' . ltrim($design['product_image'] ?? '', '/'),
-                                    'colorHex' => $design['color_hex'] ?? '#000000',
-                                    'elementsJson' => $design['elements_json'] ?? '{}',
-                                    'uploads' => $design['uploads'] ?? [],
-                                    'texts' => $design['texts'] ?? [],
-                                    // Deliberately null: the stored composites were
-                                    // rendered against the previous product artwork,
-                                    // so the modal would show a different garment from
-                                    // the card beside it. Passing null makes the modal
-                                    // compose from the live product image and the
-                                    // design's own coordinates, exactly as the card
-                                    // above does. They regenerate on the next save.
-                                    'frontPreviewPath' => null,
-                                    'frontDesignPreviewPath' => null,
-                                    'editorDAWidth'  => $phpEditorDAW,
-                                    'editorDAHeight' => $phpEditorDAH,
-                                ]), ENT_QUOTES, 'UTF-8') ?>)">
-                                    <?= t('account.add_to_cart') ?>
-                                </button>
-                                <a href="/shop/custom?load=<?= $design['id'] ?>" class="btn btn-outline"><?= t('account.edit') ?></a>
-                                <button class="btn btn-danger" onclick="deleteDesign(<?= $design['id'] ?>, '<?= htmlspecialchars(addslashes($design['name'])) ?>')"><?= t('account.delete') ?></button>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Saved Designs Tab -->
+    <div id="tab-designs" class="tab-content">
+        <?php if (empty($savedDesigns)): ?>
+            <div class="account-empty-state">
+                <h3><?= t('account.no_designs.title') ?></h3>
+                <p><?= t('account.no_designs.lead') ?></p>
+                <a href="/shop/custom" class="btn btn-primary"><?= t('account.no_designs.button') ?></a>
+            </div>
+        <?php else: ?>
+            <div class="designs-grid">
+                <?php foreach ($savedDesigns as $design): ?>
+                    <?php include __DIR__ . '/_design_card.php'; ?>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
@@ -277,7 +181,109 @@
         <?php endif; ?>
     </div>
 
-    <!-- Profile Tab -->
+    <!-- My Uploads Tab -->
+    <div id="tab-uploads" class="tab-content">
+        <?php if (empty($uploads)): ?>
+            <div class="account-empty-state">
+                <h3><?= t('account.no_uploads.title') ?></h3>
+                <p><?= t('account.no_uploads.lead') ?></p>
+                <a href="/shop/custom" class="btn btn-primary"><?= t('account.no_uploads.button') ?></a>
+            </div>
+        <?php else: ?>
+            <div class="uploads-grid">
+                <?php foreach ($uploads as $up):
+                    $src = ltrim((string)$up['stored_file_path'], '/');
+                    if (strpos($src, 'public/') === 0) $src = substr($src, 7);
+                    // file_size is stored in bytes; show whichever unit reads cleanly.
+                    $bytes = (int)($up['file_size'] ?? 0);
+                    $sizeLabel = $bytes >= 1048576
+                        ? number_format($bytes / 1048576, 1) . ' MB'
+                        : ($bytes > 0 ? max(1, (int)round($bytes / 1024)) . ' KB' : '—');
+
+                    // The editor posts artwork as base64 with no filename, so
+                    // original_filename is usually NULL. Fall back to the design
+                    // it belongs to plus the extension — more use than a hash,
+                    // and far better than a blank line.
+                    $label = trim((string)($up['original_filename'] ?? ''));
+                    if ($label === '') {
+                        $ext = strtolower(pathinfo($src, PATHINFO_EXTENSION));
+                        $firstDesign = trim(explode(',', (string)($up['design_names'] ?? ''))[0]);
+                        $label = $firstDesign !== ''
+                            ? $firstDesign . ($ext ? '.' . $ext : '')
+                            : basename($src);
+                    }
+                ?>
+                <div class="upload-card">
+                    <div class="upload-card-image">
+                        <img src="/<?= htmlspecialchars($src) ?>" alt="<?= htmlspecialchars($up['original_filename'] ?? '') ?>" loading="lazy">
+                    </div>
+                    <div class="upload-card-body">
+                        <div class="upload-card-name" title="<?= htmlspecialchars($label) ?>"><?= htmlspecialchars($label) ?></div>
+                        <div class="upload-card-meta">
+                            <span><?= htmlspecialchars($sizeLabel) ?></span>
+                            <span><?= date('M j, Y', strtotime($up['created_at'])) ?></span>
+                        </div>
+                        <div class="upload-card-used" title="<?= htmlspecialchars($up['design_names'] ?? '') ?>">
+                            <?= I18n::t('account.uploads.used_in', ['count' => (int)$up['design_count']]) ?>
+                        </div>
+                        <a class="btn btn-outline" href="/<?= htmlspecialchars($src) ?>" download><?= t('account.uploads.download') ?></a>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Favorites Tab -->
+    <div id="tab-favorites" class="tab-content">
+        <?php // Always rendered so removing the last favourite can reveal it. ?>
+        <div class="account-empty-state" id="favoritesEmpty"<?= empty($favorites) ? '' : ' style="display:none;"' ?>>
+            <h3><?= t('account.no_favorites.title') ?></h3>
+            <p><?= t('account.no_favorites.lead') ?></p>
+            <a href="/shop" class="btn btn-primary"><?= t('account.no_favorites.button') ?></a>
+        </div>
+        <?php if (!empty($favorites)): ?>
+            <div class="favorites-grid">
+                <?php foreach ($favorites as $fav):
+                    $img  = ltrim((string)($fav['image_path'] ?? ''), '/');
+                    if (strpos($img, 'public/') === 0) $img = substr($img, 7);
+                    // Products open the customiser via the picker; designs have their own page.
+                    $href = $fav['kind'] === 'design'
+                        ? '/shop/design/' . (int)$fav['item_id']
+                        : '/shop/select_product';
+                ?>
+                <div class="favorite-card<?= empty($fav['active']) ? ' is-inactive' : '' ?>">
+                    <button class="favorite-remove" type="button"
+                            data-kind="<?= htmlspecialchars($fav['kind']) ?>"
+                            data-id="<?= (int)$fav['item_id'] ?>"
+                            aria-label="<?= t('account.favorites.remove') ?>"
+                            title="<?= t('account.favorites.remove') ?>">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1z"/></svg>
+                    </button>
+                    <a href="<?= htmlspecialchars($href) ?>" class="favorite-card-link">
+                        <div class="favorite-card-image">
+                            <?php if ($img !== ''): ?>
+                                <img src="/<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($fav['name']) ?>" loading="lazy">
+                            <?php else: ?>
+                                <span class="favorite-noimage"><?= t('account.no_preview') ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="favorite-card-body">
+                            <div class="favorite-card-kind"><?= $fav['kind'] === 'design' ? t('account.favorites.kind_design') : t('account.favorites.kind_product') ?></div>
+                            <div class="favorite-card-name"><?= htmlspecialchars($fav['name']) ?></div>
+                            <div class="favorite-card-price">&euro;<?= number_format((float)$fav['display_price'], 2) ?></div>
+                            <?php if (empty($fav['active'])): ?>
+                            <div class="favorite-card-inactive"><?= t('account.favorites.unavailable') ?></div>
+                            <?php endif; ?>
+                        </div>
+                    </a>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Account Settings Tab -->
     <div id="tab-profile" class="tab-content">
         <div class="profile-section">
             <div class="profile-field">
@@ -294,6 +300,8 @@
             </div>
         </div>
     </div>
+
+    </div><!-- /.account-main -->
 </div>
 
 <!-- Delete Confirmation Modal -->
@@ -303,7 +311,11 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
         </div>
         <h3 id="deleteConfirmTitle" class="confirm-title"><?= t('account.delete_modal.title') ?></h3>
-        <p class="confirm-lead"><?= I18n::t('account.delete_modal.lead', ['name' => '<span id=\"deleteDesignNameText\"></span>']) ?><br><strong style="color:var(--ink);"><?= t('account.delete_modal.warning') ?></strong></p>
+        <?php // Plain double quotes: in a single-quoted PHP string \" is not an
+              // escape, so it emitted id=\"...\" literally and the browser never
+              // saw an element with this id — deleteDesign() then threw on its
+              // first line and the whole delete flow died on click. ?>
+        <p class="confirm-lead"><?= I18n::t('account.delete_modal.lead', ['name' => '<span id="deleteDesignNameText"></span>']) ?><br><strong style="color:var(--ink);"><?= t('account.delete_modal.warning') ?></strong></p>
         <div class="confirm-actions">
             <button type="button" class="confirm-btn confirm-btn-secondary" onclick="closeDeleteModal()"><?= t('account.delete_modal.cancel') ?></button>
             <button type="button" id="confirmDeleteBtn" class="confirm-btn confirm-btn-danger" onclick="confirmDelete()"><?= t('account.delete_modal.confirm') ?></button>
@@ -346,7 +358,7 @@
         <div style="margin-bottom:1.5rem;">
             <label style="font-weight:600; display:block; margin-bottom:0.5rem; color:var(--text-light, #fff);"><?= t('account.cart_modal.quantity') ?></label>
             <div style="display:flex; align-items:center; gap:12px;">
-                <button onclick="adjustCartQuantity(-1)" class="qty-btn" style="width:36px; height:36px; background:rgba(255,255,255,0.1); border:none; border-radius:8px; font-size:1.2rem; cursor:pointer; color:#fff;">−</button>
+                <button onclick="adjustCartQuantity(-1)" class="qty-btn" style="width:36px; height:36px; background:rgba(255,255,255,0.1); border:none; border-radius:8px; font-size:1.2rem; cursor:pointer; color:#fff;">âˆ’</button>
                 <input id="cartQuantity" type="number" value="1" min="1" max="100" style="width:60px; text-align:center; padding:8px; border:1px solid var(--border-light, rgba(255,255,255,0.2)); border-radius:8px; font-size:1rem; background:rgba(255,255,255,0.05); color:#fff;">
                 <button onclick="adjustCartQuantity(1)" class="qty-btn" style="width:36px; height:36px; background:rgba(255,255,255,0.1); border:none; border-radius:8px; font-size:1.2rem; cursor:pointer; color:#fff;">+</button>
             </div>

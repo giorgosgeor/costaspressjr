@@ -14,64 +14,348 @@
     padding: 1.5rem 2rem;
 }
 
+/* Sidebar beside the panel, rather than tabs stacked above it — the nav stays
+   in view while you work through a long list of designs or orders. */
+.account-layout {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    align-items: start;
+}
+
+.account-main { min-width: 0; }
+
 .account-header {
-    margin-bottom: 2rem;
-    text-align: center;
+    margin-bottom: 1.75rem;
 }
 
 .account-header h1 {
-    font-size: clamp(2.4rem, 6vw, 3.8rem);
+    font-size: clamp(1.8rem, 3.4vw, 2.6rem);
     color: var(--ink);
-    margin-bottom: 0.4rem;
-    letter-spacing: 0.02em;
-    
+    margin-bottom: 0.3rem;
+    letter-spacing: -0.01em;
 }
 
-.account-header p {
+/* Lives inside the Overview panel, not the shared header — it describes that
+   one section, so it would read wrong above Uploads or Order History. */
+.account-lead {
     font-family: var(--font-type);
     color: var(--ink-soft);
-    font-size: 1.05rem;
+    font-size: 1.02rem;
+    margin: -0.9rem 0 1.6rem;
 }
 
-.account-tabs {
+/* ---- Sidebar nav --------------------------------------------------------- */
+.account-nav {
     display: flex;
-    gap: 0;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid var(--border);
-    justify-content: center;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 2px;
+    position: sticky;
+    top: 24px;
 }
 
 .account-tab {
-    padding: 0.85rem 1.4rem;
-    background: var(--paper-2);
-    border: 1px solid var(--border);
-    border-bottom: none;
-    font-family: var(--font-display);
-    font-size: 1rem;
-    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 11px 14px;
+    background: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    border-radius: 0 8px 8px 0;
+    font-family: var(--font-body);
+    font-size: 0.97rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    text-align: left;
     cursor: pointer;
-    margin-bottom: -2px;
-    margin-right: -2px;
-    transition: all .12s;
-    position: relative;
+    transition: background-color .12s, color .12s, border-color .12s;
 }
 
+.account-tab-icon { flex: none; opacity: 0.75; }
+.account-tab-label { flex: 1; min-width: 0; }
+
 .account-tab:hover {
-    background: var(--paper);
-    transform: translateY(-2px);
-    z-index: 2;
+    background: var(--paper-soft);
+    color: var(--ink);
 }
 
 .account-tab.active {
-    background: var(--ink);
-    color: var(--paper);
-    z-index: 3;
-    box-shadow: 0 -3px 0 var(--spot);
+    background: var(--paper-soft);
+    border-left-color: var(--spot);
+    color: var(--spot);
+    font-weight: 600;
 }
+
+.account-tab.active .account-tab-icon { opacity: 1; }
 
 .tab-content { display: none; }
 .tab-content.active { display: block; }
+
+/* ---- Overview ------------------------------------------------------------ */
+.account-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 14px;
+    margin-bottom: 34px;
+}
+
+.account-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 16px 18px;
+    background: var(--paper-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color .12s, transform .12s;
+}
+
+.account-stat:hover {
+    border-color: var(--spot);
+    transform: translateY(-2px);
+}
+
+.account-stat-value {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.1;
+}
+
+.account-stat-label {
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+}
+
+.account-section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 0 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.account-section-head h2 {
+    font-size: 1.3rem;
+    margin: 0;
+    color: var(--ink);
+}
+
+.account-viewall {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    color: var(--spot);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.account-recent-orders {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.account-recent-order {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 18px;
+    background: var(--paper-2);
+    text-decoration: none;
+    color: var(--ink);
+    border-bottom: 1px solid var(--border);
+    transition: background-color .12s;
+}
+
+.account-recent-order:last-child { border-bottom: none; }
+.account-recent-order:hover { background: var(--paper-soft); }
+
+.account-recent-order-id    { font-weight: 600; }
+.account-recent-order-date  { color: var(--ink-soft); font-size: 0.9rem; margin-left: auto; }
+.account-recent-order-total { font-weight: 700; min-width: 84px; text-align: right; }
+
+/* ---- My Uploads ---------------------------------------------------------- */
+.uploads-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 20px;
+}
+
+.upload-card {
+    background: var(--paper-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Checkerboard so transparent artwork (most of it) is readable rather than
+   disappearing into a white card. */
+.upload-card-image {
+    aspect-ratio: 1;
+    background-color: #fff;
+    background-image:
+        linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%),
+        linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 8px 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.upload-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.upload-card-body {
+    padding: 12px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+}
+
+.upload-card-name {
+    font-weight: 600;
+    font-size: 0.93rem;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.upload-card-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+}
+
+.upload-card-used {
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.upload-card-body .btn {
+    margin-top: auto;
+    padding: 8px 12px;
+    font-size: 0.88rem;
+    text-align: center;
+}
+
+/* ---- Favorites ----------------------------------------------------------- */
+.favorites-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 20px;
+}
+
+.favorite-card {
+    position: relative;
+    background: var(--paper-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color .12s, transform .12s;
+}
+
+.favorite-card:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-2px);
+}
+
+.favorite-card.is-inactive { opacity: 0.62; }
+
+.favorite-card-link {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    text-decoration: none;
+    color: var(--ink);
+}
+
+.favorite-card-image {
+    aspect-ratio: 1;
+    background: var(--paper-soft);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.favorite-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.favorite-noimage { color: var(--ink-soft); font-size: 0.85rem; }
+
+.favorite-card-body {
+    padding: 12px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.favorite-card-kind {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+}
+
+.favorite-card-name { font-weight: 600; font-size: 0.95rem; }
+.favorite-card-price { font-weight: 700; margin-top: 2px; }
+.favorite-card-inactive { font-size: 0.8rem; color: var(--spot-2, #c0392b); }
+
+/* Filled heart, because everything in this tab is already favourited —
+   clicking it removes. */
+.favorite-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: #fff;
+    color: var(--spot);
+    cursor: pointer;
+    transition: transform .12s, color .12s, border-color .12s;
+}
+
+.favorite-remove:hover {
+    transform: scale(1.08);
+    border-color: currentColor;
+}
+
+.favorite-remove[disabled] { opacity: 0.5; cursor: default; }
 
 /* ============================================================
    SAVED DESIGNS GRID
@@ -80,6 +364,13 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.4rem;
+}
+
+/* The Overview strip is only three cards, so it uses a narrower track to keep
+   them on one row instead of leaving a lone card wrapped underneath. */
+#tab-overview .designs-grid {
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    margin-bottom: 2.2rem;
 }
 
 .design-card {
@@ -368,10 +659,45 @@
     font-size: 0.9rem;
 }
 
+/* Below this the sidebar stops paying for its width, so it becomes a
+   horizontally scrollable strip above the panel. */
+@media (max-width: 900px) {
+    .account-layout {
+        grid-template-columns: 1fr;
+        gap: 22px;
+    }
+    .account-nav {
+        position: static;
+        flex-direction: row;
+        gap: 4px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border);
+        scrollbar-width: thin;
+    }
+    .account-tab {
+        width: auto;
+        flex: none;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+        border-radius: 8px 8px 0 0;
+        white-space: nowrap;
+    }
+    .account-tab.active {
+        border-left-color: transparent;
+        border-bottom-color: var(--spot);
+    }
+}
+
 @media (max-width: 600px) {
     .account-container { padding: 1rem; }
-    .account-tabs { gap: 0; }
     .account-tab { font-size: 0.88rem; padding: 0.7rem 0.9rem; }
+    .account-tab-label { font-size: 0.88rem; }
+    .account-recent-order {
+        flex-wrap: wrap;
+        gap: 6px 12px;
+    }
+    .account-recent-order-total { min-width: 0; }
     .order-card-header {
         flex-direction: column;
         align-items: flex-start;

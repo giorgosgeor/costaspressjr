@@ -42,6 +42,7 @@ require __DIR__ . '/../app/core/Mailer.php';
 require __DIR__ . '/../app/core/Log.php';
 require __DIR__ . '/../app/core/I18n.php';
 require __DIR__ . '/../app/core/Pricing.php';
+require __DIR__ . '/../app/core/Tint.php';
 Asset::setPublicRoot(__DIR__);
 I18n::init();
 Csrf::validateRequest();
@@ -90,6 +91,7 @@ $router->get('/lang/el', function () {
 // Customer Routes (require login)
 $router->get('/home', [$customerController, 'home']);
 $router->get('/account', [$customerController, 'account']);
+$router->post('/account/favorites/toggle', [$customerController, 'toggleFavorite']);
 $router->get('/orders', [$customerController, 'orderList']);
 $router->get('/orders/view', [$customerController, 'orderDetail']);
 $router->get('/shop', [$customerController, 'shop']);

@@ -84,9 +84,20 @@ document.addEventListener('DOMContentLoaded', function () {
 <!-- Featured Products -->
 <section class="section products-section">
     <div class="container">
-        <span class="section-tag"><?= t('home.featured.tag') ?></span>
-        <h2 class="section-title"><?= t('home.featured.title') ?></h2>
-        <p class="section-subtitle"><?= t('home.featured.subtitle') ?></p>
+        <?php // Heading on the left, "view all" on the right of the same row —
+              // it reads as part of the section header instead of a footer the
+              // shopper only meets after scrolling past every card. ?>
+        <div class="section-head">
+            <div class="section-head-text">
+                <span class="section-tag"><?= t('home.featured.tag') ?></span>
+                <h2 class="section-title"><?= t('home.featured.title') ?></h2>
+                <p class="section-subtitle"><?= t('home.featured.subtitle') ?></p>
+            </div>
+            <a href="/shop" class="btn btn-outline section-head-action">
+                <?= t('home.featured.view_all') ?>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </a>
+        </div>
         <div class="products-grid">
             <?php if (!empty($featuredProducts)): ?>
                 <?php foreach ($featuredProducts as $product): ?>
@@ -108,9 +119,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     <p><?= t('home.featured.no_products') ?></p>
                 </div>
             <?php endif; ?>
-        </div>
-        <div class="section-footer">
-            <a href="/shop" class="btn btn-lg"><?= t('home.featured.view_all') ?></a>
         </div>
     </div>
 </section>
@@ -161,7 +169,17 @@ document.addEventListener('DOMContentLoaded', function () {
 <!-- Featured Products (visible to all visitors) -->
 <section class="section products-section" style="background:#fff;">
     <div class="container">
-        <h2 class="section-title"><?= t('home.featured.title') ?></h2>
+        <?php // Same header treatment as the signed-in section — the call to
+              // action sits beside the heading rather than below the grid. ?>
+        <div class="section-head">
+            <div class="section-head-text">
+                <h2 class="section-title"><?= t('home.featured.title') ?></h2>
+            </div>
+            <a href="/register" class="btn section-head-action">
+                <?= t('home.featured.sign_up') ?>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </a>
+        </div>
         <div class="products-grid">
             <?php if (!empty($featuredProducts)): ?>
                 <?php foreach ($featuredProducts as $product): ?>
@@ -183,9 +201,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     <p><?= t('home.featured.no_products') ?></p>
                 </div>
             <?php endif; ?>
-        </div>
-        <div class="section-footer">
-            <a href="/register" class="btn btn-lg"><?= t('home.featured.sign_up') ?></a>
         </div>
     </div>
 </section>

@@ -27,34 +27,12 @@ if (!function_exists('adminOrderHexToHSL')) {
     }
 }
 if (!function_exists('adminOrderProductColorFilter')) {
+    // Delegated to Tint so the production view shows the same shade the
+    // customer saw when they ordered — this copy had drifted from the studio's
+    // and never applied the solved overrides for deep reds.
     function adminOrderProductColorFilter($hex) {
         if (!$hex) return '';
-        $hex = trim($hex);
-        if ($hex[0] !== '#') $hex = '#' . $hex;
-        $hsl = adminOrderHexToHSL($hex);
-        $hexLower = strtolower($hex);
-        $isWhite = $hexLower === '#ffffff' || $hexLower === '#fff' || $hsl['l'] > 95;
-        $isBlack = $hexLower === '#000000' || $hexLower === '#000' || $hsl['l'] < 10;
-        $isGray  = $hsl['s'] < 10;
-        if ($isWhite) return 'saturate(0) brightness(2) contrast(0.8)';
-        if ($isBlack) return 'saturate(0) brightness(0.65) contrast(1.1)';
-        if ($isGray) {
-            $br = 0.2 + ($hsl['l'] / 100) * 1.5;
-            return "saturate(0) brightness($br)";
-        }
-        $hueRotate = $hsl['h'] - 50;
-        if ($hueRotate < 0) $hueRotate += 360;
-        $isReddish = $hsl['h'] <= 20 || $hsl['h'] >= 340;
-        $saturate  = ($hsl['s'] / 100) * 2 + 0.5;
-        if ($isReddish) $saturate = ($hsl['s'] / 100) * 3 + 1;
-        if ($hsl['l'] < 30) {
-            $br = 0.3 + ($hsl['l'] / 100) * 0.7;
-        } elseif ($hsl['l'] < 50) {
-            $br = 0.5 + ($hsl['l'] / 100) * 0.6;
-        } else {
-            $br = 0.6 + ($hsl['l'] / 100) * 0.5;
-        }
-        return "sepia(1) saturate($saturate) hue-rotate({$hueRotate}deg) brightness($br)";
+        return Tint::filterFor($hex);
     }
 }
 ?>

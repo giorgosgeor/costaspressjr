@@ -270,7 +270,8 @@ class CustomDesign {
         $storedFilePath = null;
         $fileSize = 0;
         $mimeType = 'image/png';
-        
+        $fileHash = null;
+
         // Extract and save base64 image to file
         if (!empty($element['src']) && strpos($element['src'], 'data:image') === 0) {
             $result = $this->saveBase64Image($element['src'], $designId, $element['id'] ?? 'element-' . $order);
@@ -278,6 +279,7 @@ class CustomDesign {
                 $storedFilePath = $result['path'];
                 $fileSize = $result['size'];
                 $mimeType = $result['mime_type'];
+                $fileHash = $result['hash'] ?? null;
             }
         } elseif (!empty($element['src'])) {
             // Existing file path (not base64) - preserve it
@@ -296,6 +298,9 @@ class CustomDesign {
             $fullPath = __DIR__ . '/../../' . $storedFilePath;
             if (file_exists($fullPath)) {
                 $fileSize = filesize($fullPath);
+                // Hash it too, so a re-saved design still participates in
+                // dedup rather than becoming an unmatched row.
+                $fileHash = hash_file('sha256', $fullPath);
             }
         }
         
@@ -309,17 +314,18 @@ class CustomDesign {
         // Check if custom_design_uploads table exists
         try {
             $stmt = $this->db->prepare("
-                INSERT INTO custom_design_uploads 
-                (design_id, element_id, stored_file_path, file_size, mime_type, view_placement, 
+                INSERT INTO custom_design_uploads
+                (design_id, element_id, stored_file_path, file_size, file_hash, mime_type, view_placement,
                  position_x, position_y, width, height, rotation, is_flipped, color_overlay, bg_removed, layer_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            
+
             $stmt->execute([
                 $designId,
                 $element['id'] ?? 'element-' . $order,
                 $storedFilePath,
                 $fileSize,
+                $fileHash,
                 $mimeType,
                 $view,
                 $element['x'] ?? 0,
@@ -430,6 +436,22 @@ class CustomDesign {
             }
         }
 
+        // Same bytes as something this user already uploaded? Point at the
+        // existing file instead of writing another copy. Scoped to the user on
+        // purpose: sharing a file between accounts would let one person's
+        // deletion break another's design, and would leak that someone else
+        // uploaded the same image.
+        $contentHash = hash('sha256', $decodedData);
+        $existing = $this->findExistingUpload($designId, $contentHash);
+        if ($existing !== null) {
+            return [
+                'path'      => $existing,
+                'size'      => strlen($decodedData),
+                'mime_type' => $mime,
+                'hash'      => $contentHash,
+            ];
+        }
+
         // Create upload directory if it doesn't exist. Folder name is the
         // random path_token rather than the predictable design id.
         $folder = $this->pathTokenFor($designId);
@@ -459,8 +481,37 @@ class CustomDesign {
         return [
             'path' => $relativePath,
             'size' => $bytesWritten,
-            'mime_type' => $mime
+            'mime_type' => $mime,
+            'hash' => $contentHash
         ];
+    }
+
+    /**
+     * Path of a file this design's owner has already uploaded with identical
+     * contents, or null. The file must still be on disk — a stale row pointing
+     * at a deleted file would otherwise hand back a broken path.
+     */
+    private function findExistingUpload(int $designId, string $contentHash): ?string {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT u.stored_file_path
+                FROM custom_design_uploads u
+                JOIN custom_designs cd  ON cd.id = u.design_id
+                JOIN custom_designs mine ON mine.user_id = cd.user_id
+                WHERE mine.id = ? AND u.file_hash = ?
+                  AND u.stored_file_path IS NOT NULL AND u.stored_file_path <> ''
+                ORDER BY u.id ASC
+            ");
+            $stmt->execute([$designId, $contentHash]);
+            foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $path) {
+                if (is_file(__DIR__ . '/../../' . $path)) {
+                    return $path;
+                }
+            }
+        } catch (PDOException $e) {
+            // file_hash column not present yet — fall through and store a copy.
+        }
+        return null;
     }
     
     /**
@@ -516,14 +567,26 @@ class CustomDesign {
             $stmt = $this->db->prepare("SELECT stored_file_path FROM custom_design_uploads WHERE design_id = ?");
             $stmt->execute([$designId]);
             $uploads = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Delete the physical files
+
+            // Identical artwork is stored once and shared across the user's
+            // designs, so a file may still belong to a design that is staying.
+            // Only remove it when nothing else points at it — otherwise deleting
+            // one design silently blanks the artwork on the others.
+            $refCount = $this->db->prepare("
+                SELECT COUNT(*) FROM custom_design_uploads
+                WHERE stored_file_path = ? AND design_id <> ?
+            ");
             foreach ($uploads as $upload) {
-                if (!empty($upload['stored_file_path'])) {
-                    $filePath = __DIR__ . '/../../' . $upload['stored_file_path'];
-                    if (file_exists($filePath)) {
-                        unlink($filePath);
-                    }
+                if (empty($upload['stored_file_path'])) {
+                    continue;
+                }
+                $refCount->execute([$upload['stored_file_path'], $designId]);
+                if ((int)$refCount->fetchColumn() > 0) {
+                    continue;
+                }
+                $filePath = __DIR__ . '/../../' . $upload['stored_file_path'];
+                if (file_exists($filePath)) {
+                    unlink($filePath);
                 }
             }
             

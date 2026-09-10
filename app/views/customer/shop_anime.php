@@ -53,6 +53,16 @@
                     ) + $design['price'];
                 ?>
                 <div class="flip-card">
+                    <?php $isFav = in_array((int)$design['id'], $favoriteDesignIds ?? [], true); ?>
+                    <button type="button" class="fav-btn<?= $isFav ? ' is-favorited' : '' ?>"
+                            data-kind="design" data-id="<?= (int)$design['id'] ?>"
+                            aria-pressed="<?= $isFav ? 'true' : 'false' ?>"
+                            data-label-on="<?= t('favorites.remove') ?>"
+                            data-label-off="<?= t('favorites.add') ?>"
+                            aria-label="<?= $isFav ? t('favorites.remove') : t('favorites.add') ?>"
+                            title="<?= $isFav ? t('favorites.remove') : t('favorites.add') ?>">
+                        <svg width="18" height="18" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1z"/></svg>
+                    </button>
                     <a href="/shop/design/<?= $design['id'] ?>" class="flip-card-inner" title="<?= htmlspecialchars($design['name']) ?>">
                         <!-- Front face -->
                         <div class="flip-face flip-front">
@@ -235,6 +245,8 @@
 .flip-card {
     display: flex;
     flex-direction: column;
+    /* Containing block for the favourite heart pinned to the card corner. */
+    position: relative;
 }
 
 .flip-card-inner {
@@ -401,4 +413,5 @@
 }
 </style>
 
+<script src="<?= htmlspecialchars(Asset::url('/js/favorites.js')) ?>" defer></script>
 <?php require __DIR__ . '/../layouts/customer_footer.php'; ?>

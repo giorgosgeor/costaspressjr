@@ -146,7 +146,127 @@ class CustomerController {
         $stmt->execute([$userId]);
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // My Uploads: every distinct artwork this user has put on a design.
+        // Grouped by CONTENT hash, not path — the same picture uploaded twice
+        // used to be two files, and the library should show one item either way.
+        // Rows predating the hash column fall back to their path so they still
+        // group sensibly instead of collapsing together under a NULL key.
+        $stmt = $this->db->prepare("
+            SELECT MIN(u.stored_file_path)  AS stored_file_path,
+                   MIN(u.original_filename) AS original_filename,
+                   MAX(u.file_size)         AS file_size,
+                   MIN(u.mime_type)         AS mime_type,
+                   MIN(u.created_at)        AS created_at,
+                   COUNT(DISTINCT u.design_id) AS design_count,
+                   GROUP_CONCAT(DISTINCT cd.name ORDER BY cd.name SEPARATOR ', ') AS design_names
+            FROM custom_design_uploads u
+            JOIN custom_designs cd ON cd.id = u.design_id
+            WHERE cd.user_id = ?
+            GROUP BY COALESCE(u.file_hash, u.stored_file_path)
+            ORDER BY MIN(u.created_at) DESC
+        ");
+        $stmt->execute([$userId]);
+        $uploads = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $favorites = $this->favoritesFor($userId);
+
         require __DIR__ . '/../views/customer/account.php';
+    }
+
+    /**
+     * Saved products and premade designs, newest first. Inactive products are
+     * still listed (with a flag) rather than dropped — silently losing a saved
+     * item looks like a bug to the person who saved it.
+     */
+    private function favoritesFor(int $userId): array {
+        $stmt = $this->db->prepare("
+            SELECT f.id, f.created_at, 'product' AS kind,
+                   p.id AS item_id, p.name, p.slug, p.image_path, p.base_price, p.active
+            FROM user_favorites f
+            JOIN products p ON p.id = f.product_id
+            WHERE f.user_id = ?
+            UNION ALL
+            SELECT f.id, f.created_at, 'design' AS kind,
+                   d.id AS item_id, d.name, NULL AS slug, d.image_path, d.price AS base_price, d.active
+            FROM user_favorites f
+            JOIN premade_designs d ON d.id = f.design_id
+            WHERE f.user_id = ?
+            ORDER BY created_at DESC
+        ");
+        $stmt->execute([$userId, $userId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Products store the SUPPLIER cost, so show the same qty-1 retail price
+        // the shop does. Designs already carry a customer-facing price.
+        foreach ($rows as &$r) {
+            $r['display_price'] = $r['kind'] === 'product'
+                ? Pricing::unitPrice((float)$r['base_price'], Pricing::categoryFor($r['slug'] ?? '', $r['name'] ?? ''), 1)
+                : (float)$r['base_price'];
+        }
+        unset($r);
+        return $rows;
+    }
+
+    /**
+     * Ids the current user has favourited, for rendering hearts in their filled
+     * state. Guests have none — the heart still shows, and clicking it sends
+     * them to log in.
+     */
+    private function favoriteIds(string $kind): array {
+        if (!Auth::check()) return [];
+        $column = $kind === 'product' ? 'product_id' : 'design_id';
+        $stmt = $this->db->prepare("SELECT {$column} FROM user_favorites WHERE user_id = ? AND {$column} IS NOT NULL");
+        $stmt->execute([(int)Auth::userId()]);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    /**
+     * Add or remove a favourite. Returns the resulting state so the button can
+     * settle on what the server actually recorded rather than assuming.
+     */
+    public function toggleFavorite(): void {
+        header('Content-Type: application/json');
+        if (!Auth::check()) {
+            http_response_code(401);
+            echo json_encode(['error' => 'login_required']);
+            return;
+        }
+        $userId = (int)Auth::userId();
+        $data   = json_decode(file_get_contents('php://input'), true) ?: [];
+        $kind   = $data['kind'] ?? '';
+        $id     = (int)($data['id'] ?? 0);
+
+        if ($id <= 0 || !in_array($kind, ['product', 'design'], true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'bad_request']);
+            return;
+        }
+
+        $column = $kind === 'product' ? 'product_id' : 'design_id';
+        $table  = $kind === 'product' ? 'products' : 'premade_designs';
+
+        // Confirm the target exists before storing a reference to it.
+        $chk = $this->db->prepare("SELECT 1 FROM {$table} WHERE id = ? LIMIT 1");
+        $chk->execute([$id]);
+        if (!$chk->fetchColumn()) {
+            http_response_code(404);
+            echo json_encode(['error' => 'not_found']);
+            return;
+        }
+
+        $find = $this->db->prepare("SELECT id FROM user_favorites WHERE user_id = ? AND {$column} = ? LIMIT 1");
+        $find->execute([$userId, $id]);
+        $existing = $find->fetchColumn();
+
+        if ($existing) {
+            $this->db->prepare("DELETE FROM user_favorites WHERE id = ?")->execute([$existing]);
+            echo json_encode(['favorited' => false]);
+            return;
+        }
+
+        $this->db->prepare("INSERT INTO user_favorites (user_id, {$column}) VALUES (?, ?)")
+                 ->execute([$userId, $id]);
+        echo json_encode(['favorited' => true]);
     }
 
     public function orderList(): void {
@@ -1506,7 +1626,7 @@ class CustomerController {
               AND p.image_path <> ''
             GROUP BY p.id, p.name, p.slug, p.base_price, p.image_path, p.active
             ORDER BY ordered_qty DESC, p.id DESC
-            LIMIT 4
+            LIMIT 8
         ");
         $featuredProducts = $stmt->fetchAll();
 
@@ -1578,6 +1698,8 @@ class CustomerController {
             }
         }
         unset($d);
+
+        $favoriteDesignIds = $this->favoriteIds('design');
 
         require __DIR__ . '/../views/customer/shop_anime.php';
     }
@@ -2011,6 +2133,8 @@ class CustomerController {
             $product['sizes'] = $stmt->fetchAll();
         }
         unset($product);
+        $favoriteProductIds = $this->favoriteIds('product');
+
         require __DIR__ . '/../views/customer/shop_select_product.php';
     }
 

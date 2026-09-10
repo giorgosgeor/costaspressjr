@@ -35,40 +35,14 @@ function cartHexToHSL($hex) {
     return ['h' => $h * 360, 's' => $s * 100, 'l' => $l * 100];
 }
 
-// Generate CSS filter for product color
+// Generate CSS filter for product color.
+// Delegated to Tint, which the browser mirrors in public/js/color-tint.js, so a
+// cart line shows the same shade as the studio the item was designed in. This
+// file's own copy had drifted (hue-rotate h-50 vs h-38) and never applied the
+// solved overrides that stop deep reds flattening.
 function getCartProductColorFilter($hex) {
     if (!$hex) return '';
-    $hex = trim($hex);
-    if ($hex[0] !== '#') $hex = '#' . $hex;
-    $hexLower = strtolower($hex);
-    $hsl = cartHexToHSL($hex);
-    
-    $isWhite = $hexLower === '#ffffff' || $hexLower === '#fff' || $hsl['l'] > 95;
-    $isBlack = $hexLower === '#000000' || $hexLower === '#000' || $hsl['l'] < 10;
-    $isGray = $hsl['s'] < 10;
-    
-    if ($isWhite) {
-        return 'saturate(0) brightness(2) contrast(0.8)';
-    } elseif ($isBlack) {
-        return 'saturate(0) brightness(0.65) contrast(1.1)';
-    } elseif ($isGray) {
-        $brightness = 0.2 + ($hsl['l'] / 100) * 1.5;
-        return "saturate(0) brightness($brightness)";
-    } else {
-        $hueRotate = $hsl['h'] - 50; // Sepia base is ~50deg
-        if ($hueRotate < 0) $hueRotate += 360;
-        $isReddish = $hsl['h'] <= 20 || $hsl['h'] >= 340;
-        $saturate = ($hsl['s'] / 100) * 2 + 0.5;
-        if ($isReddish) $saturate = ($hsl['s'] / 100) * 3 + 1;
-        if ($hsl['l'] < 30) {
-            $brightness = 0.3 + ($hsl['l'] / 100) * 0.7;
-        } elseif ($hsl['l'] < 50) {
-            $brightness = 0.5 + ($hsl['l'] / 100) * 0.6;
-        } else {
-            $brightness = 0.6 + ($hsl['l'] / 100) * 0.5;
-        }
-        return "sepia(1) saturate($saturate) hue-rotate({$hueRotate}deg) brightness($brightness)";
-    }
+    return Tint::filterFor($hex);
 }
 ?>
 

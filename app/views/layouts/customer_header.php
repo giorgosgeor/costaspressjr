@@ -104,22 +104,59 @@ $currentLocale   = I18n::locale();
                     $cartAria = I18n::t('header.cart_aria');
                 }
                 ?>
-                <a href="/cart" class="cart-link" aria-label="<?= htmlspecialchars($cartAria) ?>">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                <?php if (Auth::check()): ?>
+                <a href="/account#favorites" class="icon-link" aria-label="<?= t('header.favorites_aria') ?>" title="<?= t('account.tabs.favorites') ?>">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1z"/></svg>
+                </a>
+                <?php endif; ?>
+
+                <?php if (Auth::check()): ?>
+                <?php
+                    // Mirrors the sidebar in the account page. Kept in one array so
+                    // the two can't drift apart as sections are added or removed.
+                    $accountMenu = [
+                        'overview'  => t('account.tabs.overview',  false),
+                        'designs'   => t('account.tabs.designs',   false),
+                        'uploads'   => t('account.tabs.uploads',   false),
+                        'favorites' => t('account.tabs.favorites', false),
+                        'orders'    => t('account.tabs.orders',    false),
+                        'profile'   => t('account.tabs.profile',   false),
+                    ];
+                ?>
+                <div class="account-menu" data-account-menu>
+                    <button type="button" class="icon-link account-menu-trigger"
+                            aria-expanded="false" aria-haspopup="true" aria-controls="accountMenuList">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span class="icon-link-label"><?= t('header.my_account') ?></span>
+                    </button>
+                    <div class="account-menu-list" id="accountMenuList" role="menu" hidden>
+                        <?php foreach ($accountMenu as $key => $label): ?>
+                        <a href="/account#<?= $key ?>" role="menuitem"><?= htmlspecialchars($label) ?></a>
+                        <?php endforeach; ?>
+                        <form method="post" action="/logout" class="account-menu-signout">
+                            <?= Csrf::field() ?>
+                            <button type="submit" role="menuitem">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                <?= t('header.logout') ?>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <?php else: ?>
+                    <a href="/login" class="icon-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span class="icon-link-label"><?= t('header.login') ?></span>
+                    </a>
+                    <a href="/register" class="btn btn-sm"><?= t('header.register') ?></a>
+                <?php endif; ?>
+
+                <a href="/cart" class="icon-link cart-link" aria-label="<?= htmlspecialchars($cartAria) ?>">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
                     <?php if ($cartCount > 0): ?>
                     <span class="cart-count" id="cart-count" aria-hidden="true"><?= $cartCount ?></span>
                     <?php endif; ?>
                 </a>
-                <?php if (Auth::check()): ?>
-                    <a href="/account" class="btn btn-sm"><?= t('header.my_account') ?></a>
-                    <form method="post" action="/logout" class="logout-form">
-                        <?= Csrf::field() ?>
-                        <button type="submit" class="btn btn-sm btn-danger"><?= t('header.logout') ?></button>
-                    </form>
-                <?php else: ?>
-                    <a href="/login" class="btn btn-sm"><?= t('header.login') ?></a>
-                    <a href="/register" class="btn btn-sm btn-success"><?= t('header.register') ?></a>
-                <?php endif; ?>
+
                 <div class="lang-switcher" role="group" aria-label="Language">
                     <a href="/lang/en" class="<?= $currentLocale === 'en' ? 'active' : '' ?>" title="<?= t('lang.switch_to_english') ?>" hreflang="en">EN</a>
                     <span class="sep" aria-hidden="true"></span>

@@ -258,6 +258,16 @@
                data-family="<?= $familyOf($product['name'] ?? '') ?>"
                data-name="<?= htmlspecialchars($product['name'] ?? '') ?>"
                data-price="<?= number_format($retailOne, 2, '.', '') ?>">
+            <?php $isFav = in_array((int)$product['id'], $favoriteProductIds ?? [], true); ?>
+            <button type="button" class="fav-btn<?= $isFav ? ' is-favorited' : '' ?>"
+                    data-kind="product" data-id="<?= (int)$product['id'] ?>"
+                    aria-pressed="<?= $isFav ? 'true' : 'false' ?>"
+                    data-label-on="<?= t('favorites.remove') ?>"
+                    data-label-off="<?= t('favorites.add') ?>"
+                    aria-label="<?= $isFav ? t('favorites.remove') : t('favorites.add') ?>"
+                    title="<?= $isFav ? t('favorites.remove') : t('favorites.add') ?>">
+                <svg width="18" height="18" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1z"/></svg>
+            </button>
             <img src="/<?= htmlspecialchars($product['image_path']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" loading="lazy">
             <div class="color-preview-row">
               <?php
@@ -380,6 +390,10 @@ document.getElementById('sizeOptions').addEventListener('change', function(e) {
 // Product card selection logic
 const productCards = document.querySelectorAll('.product-list-card');
 document.querySelector('.product-list-grid').addEventListener('click', function(e) {
+  // The favourite heart lives inside the card but must not select the product.
+  // favorites.js already stops this in the capture phase; this keeps the card's
+  // own handler honest if that script ever fails to load.
+  if (e.target.closest('.fav-btn')) return;
   const card = e.target.closest('.product-list-card');
   if (card) {
     const prodId = card.getAttribute('data-product-id');
@@ -405,6 +419,7 @@ document.querySelector('.product-list-grid').addEventListener('click', function(
   }
 });
 </script>
+<script src="<?= htmlspecialchars(Asset::url('/js/favorites.js')) ?>" defer></script>
 <?php require __DIR__ . '/../layouts/customer_footer.php'; ?>
 
 <script>

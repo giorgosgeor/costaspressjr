@@ -1,11 +1,23 @@
 // Tab switching
-function switchTab(tabName) {
-    document.querySelectorAll('.account-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+function switchTab(tabName, updateHash) {
     const tab = document.querySelector(`.account-tab[data-tab="${tabName}"]`);
     const content = document.getElementById('tab-' + tabName);
-    if (tab) tab.classList.add('active');
-    if (content) content.classList.add('active');
+    if (!tab || !content) return;
+
+    document.querySelectorAll('.account-tab').forEach(t => {
+        t.classList.remove('active');
+        t.removeAttribute('aria-current');
+    });
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+    tab.classList.add('active');
+    tab.setAttribute('aria-current', 'true');
+    content.classList.add('active');
+
+    // Keep the section in the URL so it survives a refresh and can be linked to.
+    if (updateHash !== false && window.location.hash !== '#' + tabName) {
+        history.replaceState(null, '', '#' + tabName);
+    }
 }
 
 document.querySelectorAll('.account-tab').forEach(tab => {
@@ -14,12 +26,76 @@ document.querySelectorAll('.account-tab').forEach(tab => {
     });
 });
 
-// Support ?tab= query param (e.g. from order detail back link)
+// Overview stat cards and "view all" links jump to their section.
+document.querySelectorAll('[data-goto]').forEach(el => {
+    el.addEventListener('click', function() {
+        switchTab(this.dataset.goto);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+});
+
+// Opening section: #hash first, then ?tab= (used by the order-detail back link).
 (function() {
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get('tab');
+    const fromHash = (window.location.hash || '').replace('#', '');
+    if (fromHash) { switchTab(fromHash, false); return; }
+    const tabParam = new URLSearchParams(window.location.search).get('tab');
     if (tabParam) switchTab(tabParam);
 })();
+
+window.addEventListener('hashchange', function() {
+    const name = (window.location.hash || '').replace('#', '');
+    if (name) switchTab(name, false);
+});
+
+// The Overview tiles are rendered server-side, so anything removed without a
+// page load has to be reflected here or the count goes stale.
+function adjustStat(name, delta) {
+    const el = document.querySelector(`.account-stat[data-goto="${name}"] .account-stat-value`);
+    if (!el) return;
+    const next = Math.max(0, (parseInt(el.textContent, 10) || 0) + delta);
+    el.textContent = next;
+}
+
+// ---- Favourites ----------------------------------------------------------
+// Removing is optimistic-free: the card only goes once the server confirms, so
+// the list always reflects what is actually stored.
+document.querySelectorAll('.favorite-remove').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const card = this.closest('.favorite-card');
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        this.disabled = true;
+
+        fetch('/account/favorites/toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': meta ? meta.getAttribute('content') : ''
+            },
+            body: JSON.stringify({ kind: this.dataset.kind, id: parseInt(this.dataset.id, 10) })
+        })
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(res => {
+            if (res.favorited === false && card) {
+                card.remove();
+                adjustStat('favorites', -1);
+                refreshFavoritesEmptyState();
+            } else {
+                this.disabled = false;
+            }
+        })
+        .catch(() => { this.disabled = false; });
+    });
+});
+
+// Removing the last favourite should leave the same empty state the page would
+// have rendered, so it is already in the DOM and just gets swapped in.
+function refreshFavoritesEmptyState() {
+    const grid = document.querySelector('.favorites-grid');
+    const empty = document.getElementById('favoritesEmpty');
+    if (!grid || !empty || grid.children.length > 0) return;
+    grid.style.display = 'none';
+    empty.style.display = '';
+}
 
 // Cart Modal State
 let cartModalState = {
@@ -56,16 +132,26 @@ function confirmDelete() {
     btn.disabled = true;
     btn.textContent = (window.I18N ? window.I18N.t('account.deleting') : 'Deleting...');
 
+    const meta = document.querySelector('meta[name="csrf-token"]');
+
     fetch('/custom-design/delete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Every POST goes through Csrf::validateRequest(), so without this
+        // header the request is rejected with a 419 and nothing is deleted.
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': meta ? meta.getAttribute('content') : ''
+        },
         body: JSON.stringify({ design_id: pendingDeleteDesignId })
     })
     .then(response => {
         if (response.ok) {
-            const card = document.querySelector(`.design-card[data-design-id="${pendingDeleteDesignId}"]`);
-            if (card) card.remove();
+            // The same design appears twice: once in the Overview strip and
+            // once in My Designs. Remove every copy, not just the first.
+            document.querySelectorAll(`.design-card[data-design-id="${pendingDeleteDesignId}"]`)
+                .forEach(card => card.remove());
             closeDeleteModal();
+            adjustStat('designs', -1);
             const remainingCards = document.querySelectorAll('.design-card');
             if (remainingCards.length === 0) location.reload();
         } else {
@@ -153,39 +239,9 @@ function applyProductColorFilter(imgElement, hex) {
     hex = hex.trim();
     if (!hex.startsWith('#')) hex = '#' + hex;
 
-    const hsl = hexToHSL(hex);
-    const hexLower = hex.toLowerCase();
-
-    const isWhite = hexLower === '#ffffff' || hexLower === '#fff' || hsl.l > 95;
-    const isBlack = hexLower === '#000000' || hexLower === '#000' || hsl.l < 10;
-    const isGray = hsl.s < 10;
-
-    let filter;
-    if (isWhite) {
-        filter = 'saturate(0) brightness(2) contrast(0.8)';
-    } else if (isBlack) {
-        filter = 'saturate(0) brightness(0.65) contrast(1.1)';
-    } else if (isGray) {
-        const brightness = 0.2 + (hsl.l / 100) * 1.5;
-        filter = `saturate(0) brightness(${brightness})`;
-    } else {
-        const hueRotate = hsl.h - 50;
-        const isReddish = hsl.h <= 20 || hsl.h >= 340;
-        let saturate = (hsl.s / 100) * 2 + 0.5;
-        if (isReddish) saturate = (hsl.s / 100) * 3 + 1;
-
-        let brightness;
-        if (hsl.l < 30) {
-            brightness = 0.3 + (hsl.l / 100) * 0.7;
-        } else if (hsl.l < 50) {
-            brightness = 0.5 + (hsl.l / 100) * 0.6;
-        } else {
-            brightness = 0.6 + (hsl.l / 100) * 0.5;
-        }
-        filter = `sepia(1) saturate(${saturate}) hue-rotate(${hueRotate}deg) brightness(${brightness})`;
-    }
-
-    imgElement.style.filter = filter;
+    // Delegated to the one implementation in color-tint.js — this copy had
+    // drifted and never saw the solved overrides for deep reds.
+    imgElement.style.filter = window.CostasTint.filterFor(hex);
 }
 
 function _getCartFrontElements() {

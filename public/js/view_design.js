@@ -173,46 +173,11 @@ function applyColorTint(hexColor) {
         mockupContainer.classList.remove('dark-bg');
     }
 
-    // Apply color filter to product image
-    // Base image is ORANGE (~30deg hue) with transparent background
-    if (isWhite) {
-        // White product - desaturate completely and brighten significantly
-        mockupProduct.style.filter = 'saturate(0) brightness(2) contrast(0.8)';
-    } else if (isBlack) {
-        // Black product - desaturate and darken significantly
-        mockupProduct.style.filter = 'saturate(0) brightness(0.1) contrast(1.5)';
-    } else if (isGray) {
-        // Gray - desaturate and adjust brightness based on lightness
-        const brightness = 0.2 + (hsl.l / 100) * 1.5;
-        mockupProduct.style.filter = `saturate(0) brightness(${brightness})`;
-    } else {
-        // Colorize using sepia base then hue-rotate to target
-        // This works better than direct hue-rotate from orange
-        const hueRotate = hsl.h - 50; // Sepia is ~50deg
-
-        // Red hues (around 0-20 and 340-360) need extra saturation to not look pinkish
-        const isReddish = hsl.h <= 20 || hsl.h >= 340;
-        let saturate = (hsl.s / 100) * 2 + 0.5;
-        if (isReddish) {
-            saturate = (hsl.s / 100) * 3 + 1; // Boost saturation for reds
-        }
-
-        // Brightness: preserve dark colors better (like maroon)
-        // For dark colors (low lightness), keep brightness low
-        let brightness;
-        if (hsl.l < 30) {
-            // Dark colors - keep them dark
-            brightness = 0.3 + (hsl.l / 100) * 0.7;
-        } else if (hsl.l < 50) {
-            // Medium colors
-            brightness = 0.5 + (hsl.l / 100) * 0.6;
-        } else {
-            // Light colors
-            brightness = 0.6 + (hsl.l / 100) * 0.5;
-        }
-
-        mockupProduct.style.filter = `sepia(1) saturate(${saturate}) hue-rotate(${hueRotate}deg) brightness(${brightness})`;
-    }
+    // One implementation for every screen — see public/js/color-tint.js. This
+    // file used to carry its own copy, which had drifted from the others and
+    // never consulted the solved overrides, so deep reds stayed flat here even
+    // after they were fixed elsewhere.
+    mockupProduct.style.filter = window.CostasTint.filterFor(hexColor);
 }
 
 function hexToHSL(hex) {

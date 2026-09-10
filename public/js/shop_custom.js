@@ -87,31 +87,10 @@ function applyCartProductColorFilter(hex) {
     hex = hex.trim();
     if (!hex.startsWith('#')) hex = '#' + hex;
 
-    const hexLower = hex.toLowerCase();
-    const hsl = cartHexToHSL(hex);
-    const isWhite = hexLower === '#ffffff' || hexLower === '#fff' || hsl.l > 95;
-    const isBlack = hexLower === '#000000' || hexLower === '#000' || hsl.l < 10;
-    const isGray = hsl.s < 10;
-
-    if (isWhite) {
-        productImg.style.filter = 'saturate(0) brightness(2) contrast(0.8)';
-    } else if (isBlack) {
-        productImg.style.filter = 'saturate(0) brightness(0.4) contrast(1.2)';
-    } else if (isGray) {
-        const brightness = 0.2 + (hsl.l / 100) * 1.5;
-        productImg.style.filter = `saturate(0) brightness(${brightness})`;
-    } else {
-        // Colorize using sepia base then hue-rotate
-        const baseHue = 30; // Orange base
-        const targetHue = hsl.h;
-        let hueRotate = targetHue - baseHue;
-        if (hueRotate < 0) hueRotate += 360;
-
-        const saturation = Math.max(1, hsl.s / 50);
-        const brightness = 0.4 + (hsl.l / 100) * 0.8;
-
-        productImg.style.filter = `sepia(1) saturate(${saturation}) hue-rotate(${hueRotate}deg) brightness(${brightness})`;
-    }
+    // Delegated to the one implementation in color-tint.js. This site had a
+    // third formula again (saturate max(1, s/50)), so the same garment tinted
+    // differently here from every other screen.
+    productImg.style.filter = window.CostasTint.filterFor(hex);
 }
 
 // Capture the current design into the cart preview using HTML elements
@@ -606,53 +585,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Helper: get the CSS filter string for a given hex color (mirrors applyColorTint logic)
+    // Helper: get the CSS filter string for a given hex color.
+    // Delegated to the one implementation in color-tint.js, so the canvas
+    // preview matches what the shopper saw on the mockup.
     window.getColorFilterString = function getColorFilterString(hex) {
         if (!hex) return 'none';
-        hex = hex.trim();
-        if (!hex.startsWith('#')) hex = '#' + hex;
-
-        const hexLower = hex.toLowerCase();
-        const hexClean = hex.replace('#', '');
-        const r = parseInt(hexClean.substring(0,2), 16) / 255;
-        const g = parseInt(hexClean.substring(2,4), 16) / 255;
-        const b = parseInt(hexClean.substring(4,6), 16) / 255;
-        const max = Math.max(r, g, b), min = Math.min(r, g, b);
-        let h, s, l = (max + min) / 2;
-        if (max === min) { h = s = 0; }
-        else {
-            const d = max - min;
-            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-            switch(max) {
-                case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-                case g: h = ((b - r) / d + 2) / 6; break;
-                case b: h = ((r - g) / d + 4) / 6; break;
-            }
-        }
-        h *= 360; s *= 100; l *= 100;
-
-        const isWhite = hexLower === '#ffffff' || hexLower === '#fff' || l > 95;
-        const isBlack = hexLower === '#000000' || hexLower === '#000' || l < 10;
-        const isGray = s < 10;
-
-        if (isWhite) return 'saturate(0) brightness(2) contrast(0.8)';
-        if (isBlack) return 'saturate(0) brightness(0.4) contrast(1.2)';
-        if (isGray) {
-            const brightness = 0.2 + (l / 100) * 1.5;
-            return `saturate(0) brightness(${brightness})`;
-        }
-
-        const hueRotate = h - 50;
-        const isReddish = h <= 20 || h >= 340;
-        let saturate = (s / 100) * 2 + 0.5;
-        if (isReddish) saturate = (s / 100) * 3 + 1;
-
-        let brightness;
-        if (l < 30) brightness = 0.3 + (l / 100) * 0.7;
-        else if (l < 50) brightness = 0.5 + (l / 100) * 0.6;
-        else brightness = 0.6 + (l / 100) * 0.5;
-
-        return `sepia(1) saturate(${saturate}) hue-rotate(${hueRotate}deg) brightness(${brightness})`;
+        return window.CostasTint.filterFor(hex);
     }
 
     // Generates preview images for each view using Canvas API

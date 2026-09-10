@@ -1907,17 +1907,28 @@ function addToCart() {
     const mockup    = document.getElementById('mockupContainer');
     const cDesignImg = document.getElementById('confirmDesignImg');
     if (designEl && designImg && designImg.src && mockup) {
+        // Express the design's placement as a RATIO of the mockup, then apply
+        // those ratios to the modal's own box. The previous version scaled by a
+        // hardcoded 130px while .confirm-mockup-wrap is 110px, so the design
+        // came out ~18% too big and pushed down-right; percentages can't drift
+        // out of sync with the CSS that way. Measuring the live element (rather
+        // than the saved position) also keeps this correct for designs the
+        // shopper is allowed to drag.
         const mRect  = mockup.getBoundingClientRect();
         const elRect = designEl.getBoundingClientRect();
-        const scale  = 130 / (mRect.width || 130);
-        const elLeft = elRect.left - mRect.left;
-        const elTop  = elRect.top  - mRect.top;
-        const elW    = elRect.width;
-        cDesignImg.src   = designImg.src;
-        cDesignImg.style.display = 'block';
-        cDesignImg.style.width   = (elW * scale) + 'px';
-        cDesignImg.style.left    = ((elLeft + elW / 2) * scale) + 'px';
-        cDesignImg.style.top     = ((elTop  + elW / 2) * scale) + 'px';
+        if (mRect.width > 0 && mRect.height > 0) {
+            const leftPct = ((elRect.left - mRect.left) + elRect.width  / 2) / mRect.width  * 100;
+            const topPct  = ((elRect.top  - mRect.top)  + elRect.height / 2) / mRect.height * 100;
+            const widthPct = (elRect.width / mRect.width) * 100;
+
+            cDesignImg.src = designImg.src;
+            cDesignImg.style.display = 'block';
+            cDesignImg.style.width = widthPct + '%';
+            cDesignImg.style.left  = leftPct + '%';
+            cDesignImg.style.top   = topPct + '%';
+        } else {
+            cDesignImg.style.display = 'none';
+        }
     } else {
         cDesignImg.style.display = 'none';
     }
