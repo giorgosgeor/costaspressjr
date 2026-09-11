@@ -1148,7 +1148,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update Design button handler (for editing existing designs)
     document.getElementById('updateDesignBtn').addEventListener('click', function() {
         if (!window.loadedDesignId) {
-            alert('No design loaded to update.');
+            UI.error('No design loaded to update.');
             return;
         }
         
@@ -1158,7 +1158,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         if (!window.currentProduct) {
-            alert('Please select a product before saving your design.');
+            UI.error('Please select a product before saving your design.');
             return;
         }
         
@@ -1197,7 +1197,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('designSavedModal').style.display = 'flex';
                     generateAndSavePreviews(parsed.id);
                 } else {
-                    alert('Session expired. Please log in and try again.');
+                    UI.error('Session expired. Please log in and try again.');
                 }
             }
         };
@@ -1207,7 +1207,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Delete Design button handler
     document.getElementById('deleteDesignBtn').addEventListener('click', function() {
         if (!window.loadedDesignId) {
-            alert('No design loaded to delete.');
+            UI.error('No design loaded to delete.');
             return;
         }
         
@@ -1235,7 +1235,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (parsed && parsed.success) {
                     window.location.href = '/account';
                 } else {
-                    alert('Failed to delete design. Please try again.');
+                    UI.error('Failed to delete design. Please try again.');
                 }
             }
         };
@@ -1258,7 +1258,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const privacyChecked = document.getElementById('saveDesignPrivacy').checked;
         if (!name || !email || !privacyChecked) { btn.disabled = false; btn.textContent = window.I18N.t('studio.save_modal.save_new'); return; }
         if (!window.currentProduct) {
-            alert(window.I18N.t('studio.not_saved'));
+            UI.success(window.I18N.t('studio.not_saved'));
             btn.disabled = false; btn.textContent = window.I18N.t('studio.save_modal.save_new'); return;
         }
         const _editorDA_el = document.getElementById('designArea');
@@ -1311,11 +1311,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     closeSaveDesignModal();
                     document.getElementById('designSavedModal').style.display = 'flex';
                 } else {
-                    alert(window.I18N.t('checkout.errors.generic'));
+                    UI.error(window.I18N.t('checkout.errors.generic'));
                     btn.disabled = false; btn.textContent = window.I18N.t('studio.save_modal.save_new');
                 }
             } catch(e) {
-                alert(window.I18N.t('studio.cart.error_generic'));
+                UI.error(window.I18N.t('studio.cart.error_generic'));
                 btn.disabled = false; btn.textContent = window.I18N.t('studio.save_modal.save_new');
             }
         })();
@@ -1350,7 +1350,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add to Cart button handler (saved-design modal) - design already saved
     document.getElementById('addToCartNowBtn').addEventListener('click', function() {
         if (!window.savedDesignId) {
-            alert(window.I18N.t('studio.not_saved'));
+            UI.success(window.I18N.t('studio.not_saved'));
             return;
         }
         const designName = document.getElementById('saveDesignName') ? document.getElementById('saveDesignName').value : 'Your Design';
@@ -1364,13 +1364,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('addToCartDirectBtn')?.addEventListener('click', async function() {
         const btn = this;
         if (!window.currentProduct) {
-            alert(window.I18N.t('studio.not_saved'));
+            UI.success(window.I18N.t('studio.not_saved'));
             return;
         }
         const hasAny = typeof elements !== 'undefined' &&
             ['front', 'back', 'left-sleeve', 'right-sleeve'].some(v => (elements[v] || []).length > 0);
         if (!hasAny) {
-            alert(window.I18N.t('studio.cart.error_empty_design'));
+            UI.error(window.I18N.t('studio.cart.error_empty_design'));
             return;
         }
 
@@ -1404,14 +1404,14 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             const parsed = await resp.json().catch(() => null);
             if (!parsed || !parsed.id) {
-                alert((parsed && parsed.error) || window.I18N.t('studio.cart.error_generic'));
+                UI.error((parsed && parsed.error) || window.I18N.t('studio.cart.error_generic'));
                 return;
             }
             window.savedDesignId = parsed.id;
             openCartModalForDesign(parsed.id, designData.name);
         } catch (e) {
             console.error('Direct add-to-cart save failed:', e);
-            alert(window.I18N.t('studio.cart.error_generic'));
+            UI.error(window.I18N.t('studio.cart.error_generic'));
         } finally {
             btn.disabled = false;
         }
@@ -1892,9 +1892,9 @@ function closeDesignSavedModal() {
                                     if (oldOverlay) oldOverlay.remove();
                                     // Find the image DOM element (the .design-element for this image)
                                     const elementDiv = document.getElementById(el.id);
-                                    if (!elementDiv) return alert('Image not found');
+                                    if (!elementDiv) return UI.error('Image not found');
                                     const imgDiv = elementDiv.querySelector('img');
-                                    if (!imgDiv) return alert('Image not found');
+                                    if (!imgDiv) return UI.error('Image not found');
                                     // Always append overlay to the design-area, not the image parent
                                     const designArea = document.getElementById('designArea');
                                     // Get image position relative to design-area
@@ -2170,11 +2170,11 @@ updateImageRotation = function() {
                         if (!files || !files.length) return;
                         const file = files[0];
                         if (!file.type.startsWith('image/')) {
-                            alert(window.I18N.t('studio.error.image_only'));
+                            UI.error(window.I18N.t('studio.error.image_only'));
                             return;
                         }
                         if (file.size > 20 * 1024 * 1024) {
-                            alert(window.I18N.t('studio.error.file_too_large'));
+                            UI.error(window.I18N.t('studio.error.file_too_large'));
                             return;
                         }
                         const reader = new FileReader();
@@ -2252,7 +2252,7 @@ updateImageRotation = function() {
                         var modal = document.getElementById('changeColorModal');
                         var optionsDiv = document.getElementById('changeColorOptions');
                         if (!window.currentProduct) {
-                            alert('Please select a product first.');
+                            UI.error('Please select a product first.');
                             return;
                         }
                         

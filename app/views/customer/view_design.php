@@ -1882,7 +1882,7 @@ let confirmModalState = {
 };
 
 function addToCart() {
-    if (!selectedProductId) { alert('Please select a product.'); return; }
+    if (!selectedProductId) { UI.error('Please select a product.'); return; }
 
     // Get the currently previewed color
     const previewColorRadio = document.querySelector('input[name="preview_color_' + selectedProductId + '"]:checked');
@@ -2139,9 +2139,10 @@ function doAddToCart() {
         return;
     }
 
+    // Spinner rather than swapping the label to "Adding…": the text change
+    // resized the button mid-click and shifted the dialog under the cursor.
     const btn = document.getElementById('doAddToCartBtn');
-    btn.textContent = 'Adding...';
-    btn.disabled    = true;
+    UI.loading(btn, true);
 
     const cartData = {
         premade_design_id: confirmModalState.premadeDesignId,
@@ -2161,8 +2162,7 @@ function doAddToCart() {
     .then(r => r.json())
     .then(data => {
         if (data.requireLogin) { redirectToLoginWithPendingCart(cartData); return; }
-        btn.textContent = window.I18N.t('view_design.modal.title');
-        btn.disabled    = false;
+        UI.loading(btn, false);
         if (data.success || data.cart_item_id) {
             closeConfirmCart();
             showCartSuccessNotification();
@@ -2171,24 +2171,18 @@ function doAddToCart() {
         }
     })
     .catch(err => {
-        btn.textContent = window.I18N.t('view_design.modal.title');
-        btn.disabled    = false;
+        UI.loading(btn, false);
         errorEl.textContent = err.message;
         errorEl.style.display = 'block';
     });
 }
 
+// Was a hand-rolled div with inline styles and its own timer; the shared toast
+// keeps the "go to cart" follow-up and matches every other message on the site.
 function showCartSuccessNotification() {
-    let n = document.getElementById('cartSuccessNotif');
-    if (!n) {
-        n = document.createElement('div');
-        n.id = 'cartSuccessNotif';
-        n.style.cssText = 'position:fixed;top:20px;right:20px;background:#28a745;color:#fff;padding:16px 22px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.15);z-index:50000;display:flex;align-items:center;gap:12px;';
-        n.innerHTML = '<span style="font-size:1.4rem;">&#10003;</span><span><strong>Added to cart!</strong><br><small style="opacity:0.9"><a href="/cart" style="color:#fff">Go to cart &rarr;</a></small></span>';
-        document.body.appendChild(n);
-    }
-    n.style.display = 'flex';
-    setTimeout(() => { n.style.display = 'none'; }, 4000);
+    UI.success(window.I18N.t('studio.cart.added') || 'Added to cart', {
+        action: { label: window.I18N.t('studio.cart.go_to_cart') || 'Go to cart', href: '/cart' }
+    });
 }
 
 // ==================== INITIALIZATION ====================

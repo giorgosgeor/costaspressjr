@@ -667,7 +667,7 @@
     color: var(--paper);
     border-color: var(--ink);
 }
-.btn-position:hover { background: #1f3fcc; }
+.btn-position:hover { background: var(--spot-hover); }
 
 /* ============================================================
    ORDER ITEM — PRODUCTION FILES & SPECIFICATION

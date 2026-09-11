@@ -408,7 +408,7 @@ document.querySelector('.product-list-grid').addEventListener('click', function(
         if (res.ok) {
           window.location.href = '/shop/custom_product';
         } else {
-          alert(window.I18N ? window.I18N.t('shop.select.failed_select') : 'Failed to select product');
+          UI.error(window.I18N ? window.I18N.t('shop.select.failed_select') : 'Failed to select product');
         }
       });
     } else {

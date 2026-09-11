@@ -130,11 +130,11 @@
             <div class="orders-list">
                 <?php foreach ($orders as $order):
                     $statusColors = [
-                        'pending'    => ['bg' => 'rgba(234,179,8,0.15)',   'color' => '#facc15', 'border' => 'rgba(234,179,8,0.4)'],
-                        'processing' => ['bg' => 'rgba(59,130,246,0.15)',  'color' => '#60a5fa', 'border' => 'rgba(59,130,246,0.4)'],
-                        'in-transit' => ['bg' => 'rgba(139,92,246,0.15)',  'color' => '#a78bfa', 'border' => 'rgba(139,92,246,0.4)'],
-                        'delivered'  => ['bg' => 'rgba(34,197,94,0.15)',   'color' => '#4ade80', 'border' => 'rgba(34,197,94,0.4)'],
-                        'cancelled'  => ['bg' => 'rgba(239,68,68,0.15)',   'color' => '#f87171', 'border' => 'rgba(239,68,68,0.4)'],
+                        'pending'    => ['bg' => 'rgba(245,158,11,0.12)', 'color' => '#92400E', 'border' => 'rgba(245,158,11,0.40)'],
+                        'processing' => ['bg' => 'rgba(59,130,246,0.12)', 'color' => '#1E40AF', 'border' => 'rgba(59,130,246,0.40)'],
+                        'in-transit' => ['bg' => 'rgba(139,92,246,0.12)', 'color' => '#5B21B6', 'border' => 'rgba(139,92,246,0.40)'],
+                        'delivered'  => ['bg' => 'rgba(34,197,94,0.12)',  'color' => '#166534', 'border' => 'rgba(34,197,94,0.40)'],
+                        'cancelled'  => ['bg' => 'rgba(239,68,68,0.12)',  'color' => '#991B1B', 'border' => 'rgba(239,68,68,0.40)'],
                     ];
                     $sc = $statusColors[$order['status']] ?? $statusColors['pending'];
                     $paymentLabel = '';
@@ -369,7 +369,7 @@
                 <span><?= t('account.cart_modal.base_price') ?></span>
                 <span id="cartBasePrice">$0.00</span>
             </div>
-            <div style="display:flex; justify-content:space-between; font-weight:700; border-top:1px solid var(--border-light, rgba(255,255,255,0.1)); padding-top:0.5rem; margin-top:0.5rem; color:var(--success, #4ade80);">
+            <div style="display:flex; justify-content:space-between; font-weight:700; border-top:1px solid var(--border-light, rgba(255,255,255,0.1)); padding-top:0.5rem; margin-top:0.5rem; color:var(--ok);">
                 <span style="color:var(--text-light, #fff);"><?= t('account.cart_modal.total') ?></span>
                 <span id="cartTotalPrice">$0.00</span>
             </div>

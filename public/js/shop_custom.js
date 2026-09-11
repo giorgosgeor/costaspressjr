@@ -860,7 +860,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update Design button handler (for editing existing designs)
     document.getElementById('updateDesignBtn').addEventListener('click', function() {
         if (!window.loadedDesignId) {
-            alert('No design loaded to update.');
+            UI.error('No design loaded to update.');
             return;
         }
 
@@ -870,7 +870,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         if (!window.currentProduct) {
-            alert('Please select a product before saving your design.');
+            UI.error('Please select a product before saving your design.');
             return;
         }
 
@@ -907,10 +907,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     closeSaveDesignModal();
                     document.getElementById('designSavedModal').style.display = 'flex';
                 } else {
-                    alert('Failed to update design. Please try again.');
+                    UI.error('Failed to update design. Please try again.');
                 }
             } catch(e) {
-                alert('Failed to update design. Please try again.');
+                UI.error('Failed to update design. Please try again.');
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Update Design';
@@ -921,7 +921,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Delete Design button handler
     document.getElementById('deleteDesignBtn').addEventListener('click', function() {
         if (!window.loadedDesignId) {
-            alert('No design loaded to delete.');
+            UI.error('No design loaded to delete.');
             return;
         }
 
@@ -944,13 +944,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 let isJson = false;
                 try { JSON.parse(xhr.responseText); isJson = true; } catch(e){}
                 if (xhr.status === 200 && isJson) {
-                    alert('Design deleted successfully.');
+                    UI.success('Design deleted successfully.');
                     // Redirect to home or designs page
                     window.location.href = '/account';
                 } else if (xhr.status === 200 && !isJson) {
-                    alert('Session expired or not authorized. Please log in and try again.');
+                    UI.error('Session expired or not authorized. Please log in and try again.');
                 } else {
-                    alert('Failed to delete design: ' + xhr.responseText);
+                    UI.error('Failed to delete design: ' + xhr.responseText);
                 }
             }
         };
@@ -969,7 +969,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const privacyChecked = document.getElementById('saveDesignPrivacy').checked;
         if (!name || !email || !privacyChecked) return;
         if (!window.currentProduct) {
-            alert('Please select a product before saving your design.');
+            UI.error('Please select a product before saving your design.');
             return;
         }
         // Don't require size/color at save time - user selects when adding to cart
@@ -1009,10 +1009,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 closeSaveDesignModal();
                 document.getElementById('designSavedModal').style.display = 'flex';
             } else {
-                alert('Failed to save design. Please try again.');
+                UI.error('Failed to save design. Please try again.');
             }
         } catch(e) {
-            alert('Failed to save design. Please try again.');
+            UI.error('Failed to save design. Please try again.');
         } finally {
             btn.disabled = false;
             btn.textContent = originalText;
@@ -1022,7 +1022,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add to Cart button handler - opens Add to Cart modal with size/color selection
     document.getElementById('addToCartNowBtn').addEventListener('click', function() {
         if (!window.savedDesignId) {
-            alert('Design not saved yet.');
+            UI.success('Design not saved yet.');
             return;
         }
 
@@ -1170,9 +1170,9 @@ function cropImage() {
     if (oldOverlay) oldOverlay.remove();
     // Find the image DOM element (the .design-element for this image)
     const elementDiv = document.getElementById(el.id);
-    if (!elementDiv) return alert('Image not found');
+    if (!elementDiv) return UI.error('Image not found');
     const imgDiv = elementDiv.querySelector('img');
-    if (!imgDiv) return alert('Image not found');
+    if (!imgDiv) return UI.error('Image not found');
     // Always append overlay to the design-area, not the image parent
     const designArea = document.getElementById('designArea');
     // Get image position relative to design-area
@@ -1375,11 +1375,11 @@ function handleUploadFile(files) {
     if (!files || !files.length) return;
     const file = files[0];
     if (!file.type.startsWith('image/')) {
-        alert('Only image files are allowed.');
+        UI.error('Only image files are allowed.');
         return;
     }
     if (file.size > 20 * 1024 * 1024) {
-        alert('File too large. Max 20MB.');
+        UI.error('File too large. Max 20MB.');
         return;
     }
     const reader = new FileReader();
@@ -1422,7 +1422,7 @@ function openChangeColorModal() {
     var modal = document.getElementById('changeColorModal');
     var optionsDiv = document.getElementById('changeColorOptions');
     if (!window.currentProduct) {
-        alert('Please select a product first.');
+        UI.error('Please select a product first.');
         return;
     }
 

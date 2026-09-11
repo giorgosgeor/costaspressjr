@@ -847,22 +847,8 @@
     }
 }
 
-/* Loading spinner */
-.btn-loading {
-    position: relative;
-    color: transparent !important;
-}
-.btn-loading::after {
-    content: '';
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border: 3px solid currentColor;
-    border-top-color: transparent;
-    animation: spin 0.6s linear infinite;
-    color: var(--paper);
-}
-@keyframes spin { to {  } }
+/* Loading spinner now lives in style.css (.btn.is-loading) — the version
+   here had an empty @keyframes and never actually spun. */
 
 /* Order success overlay */
 .order-success-overlay {
@@ -980,4 +966,14 @@
 .order-success-actions button:hover {
     transform: translate(-2px, -2px);
     box-shadow: var(--stamp-sm);
+}
+
+/* Remove is destructive and rarely the goal — quiet by default, red only on
+   hover so the intent is still unmistakable when you reach for it. */
+.cart-remove-btn { color: var(--ink-muted); }
+.cart-remove-btn:hover,
+.cart-remove-btn:focus-visible {
+    color: var(--bad);
+    background: rgba(220, 38, 38, 0.07);
+    border-color: transparent;
 }

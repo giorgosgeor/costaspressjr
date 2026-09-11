@@ -2,64 +2,71 @@
 <?php require __DIR__ . '/../layouts/customer_header.php'; ?>
 
 <style>
+/* This page was still on the old dark theme — --gradient-dark, --text-light and
+   --bg-card-dark are leftovers from a palette the rest of the site moved off.
+   Landing here from a light page looked like a different website. Now on the
+   current tokens and spacing scale. */
 .orders-page {
     min-height: 100vh;
-    background: var(--gradient-dark);
-    padding: 40px 0 80px;
+    background: var(--paper);
+    padding: var(--space-7) 0 var(--space-8);
 }
 .orders-container {
     max-width: 860px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 0 var(--space-5);
 }
 .orders-heading {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--text-light);
-    margin-bottom: 1.75rem;
+    color: var(--ink);
+    letter-spacing: var(--tracking-snug);
+    margin-bottom: var(--space-6);
 }
 .orders-empty {
     text-align: center;
-    padding: 4rem 2rem;
-    color: var(--text-light-secondary);
+    padding: var(--space-8) var(--space-5);
+    color: var(--ink-soft);
 }
 .orders-empty p {
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--space-5);
     font-size: 1.05rem;
 }
 .order-row {
-    background: var(--bg-card-dark);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    padding: 1.25rem 1.5rem;
+    background: var(--paper-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-4) var(--space-5);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 0.875rem;
+    gap: var(--space-4);
+    margin-bottom: var(--space-3);
     text-decoration: none;
     color: inherit;
-    transition: border-color 0.2s, background 0.2s;
+    transition: border-color var(--dur-fast), background-color var(--dur-fast), transform var(--dur-fast);
 }
 .order-row:hover {
-    border-color: var(--primary, #15130E);
-    background: rgba(125,128,218,0.06);
+    border-color: var(--border-strong);
+    background: var(--paper-soft);
+    transform: translateY(-1px);
 }
+.order-row:focus-visible { outline: 2px solid var(--spot); outline-offset: 2px; }
 .order-row-left { flex: 1; min-width: 0; }
 .order-id {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--text-light);
-    margin-bottom: 0.2rem;
+    color: var(--ink);
+    margin-bottom: 2px;
 }
 .order-meta {
     font-size: 0.85rem;
-    color: var(--text-light-muted);
+    color: var(--ink-muted);
 }
 .order-status-badge {
     display: inline-block;
-    padding: 0.3rem 0.85rem;
-    border-radius: 999px;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
     font-size: 0.82rem;
     font-weight: 600;
     border: 1px solid;
@@ -68,21 +75,21 @@
 .order-row-right {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: var(--space-4);
     flex-shrink: 0;
 }
 .order-total {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--text-light);
+    color: var(--ink);
     white-space: nowrap;
 }
 .order-arrow {
-    color: var(--text-light-muted);
+    color: var(--ink-muted);
     flex-shrink: 0;
 }
 @media (max-width: 580px) {
-    .orders-container { padding: 1rem; }
+    .orders-container { padding: 0 var(--space-4); }
     .orders-heading { font-size: 1.5rem; }
     .order-row { flex-direction: column; align-items: flex-start; }
     .order-row-right { width: 100%; justify-content: space-between; }
@@ -101,12 +108,15 @@
     <?php else: ?>
 
     <?php
+    // Text tones are the 800-weight of each hue. The previous values (#facc15,
+    // #4ade80 …) were picked for a dark card and fell to roughly 2:1 against
+    // these pale tinted backgrounds once the page went light.
     $statusColors = [
-        'pending'    => ['color' => '#facc15', 'border' => 'rgba(234,179,8,0.5)',   'bg' => 'rgba(234,179,8,0.1)'],
-        'processing' => ['color' => '#60a5fa', 'border' => 'rgba(59,130,246,0.5)',  'bg' => 'rgba(59,130,246,0.1)'],
-        'in-transit' => ['color' => '#a78bfa', 'border' => 'rgba(139,92,246,0.5)',  'bg' => 'rgba(139,92,246,0.1)'],
-        'delivered'  => ['color' => '#4ade80', 'border' => 'rgba(34,197,94,0.5)',   'bg' => 'rgba(34,197,94,0.1)'],
-        'cancelled'  => ['color' => '#f87171', 'border' => 'rgba(239,68,68,0.5)',   'bg' => 'rgba(239,68,68,0.1)'],
+        'pending'    => ['color' => '#92400E', 'border' => 'rgba(245,158,11,0.40)', 'bg' => 'rgba(245,158,11,0.12)'],
+        'processing' => ['color' => '#1E40AF', 'border' => 'rgba(59,130,246,0.40)', 'bg' => 'rgba(59,130,246,0.12)'],
+        'in-transit' => ['color' => '#5B21B6', 'border' => 'rgba(139,92,246,0.40)', 'bg' => 'rgba(139,92,246,0.12)'],
+        'delivered'  => ['color' => '#166534', 'border' => 'rgba(34,197,94,0.40)',  'bg' => 'rgba(34,197,94,0.12)'],
+        'cancelled'  => ['color' => '#991B1B', 'border' => 'rgba(239,68,68,0.40)',  'bg' => 'rgba(239,68,68,0.12)'],
     ];
     $statusKeys = [
         'pending'    => 'order.status.pending',

@@ -65,7 +65,7 @@ document.querySelector('.product-list-grid').addEventListener('click', function(
         if (res.ok) {
           window.location.href = '/shop/custom_product';
         } else {
-          alert('Failed to select product');
+          UI.error('Failed to select product');
         }
       });
     } else {

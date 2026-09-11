@@ -240,3 +240,84 @@ function filterProducts() {
         window.location.href = url;
     }
 }
+
+// ---- Account dropdown (header) -------------------------------------------
+// Opens on hover for mouse users. Click still works everywhere, because touch
+// screens have no hover state and a keyboard can't produce one — without that
+// fallback the menu would be unreachable on phones.
+(function () {
+    'use strict';
+    var wrap = document.querySelector('[data-account-menu]');
+    if (!wrap) return;
+
+    var trigger = wrap.querySelector('.account-menu-trigger');
+    var list    = wrap.querySelector('.account-menu-list');
+    if (!trigger || !list) return;
+
+    var canHover = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    var closeTimer = null;
+
+    function items() {
+        return Array.prototype.slice.call(list.querySelectorAll('a[role="menuitem"], button[role="menuitem"]'));
+    }
+
+    function open() {
+        clearTimeout(closeTimer);
+        list.hidden = false;
+        trigger.setAttribute('aria-expanded', 'true');
+    }
+
+    function close(returnFocus) {
+        clearTimeout(closeTimer);
+        list.hidden = true;
+        trigger.setAttribute('aria-expanded', 'false');
+        if (returnFocus) trigger.focus();
+    }
+
+    if (canHover) {
+        wrap.addEventListener('mouseenter', open);
+        // Small grace period: without it, clipping the edge of the menu while
+        // moving the pointer towards it snaps the whole thing shut.
+        wrap.addEventListener('mouseleave', function () {
+            clearTimeout(closeTimer);
+            closeTimer = setTimeout(function () { close(false); }, 180);
+        });
+    }
+
+    trigger.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (list.hidden) { open(); } else { close(false); }
+    });
+
+    // Arrow keys move through the menu; Escape closes it and hands focus back
+    // to the trigger so the tab order doesn't jump to the top of the page.
+    trigger.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            open();
+            var first = items()[0];
+            if (first) first.focus();
+        }
+    });
+
+    list.addEventListener('keydown', function (e) {
+        var all = items();
+        var i = all.indexOf(document.activeElement);
+        if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); (all[i + 1] || all[0]).focus(); }
+        else if (e.key === 'ArrowUp')   { e.preventDefault(); (all[i - 1] || all[all.length - 1]).focus(); }
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!list.hidden && !wrap.contains(e.target)) close(false);
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !list.hidden) close(true);
+    });
+
+    // Focus leaving the menu entirely closes it (tabbing past the last item).
+    wrap.addEventListener('focusout', function (e) {
+        if (!wrap.contains(e.relatedTarget)) close(false);
+    });
+})();

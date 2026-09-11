@@ -144,7 +144,11 @@ function getCartProductColorFilter($hex) {
                             <span class="qty-value" id="qty-<?= $item['id'] ?>"><?= (int)$item['quantity'] ?></span>
                             <button class="qty-btn" onclick="updateQuantity(<?= $item['id'] ?>, 1)">+</button>
                         </div>
-                        <button class="btn-danger-outline" onclick="removeFromCart(<?= $item['id'] ?>)">
+                        <?php // Ghost, not a red outlined button. Remove was the
+                              // loudest control in every row, competing with the
+                              // quantity stepper and pulling the eye toward
+                              // deleting rather than buying. ?>
+                        <button class="btn btn-sm btn-ghost cart-remove-btn" onclick="removeFromCart(<?= $item['id'] ?>)">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:5px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg><?= t('cart.item.remove') ?>
                         </button>
                     </div>
@@ -155,7 +159,7 @@ function getCartProductColorFilter($hex) {
             <div class="cart-summary">
                 <h2><?= t('cart.summary.title') ?></h2>
                 <div class="summary-row">
-                    <span class="summary-label"><?= I18n::t('cart.summary.items', ['count' => count($cartItems)]) ?></span>
+                    <span class="summary-label"><?= t('cart.summary.items') ?></span>
                     <span class="summary-value" id="items-count"><?= array_sum(array_column($cartItems ?? [], 'quantity')) ?></span>
                 </div>
                 <div class="summary-row">
@@ -164,15 +168,18 @@ function getCartProductColorFilter($hex) {
                 </div>
                 <div class="summary-row">
                     <span class="summary-label"><?= t('cart.summary.shipping') ?></span>
-                    <span class="summary-value" style="color:#4ade80;"><?= t('cart.summary.shipping_free') ?></span>
+                    <span class="summary-value" style="color:var(--ok);"><?= t('cart.summary.shipping_free') ?></span>
                 </div>
                 <div class="summary-row total">
                     <span class="summary-label"><?= t('cart.summary.total') ?></span>
                     <span class="summary-value" id="cart-total">€<?= number_format($cartTotal ?? 0, 2) ?></span>
                 </div>
+                <?php // btn-outline-light is for DARK surfaces — white text on a
+                      // white border. On this light summary card it rendered
+                      // invisible. Secondary is the correct intent here. ?>
                 <div class="cart-summary-actions">
-                    <button id="openCheckoutModal" class="btn-success-gradient" style="padding: 16px 24px; font-size: 1.1rem;"><?= t('cart.summary.checkout') ?></button>
-                    <a href="/shop" class="btn-outline-light"><?= t('cart.summary.continue_shopping') ?></a>
+                    <button id="openCheckoutModal" class="btn btn-lg btn-success"><?= t('cart.summary.checkout') ?></button>
+                    <a href="/shop" class="btn btn-lg btn-secondary"><?= t('cart.summary.continue_shopping') ?></a>
                 </div>
             </div>
         </div>
@@ -183,7 +190,7 @@ function getCartProductColorFilter($hex) {
             </div>
             <h2><?= t('cart.empty.title') ?></h2>
             <p><?= t('cart.empty.lead') ?></p>
-            <a href="/shop" class="btn-primary-gradient" style="padding: 14px 32px; font-size: 1.1rem;"><?= t('cart.empty.button') ?></a>
+            <a href="/shop" class="btn btn-lg"><?= t('cart.empty.button') ?></a>
         </div>
         <?php endif; ?>
     </div>
@@ -477,7 +484,7 @@ function mountStripeElement() {
     if (cardElement) return;
     if (!stripeElements) {
         const el = document.getElementById('stripe-card-element');
-        if (el) el.innerHTML = '<span style="color:#f87171;font-size:0.85rem;">Stripe is not configured. Set STRIPE_PUBLISHABLE_KEY in .env</span>';
+        if (el) el.innerHTML = '<span style="color:var(--bad);font-size:0.85rem;">Stripe is not configured. Set STRIPE_PUBLISHABLE_KEY in .env</span>';
         return;
     }
     cardElement = stripeElements.create('card', {
@@ -582,12 +589,12 @@ async function updateQuantity(cartItemId, delta) {
         } else {
             // Revert on error
             qtyEl.textContent = currentQty;
-            alert(data.error || window.I18N.t('checkout.errors.generic'));
+            UI.error(data.error || window.I18N.t('checkout.errors.generic'));
         }
     } catch (error) {
         console.error('Error updating quantity:', error);
         qtyEl.textContent = currentQty;
-        alert(window.I18N.t('checkout.errors.generic'));
+        UI.error(window.I18N.t('checkout.errors.generic'));
     }
 }
 
@@ -645,11 +652,11 @@ async function confirmRemove() {
                 }
             }
         } else {
-            alert(data.error || window.I18N.t('checkout.errors.generic'));
+            UI.error(data.error || window.I18N.t('checkout.errors.generic'));
         }
     } catch (error) {
         console.error('Error removing item:', error);
-        alert(window.I18N.t('checkout.errors.generic'));
+        UI.error(window.I18N.t('checkout.errors.generic'));
     }
 }
 
@@ -817,7 +824,7 @@ function collectShippingAddress() {
 async function submitOrder() {
     const agreeCheckbox = document.getElementById('agreeTerms');
     if (!agreeCheckbox.checked) {
-        agreeCheckbox.parentElement.style.color = '#f87171';
+        agreeCheckbox.parentElement.style.color = 'var(--bad)';
         agreeCheckbox.focus();
         setTimeout(() => { agreeCheckbox.parentElement.style.color = ''; }, 2000);
         return;
@@ -835,7 +842,7 @@ async function submitOrder() {
     try {
         if (selectedPaymentMethod === 'card') {
             if (!stripe || !cardElement) {
-                alert('Stripe is not loaded. Please refresh the page.');
+                UI.error('Stripe is not loaded. Please refresh the page.');
                 return;
             }
 
@@ -843,7 +850,7 @@ async function submitOrder() {
             const piRes  = await jsonPost('/api/create-payment-intent', {});
             const piData = await piRes.json();
             if (piData.error) {
-                alert(piData.error);
+                UI.error(piData.error);
                 return;
             }
 
@@ -876,7 +883,7 @@ async function submitOrder() {
                 closeCheckoutModal();
                 showOrderSuccess(orderData.order_id, orderData.tracking_number);
             } else {
-                alert(orderData.error || window.I18N.t('checkout.errors.generic'));
+                UI.error(orderData.error || window.I18N.t('checkout.errors.generic'));
             }
         } else {
             // Non-card methods (future: Revolut, PayPal, etc.)
@@ -886,12 +893,12 @@ async function submitOrder() {
                 closeCheckoutModal();
                 showOrderSuccess(orderData.order_id, orderData.tracking_number);
             } else {
-                alert(orderData.error || window.I18N.t('checkout.errors.generic'));
+                UI.error(orderData.error || window.I18N.t('checkout.errors.generic'));
             }
         }
     } catch (err) {
         console.error('Checkout error:', err);
-        alert(window.I18N.t('checkout.errors.generic'));
+        UI.error(window.I18N.t('checkout.errors.generic'));
     } finally {
         confirmBtn.disabled = false;
         confirmBtn.classList.remove('btn-loading');

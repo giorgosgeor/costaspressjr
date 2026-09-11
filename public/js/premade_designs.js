@@ -48,7 +48,7 @@ function openEditModal(designId) {
             document.getElementById('modalLoading').style.display = 'none';
             document.getElementById('designForm').style.display = 'block';
         })
-        .catch(() => { alert('Failed to load design data'); closeModal(); });
+        .catch(() => { UI.error('Failed to load design data'); closeModal(); });
 }
 
 function closeModal() {

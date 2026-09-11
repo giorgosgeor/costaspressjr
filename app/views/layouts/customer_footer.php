@@ -75,6 +75,7 @@
         return s;
     };
     </script>
+    <script src="<?= htmlspecialchars(Asset::url('/js/ui.js')) ?>" defer></script>
     <script src="<?= htmlspecialchars(Asset::url('/js/app.js')) ?>" defer></script>
     <script>
     initCookiePopup(<?= json_encode(Auth::check()) ?>, <?= isset($user) ? (int)$user['cookie_accepted'] : 0 ?>);

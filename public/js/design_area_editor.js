@@ -173,7 +173,7 @@ function copyToView(target) {
 }
 
 function saveAll() {
-    if (!currentProductId) { alert('Select a product first.'); return; }
+    if (!currentProductId) { UI.error('Select a product first.'); return; }
 
     fetch('/admin/products/design-area/save', {
         method: 'POST',
@@ -187,10 +187,10 @@ function saveAll() {
             banner.classList.add('show');
             setTimeout(() => banner.classList.remove('show'), 2500);
         } else {
-            alert('Error: ' + (data.error || 'unknown'));
+            UI.error('Error: ' + (data.error || 'unknown'));
         }
     })
-    .catch(() => alert('Save failed.'));
+    .catch(() => UI.error('Save failed.'));
 }
 
 function round(v) { return Math.round(v * 10) / 10; }

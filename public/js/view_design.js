@@ -435,7 +435,7 @@ function addToCart() {
         }
     }
     if (errorMsg) {
-        alert(errorMsg);
+        UI.error(errorMsg);
         return;
     }
     const quantity = document.getElementById('quantity').value;
@@ -462,10 +462,10 @@ function addToCart() {
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
             if (xhr.status === 200) {
-                alert('Added to cart!');
+                UI.success('Added to cart!');
                 // Optionally update cart count, etc.
             } else {
-                alert('Failed to add to cart: ' + xhr.responseText);
+                UI.error('Failed to add to cart: ' + xhr.responseText);
             }
         }
     };

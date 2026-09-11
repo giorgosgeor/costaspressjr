@@ -160,7 +160,7 @@ function confirmDelete() {
     })
     .catch(err => {
         var msg = (window.I18N ? window.I18N.t('account.delete_failed', { error: err.message }) : 'Failed to delete design: ' + err.message);
-        alert(msg);
+        UI.error(msg);
     })
     .finally(() => {
         btn.disabled = false;

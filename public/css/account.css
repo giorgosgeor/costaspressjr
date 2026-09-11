@@ -5,13 +5,13 @@
 .account-page {
     min-height: 100vh;
     background: var(--paper);
-    padding: 40px 0;
+    padding: var(--space-6) 0;
 }
 
 .account-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 1.5rem 2rem;
+    padding: var(--space-5) var(--space-6);
 }
 
 /* Sidebar beside the panel, rather than tabs stacked above it — the nav stays
@@ -19,7 +19,7 @@
 .account-layout {
     display: grid;
     grid-template-columns: 232px minmax(0, 1fr);
-    gap: 40px;
+    gap: var(--space-6);
     align-items: start;
 }
 
@@ -49,7 +49,7 @@
 .account-nav {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-1);
     position: sticky;
     top: 24px;
 }
@@ -57,9 +57,9 @@
 .account-tab {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-3);
     width: 100%;
-    padding: 11px 14px;
+    padding: var(--space-3) var(--space-3);
     background: transparent;
     border: none;
     border-left: 3px solid transparent;
@@ -97,15 +97,15 @@
 .account-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 14px;
+    gap: var(--space-3);
     margin-bottom: 34px;
 }
 
 .account-stat {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    padding: 16px 18px;
+    gap: var(--space-1);
+    padding: var(--space-4) var(--space-4);
     background: var(--paper-2);
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -136,8 +136,8 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 16px;
-    margin: 0 0 16px;
+    gap: var(--space-4);
+    margin: 0 0 var(--space-4);
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border);
 }
@@ -173,8 +173,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14px;
-    padding: 14px 18px;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
     background: var(--paper-2);
     text-decoration: none;
     color: var(--ink);
@@ -193,7 +193,7 @@
 .uploads-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-    gap: 20px;
+    gap: var(--space-4);
 }
 
 .upload-card {
@@ -225,10 +225,10 @@
 }
 
 .upload-card-body {
-    padding: 12px 14px 14px;
+    padding: var(--space-3) var(--space-3) var(--space-3);
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: var(--space-1);
     flex: 1;
 }
 
@@ -244,7 +244,7 @@
 .upload-card-meta {
     display: flex;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--space-2);
     font-size: 0.82rem;
     color: var(--ink-soft);
 }
@@ -259,7 +259,7 @@
 
 .upload-card-body .btn {
     margin-top: auto;
-    padding: 8px 12px;
+    padding: var(--space-2) var(--space-3);
     font-size: 0.88rem;
     text-align: center;
 }
@@ -268,7 +268,7 @@
 .favorites-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-    gap: 20px;
+    gap: var(--space-4);
 }
 
 .favorite-card {
@@ -313,10 +313,10 @@
 .favorite-noimage { color: var(--ink-soft); font-size: 0.85rem; }
 
 .favorite-card-body {
-    padding: 12px 14px 14px;
+    padding: var(--space-3) var(--space-3) var(--space-3);
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: var(--space-1);
 }
 
 .favorite-card-kind {
@@ -363,7 +363,7 @@
 .designs-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.4rem;
+    gap: var(--space-5);
 }
 
 /* The Overview strip is only three cards, so it uses a narrower track to keep
@@ -406,7 +406,7 @@
     object-fit: contain;
 }
 
-.design-card-body { padding: 1rem; }
+.design-card-body { padding: var(--space-4); }
 
 .design-card-title {
     font-family: var(--font-display);
@@ -431,12 +431,12 @@
 
 .design-card-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .design-card-actions .btn {
     flex: 1;
-    padding: 0.55rem 0.8rem;
+    padding: var(--space-2) var(--space-3);
     font-size: 0.9rem;
     text-align: center;
     text-decoration: none;
@@ -445,43 +445,14 @@
 }
 
 /* Local button variants used here */
-.btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--ink);
-    color: var(--paper);
-    border: 1px solid var(--border);
-    font-family: var(--font-display);
-    box-shadow: var(--stamp-sm);
-    transition: transform .12s, box-shadow .12s;
-}
 
-.btn-primary:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: var(--stamp-sm);
-    color: var(--paper);
-    background: var(--ink);
-}
 
-.btn-outline {
-    background: var(--paper);
-    color: var(--ink);
-    border: 1px solid var(--border);
-    box-shadow: var(--stamp-sm);
-}
 
-.btn-outline:hover {
-    background: var(--ink);
-    color: var(--paper);
-    transform: translate(-2px, -2px);
-    box-shadow: var(--stamp-sm);
-}
 
 /* Empty State */
 .account-empty-state {
     text-align: center;
-    padding: 3.5rem 2rem;
+    padding: var(--space-7) var(--space-6);
     background: var(--paper-2);
     border: 2px dashed var(--border-strong);
 }
@@ -501,7 +472,7 @@
 
 .account-empty-state .btn {
     display: inline-block;
-    padding: 0.7rem 1.6rem;
+    padding: var(--space-3) var(--space-5);
     text-decoration: none;
 }
 
@@ -512,7 +483,7 @@
     background: var(--paper-2);
     border: 1px solid var(--border);
     box-shadow: var(--stamp);
-    padding: 2rem;
+    padding: var(--space-6);
     max-width: 620px;
 }
 
@@ -528,7 +499,7 @@
 
 .profile-field input {
     width: 100%;
-    padding: 0.7rem 0.9rem;
+    padding: var(--space-3) var(--space-4);
     border: 1px solid var(--border);
     background: var(--paper);
     color: var(--ink);
@@ -553,7 +524,7 @@
 .orders-list {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-4);
 }
 
 .order-card {
@@ -573,7 +544,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.9rem 1.2rem;
+    padding: var(--space-4) var(--space-4);
     border-bottom: 1px solid var(--border);
     background: var(--paper);
 }
@@ -581,7 +552,7 @@
 .order-card-meta {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: var(--space-4);
     flex-wrap: wrap;
 }
 
@@ -599,7 +570,7 @@
 
 .order-status-badge {
     display: inline-block;
-    padding: 0.3rem 0.85rem;
+    padding: var(--space-1) var(--space-3);
     font-family: var(--font-display);
     font-size: 0.85rem;
     border: 1px solid var(--border);
@@ -616,15 +587,15 @@
 
 .order-card-body {
     display: flex;
-    gap: 2rem;
-    padding: 1rem 1.2rem;
+    gap: var(--space-6);
+    padding: var(--space-4) var(--space-4);
     flex-wrap: wrap;
 }
 
 .order-card-detail {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: var(--space-1);
 }
 
 .order-detail-label {
@@ -648,14 +619,14 @@
 }
 
 .order-card-footer {
-    padding: 0.7rem 1.2rem;
+    padding: var(--space-3) var(--space-4);
     border-top: 1px dashed var(--border);
     display: flex;
     justify-content: flex-end;
 }
 
 .order-view-btn {
-    padding: 0.55rem 1.1rem;
+    padding: var(--space-2) var(--space-4);
     font-size: 0.9rem;
 }
 
@@ -664,12 +635,12 @@
 @media (max-width: 900px) {
     .account-layout {
         grid-template-columns: 1fr;
-        gap: 22px;
+        gap: var(--space-5);
     }
     .account-nav {
         position: static;
         flex-direction: row;
-        gap: 4px;
+        gap: var(--space-1);
         overflow-x: auto;
         padding-bottom: 6px;
         border-bottom: 1px solid var(--border);
@@ -690,18 +661,18 @@
 }
 
 @media (max-width: 600px) {
-    .account-container { padding: 1rem; }
-    .account-tab { font-size: 0.88rem; padding: 0.7rem 0.9rem; }
+    .account-container { padding: var(--space-4); }
+    .account-tab { font-size: 0.88rem; padding: var(--space-3) var(--space-4); }
     .account-tab-label { font-size: 0.88rem; }
     .account-recent-order {
         flex-wrap: wrap;
-        gap: 6px 12px;
+        gap: var(--space-1) var(--space-3);
     }
     .account-recent-order-total { min-width: 0; }
     .order-card-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 0.5rem;
+        gap: var(--space-2);
     }
-    .order-card-body { gap: 1rem; }
+    .order-card-body { gap: var(--space-4); }
 }

@@ -409,7 +409,7 @@ function loadImage(file) {
 // Color picker from image
 function enableColorPicker() {
     if (!originalImage) {
-        alert('Please upload an image first');
+        UI.error('Please upload an image first');
         return;
     }
     isPickingColor = true;

@@ -55,7 +55,7 @@ function openEditModal(productId) {
             form.style.display = 'block';
         })
         .catch(err => {
-            alert('Error loading product');
+            UI.error('Error loading product');
             closeEditModal();
         });
 }
@@ -251,7 +251,7 @@ function saveProduct() {
         }
     })
     .catch(() => {
-        alert('Error saving product. Please try again.');
+        UI.error('Error saving product. Please try again.');
     });
 }
 
