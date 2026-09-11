@@ -42,5 +42,5 @@
         <?php $loc = I18n::locale(); ?>
         <a href="/lang/en" class="<?= $loc === 'en' ? 'active' : '' ?>" hreflang="en">EN</a>
         <span class="sep" aria-hidden="true"></span>
-        <a href="/lang/el" class="<?= $loc === 'el' ? 'active' : '' ?>" hreflang="el">EL</a>
+        <a href="/lang/el" class="<?= $loc === 'el' ? 'active' : '' ?>" hreflang="el">GR</a>
     </div>

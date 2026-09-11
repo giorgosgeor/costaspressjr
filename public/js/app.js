@@ -60,10 +60,36 @@ document.addEventListener('DOMContentLoaded', function() {
     const mainNav = document.querySelector('.main-nav');
     
     if (mobileMenuToggle && mainNav) {
-        mobileMenuToggle.addEventListener('click', function() {
-            const open = mainNav.classList.toggle('active');
-            this.classList.toggle('active');
-            this.setAttribute('aria-expanded', open ? 'true' : 'false');
+        const setMenu = function (open) {
+            mainNav.classList.toggle('active', open);
+            mobileMenuToggle.classList.toggle('active', open);
+            mobileMenuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        };
+
+        mobileMenuToggle.addEventListener('click', function (e) {
+            e.stopPropagation();   // don't let this reach the outside-click handler
+            setMenu(!mainNav.classList.contains('active'));
+        });
+
+        // Tapping anywhere else closes it. Without this the panel stayed open
+        // and covered the page until you found the toggle again.
+        document.addEventListener('click', function (e) {
+            if (!mainNav.classList.contains('active')) return;
+            if (mainNav.contains(e.target) || mobileMenuToggle.contains(e.target)) return;
+            setMenu(false);
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && mainNav.classList.contains('active')) {
+                setMenu(false);
+                mobileMenuToggle.focus();
+            }
+        });
+
+        // Following a link closes it too — otherwise in-page links (#hash) leave
+        // the menu sitting open over the destination.
+        mainNav.addEventListener('click', function (e) {
+            if (e.target.closest('a')) setMenu(false);
         });
     }
 
@@ -285,6 +311,12 @@ function filterProducts() {
     }
 
     trigger.addEventListener('click', function (e) {
+        // The trigger is a real link to /account. With a hovering pointer the
+        // menu is already open, so let the click just follow the link. On touch
+        // there is no hover, so the first tap opens the menu instead — otherwise
+        // tapping would jump to /account and the submenu could never be reached.
+        if (canHover) return;
+        e.preventDefault();
         e.stopPropagation();
         if (list.hidden) { open(); } else { close(false); }
     });

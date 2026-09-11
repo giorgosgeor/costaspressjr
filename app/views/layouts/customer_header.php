@@ -86,7 +86,7 @@ $currentLocale   = I18n::locale();
                     <div class="lang-switcher" role="group" aria-label="Language">
                         <a href="/lang/en" class="<?= $currentLocale === 'en' ? 'active' : '' ?>" hreflang="en">EN</a>
                         <span class="sep" aria-hidden="true"></span>
-                        <a href="/lang/el" class="<?= $currentLocale === 'el' ? 'active' : '' ?>" hreflang="el">EL</a>
+                        <a href="/lang/el" class="<?= $currentLocale === 'el' ? 'active' : '' ?>" hreflang="el">GR</a>
                     </div>
                 </div>
             </nav>
@@ -104,11 +104,18 @@ $currentLocale   = I18n::locale();
                     $cartAria = I18n::t('header.cart_aria');
                 }
                 ?>
-                <?php if (Auth::check()): ?>
-                <a href="/account#favorites" class="icon-link" aria-label="<?= t('header.favorites_aria') ?>" title="<?= t('account.tabs.favorites') ?>">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1z"/></svg>
+                <div class="lang-switcher" role="group" aria-label="Language">
+                    <a href="/lang/en" class="<?= $currentLocale === 'en' ? 'active' : '' ?>" title="<?= t('lang.switch_to_english') ?>" hreflang="en">EN</a>
+                    <span class="sep" aria-hidden="true"></span>
+                    <a href="/lang/el" class="<?= $currentLocale === 'el' ? 'active' : '' ?>" title="<?= t('lang.switch_to_greek') ?>" hreflang="el">GR</a>
+                </div>
+
+                <a href="/cart" class="icon-link cart-link" aria-label="<?= htmlspecialchars($cartAria) ?>">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <?php if ($cartCount > 0): ?>
+                    <span class="cart-count" id="cart-count" aria-hidden="true"><?= $cartCount ?></span>
+                    <?php endif; ?>
                 </a>
-                <?php endif; ?>
 
                 <?php if (Auth::check()): ?>
                 <?php
@@ -124,11 +131,15 @@ $currentLocale   = I18n::locale();
                     ];
                 ?>
                 <div class="account-menu" data-account-menu>
-                    <button type="button" class="icon-link account-menu-trigger"
-                            aria-expanded="false" aria-haspopup="true" aria-controls="accountMenuList">
+                    <?php // A link, not a button: hovering opens the menu, clicking
+                          // goes straight to the account page. Keyboard users get
+                          // the menu with ArrowDown (see app.js) since they can't
+                          // hover, and Enter follows the link as normal. ?>
+                    <a href="/account" class="icon-link account-menu-trigger"
+                       aria-expanded="false" aria-haspopup="true" aria-controls="accountMenuList">
                         <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         <span class="icon-link-label"><?= t('header.my_account') ?></span>
-                    </button>
+                    </a>
                     <div class="account-menu-list" id="accountMenuList" role="menu" hidden>
                         <?php foreach ($accountMenu as $key => $label): ?>
                         <a href="/account#<?= $key ?>" role="menuitem"><?= htmlspecialchars($label) ?></a>
@@ -150,18 +161,6 @@ $currentLocale   = I18n::locale();
                     <a href="/register" class="btn btn-sm"><?= t('header.register') ?></a>
                 <?php endif; ?>
 
-                <a href="/cart" class="icon-link cart-link" aria-label="<?= htmlspecialchars($cartAria) ?>">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                    <?php if ($cartCount > 0): ?>
-                    <span class="cart-count" id="cart-count" aria-hidden="true"><?= $cartCount ?></span>
-                    <?php endif; ?>
-                </a>
-
-                <div class="lang-switcher" role="group" aria-label="Language">
-                    <a href="/lang/en" class="<?= $currentLocale === 'en' ? 'active' : '' ?>" title="<?= t('lang.switch_to_english') ?>" hreflang="en">EN</a>
-                    <span class="sep" aria-hidden="true"></span>
-                    <a href="/lang/el" class="<?= $currentLocale === 'el' ? 'active' : '' ?>" title="<?= t('lang.switch_to_greek') ?>" hreflang="el">EL</a>
-                </div>
             </div>
         </div>
     </header>

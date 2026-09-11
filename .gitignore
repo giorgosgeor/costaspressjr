@@ -55,3 +55,9 @@ folderarrangement.txt
 public/images/anime/*Search Images_files/
 *.br.js.download
 *.br.css
+
+# Throwaway QA/screenshot snapshots written into the web root during testing.
+# These are full page captures with inlined CSS/JS — large, and when taken from
+# a signed-in session they embed a CSRF token and account details.
+public/_qa*
+public/**/*.bak
