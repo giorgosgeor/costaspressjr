@@ -61,3 +61,6 @@ public/images/anime/*Search Images_files/
 # a signed-in session they embed a CSRF token and account details.
 public/_qa*
 public/**/*.bak
+
+# Dev-only mail log written by Mailer when MAIL_TRANSPORT=log
+storage/

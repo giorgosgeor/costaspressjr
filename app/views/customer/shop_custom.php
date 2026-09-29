@@ -1418,9 +1418,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Go to Checkout button handler
-    document.getElementById('goToCheckoutBtn').addEventListener('click', function() {
-        window.location.href = '/cart';
-    });
+    // There is no #goToCheckoutBtn in this page's markup, so this threw
+    // "Cannot read properties of null" inside DOMContentLoaded and aborted
+    // the rest of that handler. Guarded rather than deleted, in case the
+    // button is reinstated.
+    var _checkoutBtn = document.getElementById('goToCheckoutBtn');
+    if (_checkoutBtn) {
+        _checkoutBtn.addEventListener('click', function() {
+            window.location.href = '/cart';
+        });
+    }
 });
 function updateImageSize(type) {
     if (!selectedElement) return;
@@ -1683,6 +1690,23 @@ function closeDesignSavedModal() {
             </div>
         <?php else: ?>
 
+        <?php // ---- Phone-only studio chrome -------------------------------
+              // On a phone the tools column cannot sit beside the garment, and
+              // stacking it pushed the mockup - the thing being designed - most
+              // of a screen down the page, under a wall of controls. The tools
+              // move into a drawer instead, opened from a slim tab on the left
+              // edge, so the garment is what you see when the page loads.
+              // Both are inert above 900px, where the two-column layout works. ?>
+        <button type="button" class="studio-tools-tab" id="studioToolsTab"
+                aria-controls="studioControls" aria-expanded="false"
+                aria-label="<?= t('studio.tools_open') ?>"
+                data-label-open="<?= t('studio.tools_open') ?>"
+                data-label-close="<?= t('studio.tools_close') ?>">
+            <span class="studio-tools-tab-arrow" aria-hidden="true">&raquo;</span>
+            <span class="studio-tools-tab-label"><?= t('studio.tools') ?></span>
+        </button>
+        <div class="studio-scrim" id="studioScrim" hidden></div>
+
         <div class="custom-studio-layout">
             <!-- Preview Area (visually on right via CSS order) -->
             <div class="studio-preview">
@@ -1734,7 +1758,7 @@ function closeDesignSavedModal() {
             </div>
 
             <!-- Controls Panel (visually on left via CSS order) -->
-            <div class="studio-controls">
+            <div class="studio-controls" id="studioControls">
                
                
 
@@ -1920,22 +1944,33 @@ function closeDesignSavedModal() {
                                     // Prevent page scroll
                                     overlay.addEventListener('mousedown', function(e) { e.preventDefault(); });
                                     // Add handles via interact.js
+                                    // No endOnly restrictRect here either - it
+                                    // caused the same snap-back on this overlay
+                                    // as on the design elements. See initInteract.
                                     interact(overlay).draggable({
-                                        modifiers: [
-                                            interact.modifiers.restrictRect({ restriction: designArea, endOnly: true })
-                                        ],
                                         listeners: {
+                                            start (event) {
+                                                const t = event.target;
+                                                t._dragX = parseFloat(t.style.left) || 0;
+                                                t._dragY = parseFloat(t.style.top) || 0;
+                                            },
                                             move (event) {
                                                 const target = event.target;
-                                                let x = (parseFloat(target.style.left) || 0) + event.dx;
-                                                let y = (parseFloat(target.style.top) || 0) + event.dy;
-                                                // Constrain
-                                                const maxX = designArea.offsetWidth - target.offsetWidth;
-                                                const maxY = designArea.offsetHeight - target.offsetHeight;
-                                                x = Math.max(0, Math.min(x, maxX));
-                                                y = Math.max(0, Math.min(y, maxY));
+                                                if (typeof target._dragX !== 'number') target._dragX = parseFloat(target.style.left) || 0;
+                                                if (typeof target._dragY !== 'number') target._dragY = parseFloat(target.style.top) || 0;
+                                                target._dragX += event.dx;
+                                                target._dragY += event.dy;
+                                                const maxX = Math.max(0, designArea.clientWidth  - target.offsetWidth);
+                                                const maxY = Math.max(0, designArea.clientHeight - target.offsetHeight);
+                                                const x = Math.max(0, Math.min(target._dragX, maxX));
+                                                const y = Math.max(0, Math.min(target._dragY, maxY));
                                                 target.style.left = x + 'px';
                                                 target.style.top = y + 'px';
+                                            },
+                                            end (event) {
+                                                const target = event.target;
+                                                target._dragX = parseFloat(target.style.left) || 0;
+                                                target._dragY = parseFloat(target.style.top) || 0;
                                             }
                                         }
                                     }).resizable({
@@ -2495,6 +2530,8 @@ updateImageRotation = function() {
    without this the label is flung to the far edge of the page, nowhere near
    the garment it labels. */
 .view-toggle {
+    user-select: none;
+    -webkit-user-select: none;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2570,34 +2607,55 @@ updateImageRotation = function() {
     width: 100%;
     padding: 12px 16px;
     border: 1px solid transparent;
-    border-radius: var(--radius-sm, 6px);
+    border-radius: var(--radius, 2px);
+    border-width: 1.5px;
     font-family: inherit;
-    font-size: 0.98rem;
+    font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
     transition: background-color .15s, border-color .15s;
 }
 
+/* Was green. Green is the success colour in this palette, not an identity,
+   and using it for Add to Cart made the studio's main action look like a
+   confirmation message. These are the site's buttons now: a solid block of
+   the spot ink, and an outlined one beside it. */
 .studio-action-primary {
-    background: var(--spot-3, #16A34A);
+    background: var(--spot, #C83017);
     color: #fff;
+    border-color: transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
 }
-.studio-action-primary:hover { background: #15803D; }
+.studio-action-primary:hover { background: var(--spot-hover, #A82611); }
 
 .studio-action-secondary {
-    background: var(--paper, #fff);
-    border-color: var(--border-strong, #D4D4DA);
-    color: var(--ink, #1A1A1F);
+    background: transparent;
+    border-color: var(--ink, #16130F);
+    color: var(--ink, #16130F);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
 }
-.studio-action-secondary:hover { background: var(--paper-soft, #F4F4F6); }
+.studio-action-secondary:hover { background: var(--ink, #16130F); color: var(--paper, #F4F0E6); }
 
 .studio-action:disabled { opacity: .55; cursor: not-allowed; }
 
 .mockup-container {
     position: relative;
     background: #ffffff;
-    border-radius: 12px;
+    border: 1.5px solid var(--ink, #16130F);
+    border-radius: var(--radius, 2px);
+    /* Swiping to change view is a drag, and a drag across an image is also a
+       text/image selection — so the whole mockup lit up blue mid-swipe. The
+       design elements inside already set this for their own dragging; the
+       surface underneath them did not. -webkit-touch-callout stops iOS
+       offering "Save Image" on the long press that a slow swipe looks like. */
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
     aspect-ratio: 1;
     /* Capped and centred: this sits in the 1fr grid column, so on a wide
        screen an uncapped square grew to ~1100px and left the studio looking
@@ -2702,16 +2760,46 @@ updateImageRotation = function() {
     outline-offset: 2px;
 }
 
+/* The one thing that resizes. A square grip rather than a dot, so it reads
+   as a control and not as decoration, and it sits proud of the corner it
+   belongs to. The diagonal bars are the conventional "drag to size" mark. */
 .design-element .resize-handle {
     position: absolute;
-    bottom: -6px;
-    right: -6px;
-    width: 12px;
-    height: 12px;
-    background: #15130E;
-    border-radius: 50%;
+    bottom: -9px;
+    right: -9px;
+    width: 18px;
+    height: 18px;
+    background: var(--ink, #15130E);
+    border: 2px solid #fff;
+    border-radius: 3px;
     cursor: se-resize;
     display: none;
+    background-image:
+        linear-gradient(135deg, transparent 42%, #fff 42%, #fff 52%, transparent 52%),
+        linear-gradient(135deg, transparent 62%, #fff 62%, #fff 72%, transparent 72%);
+    touch-action: none;
+}
+
+/* The grip stays 18px, but a finger gets a 44px target around it. Without
+   this the only way to resize on a phone is to hit an 18px square exactly. */
+.design-element .resize-handle::after {
+    content: "";
+    position: absolute;
+    inset: -13px;
+}
+
+@media (pointer: coarse) {
+    .design-element .resize-handle {
+        width: 22px;
+        height: 22px;
+        bottom: -11px;
+        right: -11px;
+    }
+    /* A visibly thicker selection outline: on a phone the 2px ring was hard
+       to see against busy artwork, which added to the move/resize confusion. */
+    .design-element.selected {
+        outline-width: 3px;
+    }
 }
 
 .design-element.selected .resize-handle {
@@ -3117,15 +3205,182 @@ updateImageRotation = function() {
     font-style: italic;
 }
 
-/* Responsive */
+/* ============================================================
+   RESPONSIVE STUDIO
+
+   Above 900px nothing here applies and the two-column layout
+   stands. Below it the studio is reorganised around one idea:
+   the garment is the page, and everything else is summoned.
+   ============================================================ */
+
+/* The tab and scrim exist in the markup at every width; they are only
+   switched on below the breakpoint. */
+.studio-tools-tab,
+.studio-scrim { display: none; }
+
 @media (max-width: 900px) {
     .custom-studio-layout {
         grid-template-columns: 1fr;
-        }
+    }
+
+    /* A page title and a strapline are worth their space on a desktop, where
+       the garment is beside them anyway. On a phone they are 120px of
+       throat-clearing above the only thing that matters here. The title stays
+       for orientation and for screen readers, at a size that leaves the
+       mockup near the top of the first screen; the strapline goes. */
+    .custom-design-section { padding-top: var(--space-4, 16px); }
+    .custom-design-section .shop-header { margin-bottom: var(--space-3, 12px); }
+    .custom-design-section .shop-header h1 { font-size: 1.5rem; }
+    .custom-design-section .shop-header .shop-subtitle { display: none; }
+    .custom-design-section .breadcrumb { margin-bottom: var(--space-2, 8px); }
+
+    /* Preview first. It used to carry order:2 against the controls' order:1,
+       which is correct beside each other but put the mockup BELOW the whole
+       tool column once they stacked. */
     .studio-preview {
+        order: 1;
         position: relative;
         top: 0;
+        margin-top: 0;
     }
+
+    /* ---- Tools drawer ---- */
+    /* The drawer opens from the LEFT, on the same edge as the tab that
+       opens it. It used to slide in from the right while the tab sat on the
+       left, so the control and the thing it controlled were on opposite
+       sides of the screen and the panel appeared nowhere near the finger
+       that summoned it. */
+    .studio-controls {
+        order: 2;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: auto;
+        bottom: 0;
+        width: min(88vw, 400px);
+        max-width: none;
+        z-index: 1200;
+        margin: 0;
+        background: var(--paper-2, #fff);
+        border-right: 2px solid var(--ink, #15130E);
+        box-shadow: 10px 0 26px rgba(22, 19, 15, 0.16);
+        transform: translateX(-100%);
+        transition: transform .24s cubic-bezier(0.2, 0, 0.1, 1);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        padding: var(--space-4, 16px);
+        /* The masthead is position:sticky with z-index 50 inside <body>'s
+           stacking context, while this drawer lives inside <main>, which sits
+           at z-index 1 in that same context. No z-index HERE can lift it above
+           the header, because the whole of <main> is painted below it. Rather
+           than fight that, the drawer slides under the masthead the way a
+           drawer normally does, and this padding keeps its first control clear
+           of the header instead of hidden behind it. */
+        padding-top: 76px;
+        padding-bottom: 130px;
+        gap: 1rem;
+    }
+
+    .studio-controls.is-open { transform: translateX(0); }
+
+    .studio-scrim {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 1190;
+        background: rgba(22, 19, 15, 0.42);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .24s ease;
+    }
+    .studio-scrim.is-open { opacity: 1; pointer-events: auto; }
+
+    /* ---- The tab ----
+       A slim bar on the left edge, vertically centred so it falls under the
+       thumb rather than at the top of a long page. The arrow turns when the
+       drawer is open, so the control states its own direction. */
+    .studio-tools-tab {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        position: fixed;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1210;
+        min-width: 38px;
+        min-height: 104px;
+        padding: 12px 6px;
+        background: var(--paper-2, #fff);
+        color: var(--ink, #15130E);
+        border: 2px solid var(--ink, #15130E);
+        border-left: 0;
+        border-radius: 0 var(--radius, 2px) var(--radius, 2px) 0;
+        box-shadow: 3px 3px 0 rgba(22, 19, 15, 0.16);
+        cursor: pointer;
+    }
+
+    .studio-tools-tab-arrow {
+        font-size: 1.2rem;
+        font-weight: 700;
+        line-height: 1;
+        transition: transform .24s ease;
+    }
+    .studio-tools-tab.is-open .studio-tools-tab-arrow { transform: rotate(180deg); }
+
+    .studio-tools-tab-label {
+        font-family: var(--font-mono, monospace);
+        font-size: 0.58rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        writing-mode: vertical-rl;
+        max-height: 130px;
+        overflow: hidden;
+    }
+
+    /* Open, the tab rides the drawer's outer edge — so it stays attached to
+       the panel it belongs to and doubles as the close control, instead of
+       being stranded underneath it. */
+    .studio-tools-tab.is-open {
+        left: min(88vw, 400px);
+        border-left: 2px solid var(--ink, #15130E);
+    }
+
+    /* ---- Actions ----
+       The real buttons stay in the drawer for markup simplicity but are
+       hidden on a phone; the bar below mirrors them. Save and Add to Cart
+       belong under the design, not above it. */
+    .studio-actions { display: none; }
+
+    .studio-mobile-actions {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1180;
+        display: flex;
+        gap: var(--space-2, 8px);
+        padding: var(--space-3, 12px) var(--space-4, 16px);
+        padding-bottom: calc(var(--space-3, 12px) + env(safe-area-inset-bottom, 0px));
+        background: var(--paper-2, #fff);
+        border-top: 2px solid var(--ink, #15130E);
+        box-shadow: 0 -6px 18px rgba(22, 19, 15, 0.12);
+    }
+    .studio-mobile-actions .studio-action { margin: 0; }
+    .studio-mobile-actions .studio-action-primary { flex: 2; }
+    .studio-mobile-actions .studio-action-secondary { flex: 1; }
+
+    /* Clear the fixed bar at the foot of the page. */
+    body.studio-has-bar main { padding-bottom: 104px; }
+
+    body.studio-drawer-open { overflow: hidden; }
+}
+
+@media (min-width: 901px) {
+    .studio-mobile-actions { display: none; }
 }
 
 /* Sleeve Design Areas - Forced positions */
@@ -4562,54 +4817,141 @@ function renderElements() {
     });
 }
 
+// Bounds for a design element inside the design area.
+//
+// clientWidth/clientHeight, not getBoundingClientRect(): left/top are plain
+// CSS pixels in the design area's own coordinate space, and the layout box is
+// what they are measured against. (Rotation is applied to the inner <img>,
+// never to this container, so the two agree.)
+function designElementBounds(target) {
+    const area = target.parentNode;
+    if (!area) return { maxX: 0, maxY: 0 };
+    return {
+        maxX: Math.max(0, area.clientWidth  - target.offsetWidth),
+        maxY: Math.max(0, area.clientHeight - target.offsetHeight)
+    };
+}
+
+function clampToBox(value, max) {
+    return Math.max(0, Math.min(value, max));
+}
+
 function initInteract(div, element) {
     interact(div)
         .draggable({
             inertia: false,
-            modifiers: [
-                interact.modifiers.restrictRect({
-                    restriction: 'parent',
-                    endOnly: true
-                })
-            ],
+            // No restrictRect modifier.
+            //
+            // There used to be one, with endOnly:true, running ALONGSIDE the
+            // manual clamp below - and that combination is what threw the
+            // element back across the box when you dragged past an edge and
+            // let go. interact.js tracks its own unclamped coordinates, so
+            // while our listener was pinning the element to the boundary,
+            // interact still believed it was wherever the pointer had gone.
+            // At drag-end the modifier computed a correction against ITS
+            // position and handed us the difference as a delta, which we
+            // applied on top of our already-clamped position - a large jump
+            // backwards, landing roughly where the element had started.
+            //
+            // All bounds logic is ours now, applied every frame, so there is
+            // no second opinion to reconcile and nothing to undo at the end.
             listeners: {
+                start (event) {
+                    // The pointer's intended position, tracked unclamped and
+                    // separately from what is rendered. This is what makes the
+                    // element STICK to the edge: carry on past the boundary and
+                    // it stays pinned there, and it only starts moving again
+                    // once the pointer is genuinely back inside - rather than
+                    // sliding away from the cursor the instant you reverse.
+                    const t = event.target;
+                    t._dragX = parseFloat(t.style.left) || 0;
+                    t._dragY = parseFloat(t.style.top) || 0;
+                },
                 move (event) {
-                    let target = event.target;
-                    let x = (parseFloat(target.style.left) || 0) + event.dx;
-                    let y = (parseFloat(target.style.top) || 0) + event.dy;
-                    // Constrain within bounds
-                    const parentRect = target.parentNode.getBoundingClientRect();
-                    const rect = target.getBoundingClientRect();
-                    x = Math.max(0, Math.min(x, parentRect.width - rect.width));
-                    y = Math.max(0, Math.min(y, parentRect.height - rect.height));
-                    target.style.left = `${x}px`;
-                    target.style.top = `${y}px`;
-                    // Update element data
-                    const elementId = target.id;
-                    const el = elements[currentView].find(e => e.id === elementId);
-                    if (el) {
-                        el.x = x;
-                        el.y = y;
-                    }
+                    const t = event.target;
+                    if (typeof t._dragX !== 'number') t._dragX = parseFloat(t.style.left) || 0;
+                    if (typeof t._dragY !== 'number') t._dragY = parseFloat(t.style.top) || 0;
+                    t._dragX += event.dx;
+                    t._dragY += event.dy;
+
+                    const b = designElementBounds(t);
+                    const x = clampToBox(t._dragX, b.maxX);
+                    const y = clampToBox(t._dragY, b.maxY);
+                    t.style.left = x + 'px';
+                    t.style.top  = y + 'px';
+
+                    const el = elements[currentView].find(e => e.id === t.id);
+                    if (el) { el.x = x; el.y = y; }
+                },
+                end (event) {
+                    // Settle on exactly what is on screen: the furthest point
+                    // inside the box that the drag reached. Nothing is restored
+                    // and nothing moves after the pointer is released.
+                    const t = event.target;
+                    const b = designElementBounds(t);
+                    const x = clampToBox(parseFloat(t.style.left) || 0, b.maxX);
+                    const y = clampToBox(parseFloat(t.style.top) || 0, b.maxY);
+                    t.style.left = x + 'px';
+                    t.style.top  = y + 'px';
+                    t._dragX = x;
+                    t._dragY = y;
+
+                    const el = elements[currentView].find(e => e.id === t.id);
+                    if (el) { el.x = x; el.y = y; }
                 }
             }
         })
         .resizable({
-            edges: { left: true, right: true, bottom: true, top: true },
+            // Resizing is reachable ONLY from the corner handle.
+            //
+            // Every edge used to be a resize zone with interact's default
+            // ~10px grab margin. On a small element on a phone that leaves
+            // almost no interior to drag from, so a tap meant to MOVE the
+            // artwork resized it instead - and since the UI only ever draws
+            // one handle, at the bottom-right, nothing on screen explained
+            // why. Passing a selector makes that handle the single resize
+            // affordance, so everywhere else is unambiguously "move".
+            edges: { bottom: '.resize-handle', right: '.resize-handle' },
             listeners: {
                 move (event) {
-                    let target = event.target;
-                    // Update width and height
-                    const newWidth = event.rect.width;
-                    const newHeight = event.rect.height;
-                    target.style.width = `${newWidth}px`;
-                    target.style.height = `${newHeight}px`;
-                    // Update element data
-                    const elementId = target.id;
-                    const el = elements[currentView].find(e => e.id === elementId);
+                    const t = event.target;
+                    const area = t.parentNode;
+                    const areaW = area ? area.clientWidth  : event.rect.width;
+                    const areaH = area ? area.clientHeight : event.rect.height;
+
+                    // Resizing from a left or top handle moves the element as
+                    // well as sizing it. deltaRect carries that movement; it
+                    // was ignored before, so dragging the left handle grew the
+                    // element to the RIGHT instead of towards the pointer.
+                    let left = (parseFloat(t.style.left) || 0) + event.deltaRect.left;
+                    let top  = (parseFloat(t.style.top)  || 0) + event.deltaRect.top;
+                    let w = event.rect.width;
+                    let h = event.rect.height;
+
+                    // Never larger than the box, and never outside it. Same
+                    // rule as dragging: pushing a handle past an edge stops at
+                    // the edge instead of reverting.
+                    w = Math.max(20, Math.min(w, areaW));
+                    h = Math.max(20, Math.min(h, areaH));
+                    left = clampToBox(left, areaW - w);
+                    top  = clampToBox(top,  areaH - h);
+
+                    t.style.left   = left + 'px';
+                    t.style.top    = top + 'px';
+                    t.style.width  = w + 'px';
+                    t.style.height = h + 'px';
+
+                    // Keep the drag tracker in step, or the next drag would
+                    // resume from the pre-resize position and jump.
+                    t._dragX = left;
+                    t._dragY = top;
+
+                    const el = elements[currentView].find(e => e.id === t.id);
                     if (el) {
-                        el.width = newWidth;
-                        el.height = newHeight;
+                        el.x = left;
+                        el.y = top;
+                        el.width = w;
+                        el.height = h;
                     }
                 }
             }
@@ -4963,4 +5305,84 @@ function deleteElement(id) {
 </script>
 
 <?php require __DIR__ . '/../partials/size_guide_modal.php'; ?>
+<?php // ---- Phone-only action bar --------------------------------------
+      // Save and Add to Cart pinned under the design rather than sitting
+      // above it. These do NOT reimplement anything: each forwards its tap
+      // to the button already in the tools column, so there is one code
+      // path for saving and one for adding to cart. The originals are
+      // hidden by CSS below 900px, not removed, which is what keeps that
+      // forwarding valid. ?>
+<div class="studio-mobile-actions" id="studioMobileActions">
+    <button type="button" class="studio-action studio-action-primary" id="mobAddToCart"><?= t('studio.saved.add_to_cart') ?></button>
+    <button type="button" class="studio-action studio-action-secondary" id="mobSaveDesign"><?= t('studio.save_design') ?></button>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var tab    = document.getElementById('studioToolsTab');
+    var panel  = document.getElementById('studioControls');
+    var scrim  = document.getElementById('studioScrim');
+    var isPhone = function () { return window.matchMedia('(max-width: 900px)').matches; };
+
+    function setDrawer(open) {
+        if (!panel) return;
+        panel.classList.toggle('is-open', open);
+        if (tab) {
+            tab.classList.toggle('is-open', open);
+            tab.setAttribute('aria-expanded', open ? 'true' : 'false');
+            var lbl = open ? tab.getAttribute('data-label-close') : tab.getAttribute('data-label-open');
+            if (lbl) tab.setAttribute('aria-label', lbl);
+        }
+        if (scrim) {
+            scrim.classList.toggle('is-open', open);
+            // hidden is toggled as well as the class: a scrim left in the
+            // accessibility tree is an invisible element a screen reader can
+            // still land on.
+            if (open) { scrim.removeAttribute('hidden'); }
+            else { scrim.setAttribute('hidden', ''); }
+        }
+        document.body.classList.toggle('studio-drawer-open', open);
+    }
+
+    if (tab && panel) {
+        tab.addEventListener('click', function () {
+            setDrawer(!panel.classList.contains('is-open'));
+        });
+    }
+    if (scrim) {
+        scrim.addEventListener('click', function () { setDrawer(false); });
+    }
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && panel && panel.classList.contains('is-open')) setDrawer(false);
+    });
+
+    // The drawer deliberately does NOT close when a tool is chosen.
+    //
+    // It used to, on the theory that picking a tool was the end of what the
+    // drawer was for. That was wrong: choosing Uploads or Add Text opens that
+    // tool's panel INSIDE this drawer, so closing on the same tap hid the
+    // exact thing the tap had just opened — the panel was there all along,
+    // only visible again after reopening the drawer. It stays open; the tab,
+    // the scrim and Escape are how it closes.
+
+    // Growing past the breakpoint turns the drawer back into a column; the
+    // scroll lock has to come off with it or the page is frozen for no
+    // visible reason.
+    window.addEventListener('resize', function () {
+        if (!isPhone() && panel && panel.classList.contains('is-open')) setDrawer(false);
+    });
+
+    // ---- Action bar ----
+    document.body.classList.add('studio-has-bar');
+    function forward(fromId, toId) {
+        var from = document.getElementById(fromId), to = document.getElementById(toId);
+        if (from && to) { from.addEventListener('click', function () { to.click(); }); }
+    }
+    forward('mobAddToCart', 'addToCartDirectBtn');
+    forward('mobSaveDesign', 'saveDesignBtn');
+})();
+</script>
+
 <?php require __DIR__ . '/../layouts/customer_footer.php'; ?>

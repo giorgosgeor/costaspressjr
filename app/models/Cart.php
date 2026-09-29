@@ -1,4 +1,4 @@
-    <?php
+<?php
     class Cart {
         public function addUpload(int $cartItemId, array $upload): bool {
             $stmt = $this->db->prepare("INSERT INTO cart_item_uploads (cart_item_id, original_filename, stored_file_path, placement, position_x, position_y, width, height) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");

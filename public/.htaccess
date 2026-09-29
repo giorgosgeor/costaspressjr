@@ -30,16 +30,22 @@
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "DENY"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
-    Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    # geolocation=(self): the checkout asks for the browser's location to list
+    # the nearest ACS pickup points. () would refuse it before any prompt.
+    Header set Permissions-Policy "geolocation=(self), microphone=(), camera=()"
     Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
-    # Stripe.js loads from js.stripe.com, mounts its card fields in iframes from
-    # js.stripe.com / hooks.stripe.com, and talks to api.stripe.com. Those hosts
-    # must be allowlisted or the entire card-payment flow is blocked in the browser.
+    # Stripe.js loads from js.stripe.com (and its *.js.stripe.com shards),
+    # mounts the Payment Element in iframes from js.stripe.com / hooks.stripe.com,
+    # and talks to api.stripe.com. Stripe's guidance is to allow *.stripe.com
+    # in script-src, frame-src and connect-src; without it the payment flow
+    # is blocked in the browser.
     # Google Fonts (Inter) is loaded from fonts.googleapis.com (CSS) and
     # fonts.gstatic.com (woff2) by the customer layout — both must be allowed
     # or every page falls back to system fonts. interact.js is self-hosted
-    # under /js/vendor/ so no CDN entry is needed for scripts.
-    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com; form-action 'self'; frame-ancestors 'none'; base-uri 'self';"
+    # under /js/vendor/ so no CDN entry is needed for it.
+    # The checkout's ACS pickup map loads Leaflet (JS + CSS) from
+    # cdn.jsdelivr.net and its map tiles from tile.openstreetmap.org.
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.stripe.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https://tile.openstreetmap.org; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.stripe.com; frame-src https://*.stripe.com; form-action 'self'; frame-ancestors 'none'; base-uri 'self';"
 </IfModule>
 
 # Default charset

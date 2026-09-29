@@ -38,35 +38,58 @@
             </div>
         </div>
         <style>
+        /* A real grid, not a flex row of fixed-width cards.
+           The card was 240px wide with a 320px minimum height and an 8px
+           margin, which on a phone meant exactly one product per row and
+           about five thousand pixels of scrolling to reach the fourteenth.
+           Fixed widths also cannot be overridden from mobile.css, because
+           this block is inline and therefore always wins on order — so the
+           fix has to be made here, at the source, rather than layered on.
+
+           The track minimum is min(46%, 210px) rather than a flat 210px, so
+           ONE rule serves every width and no media query — and therefore no
+           override from a file this block would outrank — is needed:
+             350px phone  -> min = 161px -> 2 columns
+             768px tablet -> min = 210px -> 3 columns
+             1160px desk  -> min = 210px -> 5 columns
+           The percentage floor is what guarantees two across on a phone; a
+           fixed 200px minimum could not fit twice in 350px and silently
+           collapsed back to the single column this was meant to fix. */
         .product-list-grid {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(min(46%, 210px), 1fr));
+          gap: var(--space-4);
           margin-bottom: 1.2rem;
         }
         .product-list-card {
-          border: 1px solid #eee;
-          border-radius: 10px;
-          background: #fff;
+          border: 1.5px solid var(--ink);
+          border-radius: var(--radius);
+          background: var(--stock);
           position: relative;
-          min-height: 320px;
-          width: 240px;
-          padding: 10px 8px;
-          margin: 8px;
+          min-height: 0;
+          width: auto;
+          padding: var(--space-3) var(--space-3) var(--space-4);
+          margin: 0;
           cursor: pointer;
-          transition: box-shadow 0.2s, transform 0.2s;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+          transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+          box-shadow: var(--press-sm);
           text-align: center;
+          display: flex;
+          flex-direction: column;
         }
         .product-list-card:hover {
-          box-shadow: 0 8px 24px rgba(102,126,234,0.18);
-          transform: scale(1.04);
+          box-shadow: 4px 4px 0 var(--ink);
+          transform: translate(-2px, -2px);
           z-index: 2;
         }
         .product-list-card.selected {
-          border: 2px solid #15130E;
-          box-shadow: 0 4px 16px rgba(102,126,234,0.08);
+          border: 1.5px solid var(--ink);
+          background: var(--ink);
+          color: var(--paper);
+          box-shadow: var(--press-sm);
         }
+        .product-list-card.selected .product-name,
+        .product-list-card.selected .price-label { color: var(--paper); }
         .product-list-card img {
           width: 100%;
           max-width: 250px;

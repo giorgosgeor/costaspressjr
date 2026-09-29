@@ -44,7 +44,25 @@ class Mailer {
         }
 
         // Default: log it. Useful during development before SMTP is wired up.
+        //
+        // error_log() alone was not enough to work with: under `php -S` it goes
+        // to the server process's stderr, which is gone the moment the console
+        // is hidden. Password-reset and verification links were therefore
+        // unrecoverable in dev. Also append to a file so the message — and its
+        // link — can actually be read back.
         error_log("[Mailer:log] To: $to | Subject: $subject\n--text--\n$textBody\n");
+
+        $logDir = __DIR__ . '/../../storage';
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0775, true);
+        }
+        if (is_dir($logDir) && is_writable($logDir)) {
+            $entry = sprintf(
+                "[%s] To: %s\nSubject: %s\n%s\n%s\n\n",
+                date('Y-m-d H:i:s'), $to, $subject, str_repeat('-', 60), $textBody
+            );
+            @file_put_contents($logDir . '/mail.log', $entry, FILE_APPEND | LOCK_EX);
+        }
         return true;
     }
 

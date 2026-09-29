@@ -22,8 +22,9 @@
 }
 .main-image {
   margin-bottom: 0;
-  background: #ffffff;
-  border-radius: 12px;
+  background: var(--stock);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius);
   padding: 12px;
 }
 #mainProductImage {
@@ -151,7 +152,13 @@
                         <?php endif; ?>
                     </span>
                     <div id="sizeOptions" style="display:flex;gap:-12px;margin-top:6px;"></div>
-                </style>
+                <?php // A stray, unmatched STYLE end tag sat here in the original markup.
+                      // The parser discards such a tag, so the elements around it still
+                      // balanced and it was inert — it was NOT a mistyped closing div.
+                      // Turning it into a real </div> closed .custom-product-info early,
+                      // which made every block below it a flex sibling of the gallery and
+                      // laid them out in a row across the desktop page. It is simply
+                      // removed instead. ?>
                 <style>
                 .size-label {
                     font-size: 1.2em;
@@ -343,32 +350,66 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 function setSelectedSwatch(colorId) {
+    // Selection is a class, so the ring is described once in CSS instead of
+    // being an inline outline this function has to keep in sync with the
+    // palette. aria-pressed makes the state audible to a screen reader.
     document.querySelectorAll('.color-swatch').forEach(swatch => {
-        if (swatch.getAttribute('data-color-id') == colorId) {
-            swatch.style.outline = '3px solid #15130E';
-        } else {
-            swatch.style.outline = '';
-        }
+        const on = swatch.getAttribute('data-color-id') == colorId;
+        swatch.classList.toggle('is-selected', on);
+        swatch.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
 }
 
 function renderColors() {
+    // Buttons, not spans: they were unreachable by keyboard and had no role.
+    // Only the colour itself stays inline — every dimension moved to CSS so
+    // the swatch can carry a 44px touch target on a phone without this
+    // function knowing anything about viewport size.
     let html = '';
     colors.forEach(color => {
-        html += `<span class="color-swatch" data-color-id="${color.id}" title="${color.name}" style="display:inline-block;width:28px;height:28px;border-radius:6px;background:${color.hex};border:2px solid #ccc;cursor:pointer;"></span>`;
+        html += `<button type="button" class="color-swatch" data-color-id="${color.id}"`
+             +  ` title="${color.name}" aria-label="${color.name}" aria-pressed="false"`
+             +  ` style="--chip:${color.hex}"></button>`;
     });
     document.getElementById('colorSwatches').innerHTML = html;
 }
 
 function renderSizes(colorId) {
+    // Sizes were <span>s that nothing ever selected: no click handler added
+    // the .selected class the submit path looked for, so tapping a size did
+    // nothing and the first available one was always used. They are buttons
+    // now, with a real selection that survives a colour change when the size
+    // is still available in the new colour.
     let html = '';
     const availableSizes = colorSizeMatrix[colorId] || [];
+    if (!availableSizes.includes(selectedSize)) { selectedSize = null; }
     sizes.forEach(size => {
         const enabled = availableSizes.includes(size.id);
-        html += `<span class="size-label" style="display:inline-block;margin-right:10px;${enabled ? 'color:#222;' : 'color:#bbb;'}">${size.size_name}</span>`;
+        if (enabled && selectedSize === null) { selectedSize = size.id; }
+        const on = enabled && selectedSize === size.id;
+        html += `<button type="button" class="size-chip${on ? ' is-selected' : ''}"`
+             +  ` data-size-id="${size.id}" data-size-name="${size.size_name}"`
+             +  ` aria-pressed="${on ? 'true' : 'false'}"${enabled ? '' : ' disabled'}>`
+             +  `${size.size_name}</button>`;
     });
     document.getElementById('sizeOptions').innerHTML = html;
 }
+
+// NOTE: selectedSize is already declared with `let` at the top of this
+// script, so it is deliberately NOT redeclared here — doing so threw
+// "Identifier 'selectedSize' has already been declared", which is a
+// SyntaxError and therefore killed the ENTIRE script before it ran. That
+// is why the colour swatches and size chips rendered as empty containers.
+document.addEventListener('click', function (e) {
+    const chip = e.target.closest('#sizeOptions .size-chip');
+    if (!chip || chip.disabled) return;
+    selectedSize = parseInt(chip.getAttribute('data-size-id'), 10);
+    document.querySelectorAll('#sizeOptions .size-chip').forEach(function (c) {
+        const on = c === chip;
+        c.classList.toggle('is-selected', on);
+        c.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+});
 
 // Move modal logic inside DOMContentLoaded
 // (No extra closing brace here)
@@ -501,23 +542,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('startDesigningBtn').addEventListener('click', function() {
         // Get selected color and size
         let color = selectedColor;
+        // Was: compare each label's inline style.color against the string
+        // 'rgb(34, 34, 34)' and take the first match. That broke the moment a
+        // stylesheet set the colour instead, and it could not represent an
+        // actual choice. The selected chip is now tracked directly.
         let size = null;
-        const sizeLabels = document.querySelectorAll('#sizeOptions .size-label');
-        sizeLabels.forEach(label => {
-            if (label.style.color === 'rgb(34, 34, 34)' || label.style.color === '#222' || label.style.color === 'color: #222;') {
-                if (label.classList.contains('selected')) {
-                    size = label.textContent.trim();
-                }
-            }
-        });
-        if (!size) {
-            for (let label of sizeLabels) {
-                if (label.style.color === 'rgb(34, 34, 34)' || label.style.color === '#222' || label.style.color === 'color: #222;') {
-                    size = label.textContent.trim();
-                    break;
-                }
-            }
-        }
+        const chosen = document.querySelector('#sizeOptions .size-chip.is-selected');
+        if (chosen) { size = chosen.getAttribute('data-size-name'); }
         // Hand the chosen product/colour/size to the studio. Only write keys we
         // actually resolved - storing a null here lands the string "null" in
         // sessionStorage, which reads as truthy on the other side.
@@ -558,4 +589,51 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 <?php require __DIR__ . '/../partials/size_guide_modal.php'; ?>
+<?php // ---- Sticky action bar (phones only) ----------------------------
+      // On a phone the real call to action sits below the colour row, the
+      // size run, the quantity stepper and the price panel — far enough
+      // down that a shopper scrolling back up to look at the garment loses
+      // it entirely. Pinning price and button to the bottom edge keeps the
+      // decision one thumb-reach away at all times.
+      //
+      // It does not duplicate any logic: the button forwards the tap to the
+      // existing #startDesigningBtn, so there is exactly one code path for
+      // starting a design, and the price mirrors whatever price-tiers.js
+      // has rendered rather than recomputing it. ?>
+<div class="mobile-action-bar" role="region" aria-label="<?= t('custom_product.start') ?>">
+    <span class="mab-price">
+        <span class="mab-label"><?= t('home.rate.from') ?></span>
+        <span class="mab-amount" id="mabAmount">&euro;<?= number_format((float)($retailPrice ?? 0), 2) ?></span>
+    </span>
+    <button type="button" class="btn" id="mabStart"><?= t('custom_product.start') ?></button>
+</div>
+<script>
+(function () {
+    document.body.classList.add('has-action-bar');
+
+    var start = document.getElementById('mabStart');
+    var real  = document.getElementById('startDesigningBtn');
+    if (start && real) {
+        start.addEventListener('click', function () { real.click(); });
+    }
+
+    // price-tiers.js owns the per-unit figure and re-renders it whenever the
+    // quantity changes. Mirroring its output keeps one source of truth; the
+    // observer is needed because that block is replaced wholesale, so a
+    // reference taken once would go stale on the first update.
+    var panel = document.getElementById('productPriceTiers');
+    var out   = document.getElementById('mabAmount');
+    if (panel && out && 'MutationObserver' in window) {
+        var sync = function () {
+            var unit = panel.querySelector('.price-tiers-unit');
+            if (!unit) return;
+            var text = (unit.childNodes[0] && unit.childNodes[0].nodeValue || '').trim();
+            if (text) out.textContent = text;
+        };
+        new MutationObserver(sync).observe(panel, { childList: true, subtree: true });
+        sync();
+    }
+})();
+</script>
+
 <?php require __DIR__ . '/../layouts/customer_footer.php'; ?>

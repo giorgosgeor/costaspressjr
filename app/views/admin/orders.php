@@ -37,9 +37,17 @@
                 <?php $statusLabels = ['pending'=>'Pending','processing'=>'Processing','in-transit'=>'In Transit','delivered'=>'Delivered','cancelled'=>'Cancelled']; ?>
                 <td><span class="status status-<?= htmlspecialchars($order['status']) ?>"><?= htmlspecialchars($statusLabels[$order['status']] ?? ucfirst($order['status'])) ?></span></td>
                 <td>
+                    <?php
+                    // Refunds and disputes are synced from Stripe by the webhook.
+                    $payStatus = (string)($order['payment_status'] ?? '');
+                    $payClass  = $payStatus === 'paid' ? 'paid'
+                        : (in_array($payStatus, ['refunded', 'partially_refunded', 'disputed', 'dispute_lost'], true) ? 'refunded' : 'pending');
+                    ?>
                     <?php if (!empty($order['card_last4'])): ?>
-                        <?= ucfirst($order['card_brand'] ?? 'card') ?> •••• <?= htmlspecialchars($order['card_last4']) ?>
-                        <br><span class="payment-badge payment-<?= ($order['payment_status'] ?? '') === 'paid' ? 'paid' : 'pending' ?>"><?= htmlspecialchars($order['payment_status'] ?? '—') ?></span>
+                        <?= ucfirst($order['card_brand'] ?? 'card') ?> •••• <?= htmlspecialchars($order['card_last4']) ?><br>
+                    <?php endif; ?>
+                    <?php if ($payStatus !== ''): ?>
+                        <span class="payment-badge payment-<?= $payClass ?>"><?= htmlspecialchars(str_replace('_', ' ', $payStatus)) ?></span>
                     <?php else: ?>
                         <span style="color:#999;">—</span>
                     <?php endif; ?>

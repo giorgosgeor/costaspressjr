@@ -13,18 +13,18 @@ ob_start();
 <ul>
     <li><?= t('info.shipping.p2_a') ?></li>
     <li><?= t('info.shipping.p2_b') ?></li>
-    <li><?= t('info.shipping.p2_c') ?></li>
 </ul>
-<p><?= t('info.shipping.p2_after') ?></p>
+<p><?= t('info.shipping.p2_after', false) ?></p>
 
 <h2><?= t('info.shipping.h3') ?></h2>
-<p><?= t('info.shipping.p3') ?></p>
+<p><?= t('info.shipping.p3', false) ?></p>
 
 <h2><?= t('info.shipping.h4') ?></h2>
 <p><?= t('info.shipping.p4', false) ?></p>
 
-<h2><?= t('info.shipping.h5') ?></h2>
-<p><?= t('info.shipping.p5') ?></p>
+<?php // The Customs and Import Taxes section was removed with the move to
+      // Cyprus-only delivery: there is no destination country for duty to be
+      // charged in, so the section could only confuse. ?>
 
 <?php if (Env::get('APP_ENV', 'production') !== 'production'): ?>
 <p class="info-disclaimer"><?= t('info.shipping.placeholder', false) ?></p>

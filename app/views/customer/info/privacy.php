@@ -33,6 +33,15 @@ ob_start();
 <h2><?= t('info.privacy.h7') ?></h2>
 <p><?= t('info.privacy.p7') ?></p>
 
+<?php // Support chat. Sits before Contact because it ends by pointing there,
+      // and because a reader who has just been told their message may leave
+      // the EU should find the way to reach a human on the next line. ?>
+<h2><?= t('info.privacy.h_assistant') ?></h2>
+<p><?= t('info.privacy.p_assistant_1') ?></p>
+<p><?= t('info.privacy.p_assistant_2') ?></p>
+<p><?= t('info.privacy.p_assistant_3', false) ?></p>
+<p><?= t('info.privacy.p_assistant_4') ?></p>
+
 <h2><?= t('info.privacy.h8') ?></h2>
 <p><?= t('info.privacy.p8', false) ?></p>
 

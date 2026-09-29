@@ -128,37 +128,59 @@
 </section>
 
 <style>
-/* ===== ANIME PAGE BACKGROUND ===== */
-/* Flat ink surface, matching .dark-page elsewhere. Previously a four-stop
-   navy/purple diagonal gradient in colours that appear nowhere else in the
-   palette — it read as decoration rather than as part of the brand. */
+/* ============================================================
+   ANIME COLLECTION — printed on blue.
+
+   The blue ground is the shop owner's requirement, so the whole
+   page is treated as a second press run: one ink (--ink-blue)
+   with paper and ochre laid over it, instead of the four-stop
+   navy/purple gradients, 20px radii and glowing box-shadows this
+   block used to carry — none of which appear anywhere else on
+   the site.
+
+   Contrast rule for this surface, measured: paper 12.8:1 and
+   ochre 6.6:1 are fine, but VERMILLION is 2.7:1. The site's spot
+   ink must never be used for text or hairlines here; ochre is
+   the accent on blue.
+   ============================================================ */
 .anime-page {
-    background: var(--ink);
+    background: var(--ink-blue);
     min-height: 100vh;
-    padding-top: 40px;
-    padding-bottom: 60px;
+    padding-top: var(--space-6);
+    padding-bottom: var(--space-8);
+    position: relative;
+    isolation: isolate;
 }
 
+/* Halftone screen in paper, so the blue reads as printed rather
+   than as a flat CSS background colour. */
+.anime-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: radial-gradient(circle at center, var(--paper) 1.1px, transparent 1.2px);
+    background-size: var(--halftone-size);
+    opacity: 0.10;
+}
+
+.anime-page .breadcrumb,
 .anime-page .breadcrumb a,
-.anime-page .breadcrumb span {
-    color: rgba(255,255,255,0.5);
-}
+.anime-page .breadcrumb span { color: rgba(244, 240, 230, 0.62); }
+.anime-page .breadcrumb a:hover { color: var(--ochre); }
 
-.anime-page .breadcrumb a:hover {
-    color: #15130E;
-}
-
-/* ===== ANIME HERO BANNER ===== */
+/* ===== BANNER ===== */
 .anime-hero-banner {
     position: relative;
-    border-radius: 20px;
+    border-radius: var(--radius);
     overflow: hidden;
-    height: 280px;
+    min-height: 240px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 48px;
-    box-shadow: 0 8px 40px rgba(0,0,60,0.5);
+    align-items: flex-end;
+    margin-bottom: var(--space-7);
+    border: 2px solid var(--paper);
+    box-shadow: none;
 }
 
 .anime-bg-left,
@@ -174,78 +196,63 @@
 .anime-bg-left  { left: 0; }
 .anime-bg-right { right: 0; }
 
+/* A flat duotone wash rather than a three-stop diagonal gradient: the
+   artwork stays readable underneath, and the banner belongs to the same
+   blue as the page instead of introducing two more colours. */
+/* Weighted to the bottom, where the type sits: the artwork stays legible
+   across the top of the banner while the headline gets a solid enough
+   ground to hold 12:1 contrast over a very busy collage. */
 .anime-banner-overlay {
     position: absolute;
     inset: 0;
     background: linear-gradient(
-        135deg,
-        rgba(20, 18, 48, 0.82) 0%,
-        rgba(26, 58, 110, 0.72) 50%,
-        rgba(20, 18, 48, 0.82) 100%
+        to top,
+        rgba(20, 41, 74, 0.96) 0%,
+        rgba(20, 41, 74, 0.88) 42%,
+        rgba(20, 41, 74, 0.55) 100%
     );
 }
 
 .anime-banner-text {
     position: relative;
     z-index: 2;
-    text-align: center;
-    padding: 0 40px;
+    text-align: left;
+    padding: var(--space-6);
+    width: 100%;
 }
 
 .anime-banner-text h1 {
-    color: #fff;
-    font-size: 2.8rem;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    text-shadow: 0 0 40px rgba(125,128,218,0.6);
-    margin-bottom: 10px;
+    color: var(--paper);
+    font-size: clamp(2rem, 7vw, 4rem);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-tight);
+    line-height: 0.9;
+    text-shadow: none;
+    margin-bottom: var(--space-2);
 }
 
 .anime-banner-text p {
-    color: rgba(255,255,255,0.65);
-    font-size: 1.05rem;
+    color: rgba(244, 240, 230, 0.78);
+    font-size: clamp(0.92rem, 2.2vw, 1.05rem);
+    max-width: 52ch;
 }
 
-@media (max-width: 700px) {
-    .anime-hero-banner { height: 200px; }
-    .anime-banner-text { padding: 0 20px; }
-    .anime-banner-text h1 { font-size: 1.8rem; }
-}
-
-.anime-page .card-name { color: #e8e8f4; }
-
-.anime-page .flip-card-inner {
-    box-shadow: 0 4px 20px rgba(0,0,60,0.4);
-}
-
-.anime-page .flip-card-inner:hover {
-    box-shadow: 0 8px 32px rgba(125,128,218,0.35);
-}
-
-.anime-page .card-info {
-    background: transparent;
-}
-
-.anime-page .empty-state {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: rgba(255,255,255,0.7);
-}
-
-.anime-page .empty-state h3,
-.anime-page .empty-state p { color: rgba(255,255,255,0.7); }
-
+/* ===== GRID ===== */
 .products-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 30px;
+    gap: var(--space-5);
 }
 
-/* ===== FLIP CARD ===== */
+/* ===== FLIP CARD =====
+   The flip is kept — it shows front and back artwork without a click and
+   is genuinely useful here. What changed is the card it flips: a white
+   printed sheet with an ink rule and square corners, which also keeps the
+   garment mockups on the white they were shot on. */
 .flip-card {
     display: flex;
     flex-direction: column;
-    /* Containing block for the favourite heart pinned to the card corner. */
     position: relative;
 }
 
@@ -254,46 +261,46 @@
     position: relative;
     width: 100%;
     aspect-ratio: 1;
-    perspective: 800px;
+    perspective: 900px;
     text-decoration: none;
-    border-radius: 12px;
+    border-radius: var(--radius);
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-    transition: box-shadow 0.3s;
+    border: 1.5px solid var(--ink);
+    box-shadow: none;
+    transition: transform var(--dur) var(--ease);
     cursor: pointer;
 }
 
-.flip-card-inner:hover {
-    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-}
+.anime-page .flip-card-inner,
+.anime-page .flip-card-inner:hover { box-shadow: none; }
+
+.flip-card-inner:hover { transform: translate(-2px, -2px); }
 
 .flip-face {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    background: #f5f5f5;
+    background: var(--stock);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: 12px;
+    transition: transform 0.55s var(--ease);
+    border-radius: 0;
     overflow: hidden;
 }
 
-.flip-front {
-    transform: rotateY(0deg);
-}
+.flip-front { transform: rotateY(0deg); }
+.flip-back  { transform: rotateY(180deg); }
+.flip-card-inner:hover .flip-front { transform: rotateY(-180deg); }
+.flip-card-inner:hover .flip-back  { transform: rotateY(0deg); }
 
-.flip-back {
-    transform: rotateY(180deg);
-}
-
-.flip-card-inner:hover .flip-front {
-    transform: rotateY(-180deg);
-}
-
-.flip-card-inner:hover .flip-back {
-    transform: rotateY(0deg);
+/* The flip is decorative motion: honour a reduced-motion preference by
+   showing the front face only, rather than spinning the card. */
+@media (prefers-reduced-motion: reduce) {
+    .flip-face { transition: none; }
+    .flip-card-inner:hover { transform: none; }
+    .flip-card-inner:hover .flip-front { transform: rotateY(0deg); }
+    .flip-card-inner:hover .flip-back  { transform: rotateY(180deg); }
 }
 
 .face-product-img {
@@ -309,7 +316,7 @@
     transform: translate(-50%, -50%);
     height: auto;
     pointer-events: none;
-    filter: drop-shadow(1px 2px 4px rgba(0,0,0,0.25));
+    filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.22));
     z-index: 2;
 }
 
@@ -319,8 +326,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #aaa;
-    font-size: 0.9rem;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
 }
 
 .front-label {
@@ -328,88 +338,110 @@
     bottom: 8px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0,0,0,0.5);
-    color: white;
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 10px;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    padding: 3px 9px;
+    border-radius: 0;
     z-index: 3;
     white-space: nowrap;
 }
 
-/* Card info below flip area */
+/* ===== CARD INFO ===== */
 .card-info {
-    padding: 12px 4px 4px;
-    text-align: center;
+    padding: var(--space-3) 0 0;
+    text-align: left;
 }
 
+.anime-page .card-info { background: transparent; }
+
 .card-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 4px;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
+.anime-page .card-name { color: var(--paper); }
+
+/* Ochre, not vermillion — see the contrast note at the top of this block. */
 .card-price {
-    color: #e74c3c;
-    font-weight: 600;
-    font-size: 0.9rem;
-    margin-bottom: 8px;
+    font-family: var(--font-mono);
+    color: var(--ink-soft);
+    font-weight: 500;
+    font-size: 0.8rem;
+    margin-bottom: var(--space-3);
 }
 
-.card-btn {
-    display: inline-block;
-    padding: 7px 18px;
-    font-size: 0.85rem;
-    border-radius: 20px;
-    background: var(--ink);
-    color: white;
-    text-decoration: none;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
+.anime-page .card-price { color: var(--ochre); }
 
-.card-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102,126,234,0.4);
-}
+/* The button already carries .btn .btn-sm, so it inherits the site's flat
+   ink block. This used to override it back into a rounded pill with a
+   coloured glow, which is why the collection looked like a different site. */
+.card-btn { display: inline-flex; }
 
+.anime-page .card-btn {
+    background: var(--paper);
+    color: var(--ink);
+    border-color: var(--paper);
+}
+.anime-page .card-btn:hover {
+    background: var(--ochre);
+    color: var(--ink);
+    border-color: var(--ochre);
+}
+.anime-page .card-btn:focus-visible { outline-color: var(--paper); }
+
+/* ===== EMPTY STATE ===== */
 .no-products {
     grid-column: 1 / -1;
     text-align: center;
-    padding: 60px 20px;
+    padding: var(--space-8) var(--space-4);
 }
 
 .empty-state {
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 40px;
-    max-width: 400px;
+    background: transparent;
+    border: 2px dashed rgba(244, 240, 230, 0.35);
+    border-radius: var(--radius);
+    padding: var(--space-7);
+    max-width: 460px;
     margin: 0 auto;
 }
 
-.empty-state h3 {
-    font-size: 1.5rem;
-    margin-bottom: 10px;
-    color: #333;
+.anime-page .empty-state h3 {
+    color: var(--paper);
+    text-transform: uppercase;
+    margin-bottom: var(--space-2);
 }
+.anime-page .empty-state p { color: rgba(244, 240, 230, 0.72); }
 
-.empty-state p {
-    color: #666;
-    line-height: 1.6;
+/* The favourite control is a stamped square on this page, not the soft
+   white circle it inherits — a lone rounded pill on a page built from
+   ruled squares is exactly the kind of leftover that makes a redesign
+   look half-applied. */
+.anime-page .fav-btn {
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    color: var(--ink);
+}
+.anime-page .fav-btn.is-favorited {
+    background: var(--ochre);
+    color: var(--ink);
 }
 
 @media (max-width: 600px) {
-    .shop-header h1 {
-        font-size: 2rem;
-    }
-
-    .products-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-    }
+    .anime-hero-banner { min-height: 180px; }
+    .anime-banner-text { padding: var(--space-4); }
+    .products-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+    .card-name { font-size: 1rem; }
 }
 </style>
 

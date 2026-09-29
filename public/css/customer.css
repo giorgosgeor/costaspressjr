@@ -34,7 +34,16 @@
     --gradient-primary:  linear-gradient(135deg, var(--spot), var(--spot-hover));
     --gradient-dark:     linear-gradient(135deg, #1F2937, #111827);
     --gradient-success:  linear-gradient(135deg, var(--spot-3), #15803D);
-    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-xl: 20px; --radius-full: 9999px;
+    /* --radius-sm and --radius-lg are NOT redefined here.
+       This legacy alias block used to set them to 6px and 16px, and because
+       customer.css loads after style.css those values quietly replaced the
+       press-floor radii (1px and 3px) for the entire customer side. Corners
+       that were meant to be cut stayed rounded — the product panel, the
+       colour swatches and every card carrying --radius-lg — which is why
+       parts of the site still looked like the old theme no matter what the
+       token block said. Aliases must never shadow a real token's name.
+       --radius-xl and --radius-full had no users at all and are gone. */
+    --radius-md: var(--radius);
     --transition-fast: 0.15s ease;
     --transition-normal: 0.2s ease;
 }
@@ -206,15 +215,24 @@
 /* ============================================================
    SITE HEADER — clean sticky masthead
    ============================================================ */
+/* A masthead, not a nav bar. Closed off with a full ink rule instead of
+   a pale grey hairline, on the lighter stock so it separates from the
+   newsprint page beneath it without needing a shadow. */
 .site-header {
-    background: #fff;
-    border-bottom: 1px solid var(--border);
+    background: var(--paper-2);
+    border-bottom: 2px solid var(--ink);
     position: sticky;
     top: 0;
     z-index: 50;
 }
 
-.site-header::after { content: none; }
+/* The thin spot rule under the masthead reads as a second ink pass. */
+.site-header::after {
+    content: "";
+    display: block;
+    height: 3px;
+    background: var(--spot);
+}
 
 .header-inner {
     display: flex;
@@ -253,35 +271,46 @@
 /* The "tail" inside the nav only appears in the mobile drawer */
 .nav-mobile-tail { display: none; }
 
-.main-nav a {
-    color: var(--ink-soft);
-    padding: var(--space-2) var(--space-3);
-    font-size: 0.95rem;
-    font-weight: 500;
-    text-decoration: none;
-    border-radius: var(--radius-sm);
-    position: relative;
-    transition: color .15s, background .15s;
-}
-
-.main-nav a:hover {
+/* Nav items are set as caps in the display face so the masthead reads as
+   printed rather than as UI chrome. The underline on the current page is
+   a drawn rule, thick enough to look inked on. */
+/* :not(.btn) for the same reason as .info-article-body a: this selector
+   outranks .btn, so the Login and Register buttons in the mobile drawer had
+   their labels repainted to ink and became near-invisible on their own
+   fills. Nav links take the nav colour; buttons keep their scheme. */
+.main-nav a:not(.btn) {
     color: var(--ink);
-    background: var(--paper-soft);
+    padding: var(--space-2) var(--space-3);
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    text-decoration: none;
+    border-radius: 0;
+    position: relative;
+    transition: color var(--dur) var(--ease);
 }
 
-.main-nav a.active {
-    color: var(--spot);
-    background: transparent;
-    font-weight: 600;
-}
-
-.main-nav a.active::after {
+.main-nav a:not(.btn)::after {
     content: '';
     position: absolute;
-    left: 14px; right: 14px; bottom: -2px;
-    height: 2px;
+    left: var(--space-3); right: var(--space-3); bottom: 2px;
+    height: 3px;
     background: var(--spot);
-    border-radius: 2px;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur) var(--ease);
+}
+
+.main-nav a:not(.btn):hover { color: var(--spot); background: transparent; }
+.main-nav a:not(.btn):hover::after { transform: scaleX(1); }
+
+.main-nav a.active:not(.btn) { color: var(--ink); background: transparent; }
+.main-nav a.active:not(.btn)::after { transform: scaleX(1); }
+
+@media (prefers-reduced-motion: reduce) {
+    .main-nav a:not(.btn)::after { transition: none; }
 }
 
 .header-actions {
@@ -525,54 +554,85 @@
    ============================================================ */
 /* Sized so the section below it starts above the fold. The vh terms let the
    banner give up height on short screens instead of pushing the page down. */
+/* The hero is the front of a press sheet: ink on newsprint, closed with
+   a rule, with a halftone screen fading down behind the type. The grey
+   band it replaced (#ECECEF) is the single most template-looking element
+   the site had — every print-on-demand competitor ships the same one. */
 .hero {
-    /* Neutral band, not the old lavender — that was tinted to sit with the blue
-       accent and read as a stray colour once the accent went neutral. */
-    background: #ECECEF;
-    padding: clamp(28px, 4vh, 44px) 0 clamp(32px, 4.5vh, 50px);
+    background: var(--paper);
+    padding: clamp(26px, 5vh, 80px) 0 clamp(26px, 5vh, 64px);
     position: relative;
     overflow: hidden;
+    border-bottom: 2px solid var(--ink);
+    isolation: isolate;
 }
 
-.hero::before { content: none; }
+/* Halftone screen, fading upward off the rule at the bottom. */
+.hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--halftone);
+    background-size: var(--halftone-size);
+    opacity: 0.18;
+    -webkit-mask: linear-gradient(to top, #000, transparent 72%);
+            mask: linear-gradient(to top, #000, transparent 72%);
+}
 
 .hero-content {
     position: relative;
     z-index: 1;
-    max-width: 820px;
+    max-width: 980px;
     margin: 0 auto;
     padding: 0 var(--space-4);
     text-align: left;
 }
 
+/* Was a soft white pill — the most generic shape on the page. Now the
+   printed slug line that sits above a headline on a press sheet. */
 .hero-badge {
-    display: inline-block;
-    background: #fff;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    background: transparent;
     color: var(--ink);
-    padding: var(--space-1) var(--space-3);
-    font-size: 0.78rem;
-    font-weight: 600;
-    border-radius: 9999px;
-    margin-bottom: 18px;
-    box-shadow: var(--stamp-xs);
+    padding: 0 0 var(--space-3);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    border-radius: 0;
+    margin-bottom: var(--space-4);
+    box-shadow: none;
 }
 
+/* Extra Condensed at 900 wants to be set big and tight — at the old
+   2.75rem ceiling it just looked like a narrow sans. This is the size
+   the face was drawn for, and it is what makes the page feel printed. */
 .hero h1 {
-    font-size: clamp(1.9rem, 4vw, 2.75rem);
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-    margin-bottom: 14px;
+    font-size: clamp(2.1rem, 9vw, 6rem);
+    line-height: 0.9;
+    letter-spacing: -0.015em;
+    margin-bottom: var(--space-4);
     color: var(--ink);
-    font-weight: 800;
-    max-width: 620px;
+    font-weight: 900;
+    text-transform: uppercase;
+    max-width: 14ch;
 }
+
+/* One word of the headline carries the spot ink — a second plate on the
+   press. Applied with a span in the markup. */
+.hero h1 .ink-2 { color: var(--spot); }
 
 .hero p {
-    font-size: 1.05rem;
+    font-size: clamp(0.98rem, 2.4vw, 1.12rem);
     color: var(--ink-soft);
-    max-width: 520px;
-    margin: 0 0 var(--space-5);
-    line-height: 1.55;
+    max-width: 52ch;
+    margin: 0 0 var(--space-6);
+    line-height: 1.5;
 }
 
 .hero-buttons {
@@ -587,8 +647,11 @@
 /* ============================================================
    SECTIONS
    ============================================================ */
+/* 64px of air above and below every band is right on a desktop and far
+   too much on a phone, where it pushes the next section entirely out of
+   sight between scrolls. */
 .section {
-    padding: var(--space-8) 0;
+    padding: clamp(var(--space-6), 6vw, var(--space-8)) 0;
     position: relative;
 }
 
@@ -610,35 +673,58 @@
     padding-top: 46px;
 }
 
+/* A caption above a section, not a coloured pill. The leading rule gives
+   the eye a start point and ties the label to the rule system. */
 .section-tag {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    background: transparent;
+    color: var(--ink);
+    padding: 0;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    border: 0;
+    margin-bottom: var(--space-3);
+}
+.section-tag::before {
+    content: "";
+    width: 26px;
+    height: 3px;
     background: var(--spot);
-    color: var(--paper);
-    padding: var(--space-1) var(--space-3);
-    font-family: var(--font-type);
-    font-size: 0.82rem;
-    border: 1px solid var(--border);
-    margin-bottom: 12px;
-    
+    flex: none;
 }
 
+/* Section titles are left-aligned now. Centred headings over a left
+   aligned grid is the layout every template ships; ranging everything
+   from one left margin is what makes a page look set rather than
+   assembled. The centred variant is kept as an opt-in for the few
+   places that genuinely want it. */
 .section-title {
-    font-size: clamp(1.6rem, 4vw, 2.25rem);
-    text-align: center;
-    margin-bottom: 10px;
+    font-size: clamp(1.5rem, 5.5vw, 3rem);
+    text-align: left;
+    margin-bottom: var(--space-3);
     color: var(--ink);
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-tight);
+    line-height: 0.95;
 }
 
 .section-subtitle {
-    text-align: center;
+    text-align: left;
     color: var(--ink-soft);
-    font-size: 1rem;
-    max-width: 560px;
-    margin: 0 auto 36px;
-    line-height: 1.55;
+    font-size: clamp(0.94rem, 2.2vw, 1.02rem);
+    max-width: 58ch;
+    margin: 0 0 var(--space-6);
+    line-height: 1.5;
 }
+
+.section-title-center { text-align: center; }
+.section-subtitle-center { text-align: center; margin-left: auto; margin-right: auto; }
 
 .section-footer {
     text-align: center;
@@ -654,8 +740,9 @@
     align-items: flex-end;
     justify-content: space-between;
     gap: var(--space-5);
-    padding-bottom: 18px;
-    border-bottom: 1px solid var(--border);
+    padding-bottom: var(--space-4);
+    margin-bottom: var(--space-6);
+    border-bottom: var(--rule);
 }
 
 .section-head-text { min-width: 0; }
@@ -800,12 +887,16 @@
     margin-top: 28px;
 }
 
+/* A product card is a spec sheet: white stock, ink rule, hard offset.
+   On hover it lifts up-left and the offset deepens, the same physical
+   language as the buttons. */
 .product-card {
-    background: #fff;
-    border: 1px solid var(--border);
+    background: var(--stock);
+    border: 1.5px solid var(--ink);
+    box-shadow: var(--press-sm);
     text-decoration: none;
     color: var(--ink);
-    transition: transform .15s, box-shadow .15s, border-color .15s;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -813,29 +904,40 @@
 }
 
 .product-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--stamp);
-    border-color: var(--border-strong);
+    transform: translate(-3px, -3px);
+    box-shadow: 6px 6px 0 var(--ink);
     color: var(--ink);
 }
 
 .product-image {
     position: relative;
     aspect-ratio: 1;
-    background: var(--paper-soft);
-    border-bottom: 1px solid var(--border);
+    background: var(--stock);
+    border-bottom: 1.5px solid var(--ink);
     overflow: hidden;
 }
 
+/* contain, not cover. These are garment mockups shot flat on white, and
+   cover was cropping sleeves and hems off every card — the shopper was
+   being shown a worse photo than the one we have. The padding keeps the
+   garment off the rule so the card reads as a mounted sheet. */
 .product-image img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    transition: transform .25s ease;
+    object-fit: contain;
+    padding: var(--space-4);
+    transition: transform var(--dur) var(--ease);
     display: block;
 }
 
-.product-card:hover .product-image img { transform: scale(1.04); }
+.product-card:hover .product-image img { transform: scale(1.03); }
+
+@media (prefers-reduced-motion: reduce) {
+    .product-card, .product-card:hover,
+    .product-image img, .product-card:hover .product-image img {
+        transition: none; transform: none;
+    }
+}
 
 /* Preview-only cards (home page "featured"): nothing to click, so don't offer
    any interactive affordance - no lift, no image zoom, no pointer cursor. */
@@ -846,29 +948,32 @@
 
 .product-card.is-preview:hover {
     transform: none;
-    box-shadow: none;
-    border-color: var(--border);
+    box-shadow: var(--press-sm);
 }
 
 .product-card.is-preview:hover .product-image img { transform: none; }
 
+/* Stamped onto the sheet, leaning like a real rubber stamp. */
 .product-badge {
     position: absolute;
     top: 10px;
     left: 10px;
-    background: var(--spot-2);
-    color: #fff;
+    background: var(--ochre);
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
     padding: var(--space-1) var(--space-2);
-    font-size: 0.72rem;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-caps);
+    transform: rotate(-2deg);
     z-index: 2;
 }
 
 .badge-soldout {
-    background: var(--ink-soft);
-    color: #fff;
+    background: var(--ink);
+    color: var(--paper);
 }
 
 /* Column layout so the price can be pinned to the bottom — otherwise a name
@@ -1253,12 +1358,18 @@
 
 .info-article-body li { margin-bottom: 6px; }
 
-.info-article-body a {
+/* :not(.btn) is load-bearing. This selector scores higher than .btn, so a
+   button placed in an info article had its label repainted to the spot ink
+   — vermillion text on a vermillion fill, i.e. an empty red rectangle. It
+   affected every .btn inside /track-order, /shipping, /returns, /sizing,
+   /faq and the legal pages. Prose links keep the spot ink; buttons keep
+   their own scheme. */
+.info-article-body a:not(.btn) {
     color: var(--spot);
     text-decoration: none;
 }
 
-.info-article-body a:hover {
+.info-article-body a:not(.btn):hover {
     text-decoration: underline;
 }
 
@@ -1349,7 +1460,9 @@
 }
 
 .category-image.anime-bg {
-    background: var(--spot-2);
+    /* Same blue the collection page is printed on, so the tile on /shop
+       previews the section it leads to instead of a near-miss navy. */
+    background: var(--ink-blue);
     background-image:
         radial-gradient(circle, rgba(241,236,222,0.18) 2px, transparent 2.5px);
     background-size: 16px 16px;
@@ -1584,9 +1697,9 @@
 }
 
 .main-image {
-    background: var(--paper-2);
-    border: 1px solid var(--border);
-    box-shadow: var(--stamp);
+    background: var(--stock);
+    border: 1.5px solid var(--ink);
+    box-shadow: none;
     overflow: hidden;
     aspect-ratio: 1;
 }
@@ -1594,8 +1707,35 @@
 .main-image img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
+}
+
+/* The customiser's gallery must NOT be forced square: a 1:1 box wrapped a
+   474px-tall panel around a 302px picture, which is what made the panel read
+   as far too big on a phone.
+
+   But dropping aspect-ratio alone is not enough. .main-image is a flex item
+   in a row, so with no width of its own it shrink-to-fits, and the image
+   inside it is width:100% — a percentage resolved against a width that
+   depends on the image. That circular reference collapses the panel to
+   nothing, which is why the product photo vanished on desktop while still
+   showing on mobile, where the container is a column and therefore already
+   has a definite width. flex-basis gives it that definite width in both
+   directions; min-width:0 lets it shrink below the image's intrinsic size
+   instead of pushing the row wide. */
+.custom-product-gallery .main-image {
+    aspect-ratio: auto;
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.custom-product-gallery #mainProductImage {
+    width: 100%;
+    height: auto;
+    max-height: 60vh;
+    object-fit: contain;
 }
 
 .product-title {
@@ -1703,115 +1843,29 @@
 }
 
 @media screen and (max-width: 768px) {
-    .header-inner { padding: var(--space-2) 0; gap: var(--space-2); }
-    .mobile-menu-toggle { display: flex; }
+    /* The masthead's mobile behaviour — the drawer, the toggle, the tail and
+       every touch target in it — now lives in mobile.css, which is loaded
+       last. It used to be restated here as well, so the two disagreed about
+       padding and colour and whichever loaded later won. What is left below
+       is only the ordering of the top bar, which nothing else sets. */
 
-    .main-nav {
-        display: none;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: var(--paper-2);
-        border-top: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-        flex-direction: column;
-        padding: var(--space-3);
-        gap: var(--space-1);
-        z-index: 49;
-    }
-
-    .main-nav.active { display: flex; }
-
-    .mobile-menu-toggle.active span:nth-child(1) {
-        transform: translateY(7px) rotate(45deg);
-    }
-    .mobile-menu-toggle.active span:nth-child(2) { opacity: 0; }
-    .mobile-menu-toggle.active span:nth-child(3) {
-        transform: translateY(-7px) rotate(-45deg);
-    }
-
-    .main-nav a {
-        width: 100%;
-        text-align: center;
-        padding: var(--space-3);
-    }
-
-    /* Drawer "tail": account, logout, lang switcher live inside the menu */
-    .nav-mobile-tail {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2);
-        width: 100%;
-        margin-top: 8px;
-        padding-top: 14px;
-        border-top: 1px dashed var(--border);
-    }
-    /* Defeat the inherited `.main-nav a` color so .btn keeps its own scheme. */
-    .nav-mobile-tail .btn {
-        width: 100%;
-        padding: var(--space-3);
-        font-size: 1rem;
-        color: var(--paper);
-        background: var(--ink);
-        text-decoration: none;
-    }
-    .nav-mobile-tail .btn:hover {
-        color: var(--paper);
-        background: var(--ink);
-    }
-    .nav-mobile-tail .btn-success {
-        background: var(--spot-3);
-        color: var(--paper);
-    }
-    .nav-mobile-tail .btn-danger {
-        background: var(--bad);
-        color: var(--paper);
-    }
-    .nav-mobile-tail .logout-form { width: 100%; }
-    .nav-mobile-tail .logout-form .btn { width: 100%; }
-    .nav-mobile-tail .lang-switcher {
-        align-self: center;
-        margin-top: 4px;
-    }
-    /* Lang switcher links: also defeat .main-nav a inheritance */
-    .nav-mobile-tail .lang-switcher a {
-        color: var(--ink);
-        background: transparent;
-        padding: var(--space-1) var(--space-3);
-    }
-    /* Matches the desktop switcher — grey, not the CTA blue. */
-    .nav-mobile-tail .lang-switcher a.active,
-    .nav-mobile-tail .lang-switcher a:hover {
-        color: #fff;
-        background: var(--ink-soft);
-    }
-
-    /* Header top bar reorder: [logo .... cart hamburger]
-       Hide account/logout/lang in the top bar (they live in the drawer). */
+    /* Header top bar order: [logo .... cart hamburger] */
     .header-inner > .logo               { order: 1; }
     .header-inner > .header-actions     { order: 2; margin-left: auto; }
     .header-inner > .mobile-menu-toggle { order: 3; }
 
-    .header-actions { gap: var(--space-2); }
+    /* Account, sign-out and language move into the drawer. */
     .header-actions > .btn-sm,
     .header-actions > .logout-form,
     .header-actions > .lang-switcher {
         display: none;
     }
 
-    .hero { padding: var(--space-6) 0 var(--space-6); }
-
-    .section { padding: var(--space-7) 0; }
-
-    .categories-grid,
-    .products-grid,
-    .features-grid {
-        gap: var(--space-4);
-    }
+    .mobile-menu-toggle { display: flex; }
+    .main-nav { display: none; }
+    .main-nav.active { display: flex; }
 
     .stat-card { padding: var(--space-4) var(--space-3); }
-
     .form-container { margin: var(--space-4) var(--space-4); padding: var(--space-5); }
 
     .newsletter-form { flex-direction: column; }
@@ -1822,12 +1876,12 @@
 }
 
 @media screen and (max-width: 480px) {
-    .hero h1 { font-size: 2rem; }
-    .hero p { font-size: 1rem; }
+    /* The fixed heading sizes that used to sit here (hero h1 2rem,
+       section-title 1.8rem) have gone: every heading is on a clamp() scale
+       now, and a hard px value at the small end simply switched that scale
+       off on the screens it exists to serve. Sizing belongs in one place. */
     .hero-buttons { flex-direction: column; }
     .hero-buttons .btn { width: 100%; }
-
-    .section-title { font-size: 1.8rem; }
     .section-subtitle { font-size: 0.95rem; }
 
     .categories-grid,
@@ -2431,12 +2485,22 @@
     transform: rotate(-135deg) translate(-2px, -2px);
 }
 
+/* table-layout:fixed is doing real work here, not tidiness. An auto table
+   refuses to shrink below its min-content width, so this one rendered 600px
+   wide inside a 474px column and gave the whole product page a horizontal
+   scrollbar — which is what was cutting the page off on phones. Fixed makes
+   width:100% authoritative, and the wrap rule keeps a long tier label from
+   being clipped once it can no longer push the table wider. */
 .price-tiers-table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     margin-top: 10px;
     font-size: 0.88rem;
 }
+
+.price-tiers-table th,
+.price-tiers-table td { overflow-wrap: anywhere; }
 
 .price-tiers-table th {
     text-align: left;
@@ -2583,4 +2647,679 @@
 @media (max-width: 640px) {
     .picker-toolbar { flex-direction: column; align-items: stretch; }
     .picker-sort { justify-content: space-between; }
+}
+
+/* ============================================================
+   HOME PAGE — ticker, hero split, rate card, steps
+   ============================================================ */
+
+/* ---- Ticker --------------------------------------------------------
+   The strip a shop letters across the top of a job sheet. Two identical
+   lists sit side by side and the track slides exactly half its width,
+   so the loop is seamless with no gap or jump. overflow:hidden on the
+   frame is load-bearing: without it the second list overflows the page
+   and gives the whole document a horizontal scrollbar. */
+.ticker {
+    background: var(--ink);
+    color: var(--paper);
+    border-bottom: 2px solid var(--ink);
+    overflow: hidden;
+    padding: 7px 0;
+}
+
+.ticker-track {
+    display: flex;
+    width: max-content;
+    animation: ticker-slide 38s linear infinite;
+}
+
+.ticker-list {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    margin: 0;
+    padding: 0 var(--space-6) 0 0;
+    list-style: none;
+    flex: none;
+}
+
+.ticker-list li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+}
+
+@keyframes ticker-slide {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+
+/* Motion for its own sake is exactly what a reduced-motion preference is
+   asking us not to do. The strip still reads, it just holds still. */
+@media (prefers-reduced-motion: reduce) {
+    .ticker-track { animation: none; }
+    .ticker-list:nth-child(2) { display: none; }
+}
+
+/* ---- Hero ----------------------------------------------------------
+   Single column. A rate card lived in a right-hand column here for one
+   pass; it was pulled because the shop sells tees at ~EUR 13 and hoodies
+   at ~EUR 37, so one garment's quantity ladder read as THE price list and
+   misrepresented most of the catalogue. The quantity discount belongs on
+   a product, where it can be that product's real ladder. */
+/* Carries .spec in the markup for its muted colour, but overrides the
+   rest of it: .spec is mono caps for labels and codes, and a sentence a
+   shopper actually reads set in mono looks like console output. */
+.hero-note {
+    margin-top: var(--space-4);
+    font-family: var(--font-body);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.85rem;
+    max-width: 46ch;
+}
+
+/* ---- How it works ---------------------------------------------------- */
+.how-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: none;
+}
+
+@media (min-width: 760px) {
+    .how-grid { grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
+}
+
+.how-step {
+    padding-top: var(--space-3);
+    border-top: var(--rule);
+}
+
+.how-num {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    color: var(--spot);
+    margin-bottom: var(--space-2);
+}
+
+/* Headings only now, so the step reads as a label under its number rather
+   than as the title of a paragraph that is no longer there. */
+.how-step h3 { margin-bottom: 0; }
+
+.how-cta { margin-top: var(--space-6); }
+
+/* ---- Category cards -------------------------------------------------- */
+.category-card {
+    position: relative;
+    display: block;
+    /* Explicitly left, overriding the centred alignment the older rule for
+       this class still sets further up the file. Everything else on the
+       page ranges from one left margin; these were the odd ones out. */
+    text-align: left;
+    background: var(--stock);
+    border: 1.5px solid var(--ink);
+    padding: var(--space-5);
+    padding-right: var(--space-8);
+    text-decoration: none;
+    color: var(--ink);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.category-card:hover { background: var(--ink); color: var(--paper); text-decoration: none; }
+.category-card:hover p { color: var(--paper); }
+.category-card:hover .category-num { color: var(--paper); }
+
+.category-num {
+    display: block;
+    color: var(--spot);
+    margin-bottom: var(--space-4);
+}
+
+.category-card h3 { margin-bottom: var(--space-2); color: inherit; }
+.category-card p { color: var(--ink-soft); font-size: 0.95rem; max-width: 40ch; }
+
+.category-card .category-icon {
+    margin: 0 0 var(--space-4);
+    color: inherit;
+    display: block;
+    width: auto;
+    height: auto;
+    background: none;
+    border: 0;
+}
+
+.category-go {
+    position: absolute;
+    right: var(--space-5);
+    bottom: var(--space-5);
+    display: inline-flex;
+    color: var(--spot);
+    transition: transform var(--dur) var(--ease);
+}
+.category-card:hover .category-go { color: var(--paper); transform: translateX(4px); }
+
+@media (prefers-reduced-motion: reduce) {
+    .category-card, .category-go { transition: none; }
+    .category-card:hover .category-go { transform: none; }
+}
+
+/* ---- Hero split + bulk-pricing card ---------------------------------
+   Pitch left, the reason to buy here on the right. One column until
+   there is genuinely room for two. */
+.hero-split {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+    align-items: start;
+}
+
+@media (min-width: 900px) {
+    .hero-split {
+        grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+        gap: var(--space-8);
+        align-items: center;
+    }
+}
+
+/* minmax(0, …) above rather than a px minimum: a track with a fixed
+   minimum refuses to shrink under it and pushes the grid wider than the
+   page, which is exactly how the previous version of this card gave the
+   home page a horizontal scrollbar on narrow screens. */
+.bulk-card {
+    background: var(--stock);
+    border: 1.5px solid var(--ink);
+    padding: var(--space-5);
+    min-width: 0;
+}
+
+.bulk-card .section-tag { margin-bottom: var(--space-3); }
+
+.bulk-title {
+    font-size: clamp(1.5rem, 3.2vw, 2rem);
+    line-height: 0.98;
+    margin-bottom: var(--space-3);
+    text-transform: uppercase;
+}
+
+/* The number is the hook, so it gets the display face and the spot ink
+   rather than being buried in the paragraph above it. */
+.bulk-save {
+    margin-top: var(--space-4);
+    font-family: var(--font-display);
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: clamp(1.25rem, 2.6vw, 1.6rem);
+    line-height: 1.04;
+    color: var(--spot);
+    margin-bottom: var(--space-5);
+    padding-top: var(--space-4);
+    border-top: var(--rule);
+}
+
+
+/* ============================================================
+   PRODUCT CONTROLS — colour swatches and size chips
+
+   These live here, in a stylesheet that is actually loaded, and
+   not in custom_product.css. That file — along with
+   shop_select_product.css and shop_anime.css — is referenced by
+   nothing: every one of those pages carries its rules in an
+   inline <style> block instead, so the three files on disk are
+   dead. Styles put there silently do nothing, which is exactly
+   what happened to these: the swatches fell back to the
+   browser's default button chrome and rendered as empty grey
+   ovals.
+   ============================================================ */
+
+#colorSwatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.color-swatch {
+    --chip: #fff;
+    position: relative;
+    width: 30px;
+    height: 30px;
+    flex: none;
+    padding: 0;
+    background: var(--chip);
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: transform var(--dur-fast) var(--ease);
+}
+
+/* The visible chip stays 30px so a long colour row still fits, while the
+   hit area is pushed out to 44px in every direction. Padding would have
+   made the swatch itself huge; an inset pseudo element enlarges only what
+   the finger has to find. */
+.color-swatch::after {
+    content: "";
+    position: absolute;
+    inset: -7px;
+}
+
+.color-swatch:hover { transform: translate(-1px, -1px); }
+
+.color-swatch.is-selected {
+    box-shadow: 0 0 0 2px var(--stock), 0 0 0 4px var(--ink);
+}
+
+.color-swatch:focus-visible {
+    outline: 3px solid var(--spot);
+    outline-offset: 3px;
+}
+
+#sizeOptions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.size-chip {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 var(--space-3);
+    background: var(--stock);
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.size-chip:hover:not(:disabled) { background: var(--paper-soft); }
+
+.size-chip.is-selected {
+    background: var(--ink);
+    color: var(--paper);
+}
+
+/* Out of stock in the chosen colour. Kept visible rather than removed so
+   the size run reads consistently as the shopper changes colour, but it is
+   struck through so "unavailable" is not carried by colour alone. */
+.size-chip:disabled {
+    background: transparent;
+    color: var(--ink-muted);
+    border-color: var(--border);
+    cursor: not-allowed;
+    text-decoration: line-through;
+}
+
+.size-chip:focus-visible { outline: 3px solid var(--spot); outline-offset: 2px; }
+
+/* ============================================================
+   COOKIE NOTICE
+
+   Built by app.js, styled here. It carried its own inline
+   gradient, 14px radius and #e2e8f0 border — leftovers of a
+   theme the site no longer uses — and, because it had never
+   actually run (see customer_footer.php), nobody had seen it.
+   On a phone it becomes a full-width sheet at the bottom
+   edge rather than a floating 560px card.
+   ============================================================ */
+#cookie-popup {
+    position: fixed;
+    bottom: var(--space-5);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 560px;
+    max-width: calc(100vw - var(--space-8));
+    background: var(--paper-2);
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: var(--press);
+    padding: var(--space-5);
+    z-index: 9999;
+}
+
+.cookie-popup-title {
+    margin: 0 0 var(--space-2);
+    font-size: 1.3rem;
+    text-transform: uppercase;
+}
+
+.cookie-popup-text {
+    margin: 0 0 var(--space-4);
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+}
+
+.cookie-popup-text a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--spot);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
+}
+
+.cookie-popup-actions {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+    /* A bottom sheet: full width, square top edge, sitting on the screen
+       edge and clear of the iOS home indicator. */
+    #cookie-popup {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: auto;
+        max-width: none;
+        transform: none;
+        border-width: 2px 0 0;
+        border-radius: 0;
+        box-shadow: 0 -6px 18px rgba(22, 19, 15, 0.14);
+        padding: var(--space-4);
+        padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+    }
+    .cookie-popup-actions { flex-direction: column-reverse; }
+    .cookie-popup-actions .btn { width: 100%; min-height: 46px; }
+}
+
+/* ============================================================
+   SHOP ASSISTANT
+
+   A launcher pinned to the corner and a panel that opens from
+   it. Built in the same press language as the rest of the site
+   rather than looking like a bolted-on third-party widget,
+   which is half the reason for not using one.
+   ============================================================ */
+
+.assistant-launcher {
+    position: fixed;
+    right: var(--space-4);
+    bottom: var(--space-4);
+    z-index: 1150;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: var(--ink);
+    color: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: var(--press-sm);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    transition: background var(--dur) var(--ease);
+}
+
+.assistant-launcher:hover { background: var(--spot); border-color: var(--spot); }
+.assistant-launcher:focus-visible { outline: 3px solid var(--spot); outline-offset: 3px; }
+.assistant-launcher[hidden] { display: none; }
+
+.assistant-launcher svg { flex: none; }
+
+/* The product page pins a price + CTA bar to the bottom edge; sit above it
+   rather than on top of the thing the shopper came to press. */
+body.has-action-bar .assistant-launcher { bottom: calc(var(--space-4) + 76px); }
+
+/* Hidden in the studio. Someone mid-design has a tools drawer on one side
+   and an action bar on the other; a third floating control is clutter. */
+body.studio-has-bar .assistant-launcher,
+body.studio-has-bar .assistant-panel { display: none; }
+
+/* ---- Panel ---- */
+.assistant-panel {
+    position: fixed;
+    right: var(--space-4);
+    bottom: var(--space-4);
+    z-index: 1160;
+    width: 380px;
+    max-width: calc(100vw - var(--space-6));
+    max-height: min(620px, calc(100dvh - var(--space-8)));
+    display: flex;
+    flex-direction: column;
+    background: var(--paper-2);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: var(--press);
+    overflow: hidden;
+}
+
+.assistant-panel[hidden] { display: none; }
+
+.assistant-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--ink);
+    color: var(--paper);
+}
+
+.assistant-head h2 {
+    color: var(--paper);
+    font-size: 1.25rem;
+    margin: 0 0 2px;
+    text-transform: uppercase;
+}
+
+.assistant-head p {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    color: rgba(244, 240, 230, 0.72);
+}
+
+.assistant-close {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1.5px solid rgba(244, 240, 230, 0.5);
+    border-radius: var(--radius);
+    color: var(--paper);
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+.assistant-close:hover { background: var(--spot); border-color: var(--spot); }
+
+/* ---- Message log ---- */
+.assistant-log {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    background: var(--paper);
+}
+
+.assistant-msg {
+    max-width: 88%;
+    padding: var(--space-3);
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+.assistant-msg-bot {
+    align-self: flex-start;
+    background: var(--stock);
+    color: var(--ink);
+}
+
+.assistant-msg-you {
+    align-self: flex-end;
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+}
+
+.assistant-msg a {
+    color: var(--spot);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.assistant-msg-you a { color: var(--ochre); }
+
+/* Suggested questions and the links an answer offers. */
+.assistant-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-self: flex-start;
+    max-width: 100%;
+}
+
+.assistant-chip {
+    padding: 7px 11px;
+    background: transparent;
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.assistant-chip:hover { background: var(--ink); color: var(--paper); text-decoration: none; }
+.assistant-chip-link { border-style: dashed; }
+
+.assistant-typing {
+    align-self: flex-start;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    color: var(--ink-muted);
+}
+
+/* ---- Composer ---- */
+.assistant-form {
+    display: flex;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-top: 2px solid var(--ink);
+    background: var(--paper-2);
+}
+
+.assistant-form input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--stock);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+}
+.assistant-form input:focus {
+    outline: none;
+    border-color: var(--spot);
+    box-shadow: inset 0 0 0 2px var(--spot);
+}
+
+.assistant-form button {
+    flex: none;
+    padding: 0 var(--space-4);
+    background: var(--spot);
+    color: #fff;
+    border: 2px solid transparent;
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    cursor: pointer;
+}
+.assistant-form button:hover { background: var(--spot-hover); }
+.assistant-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.assistant-note {
+    padding: var(--space-2) var(--space-3);
+    background: var(--paper-soft);
+    border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    color: var(--ink-muted);
+    text-align: center;
+}
+
+/* ---- Phone: a bottom sheet, not a floating card ---- */
+@media (max-width: 640px) {
+    .assistant-launcher {
+        right: var(--space-3);
+        bottom: var(--space-3);
+        padding: var(--space-3);
+        border-radius: var(--radius);
+    }
+    /* The label costs width a phone does not have; the icon carries it and
+       the accessible name still announces the control. */
+    .assistant-launcher-label { display: none; }
+
+    .assistant-panel {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: auto;
+        max-width: none;
+        height: 88dvh;
+        max-height: none;
+        border-width: 2px 0 0;
+        border-radius: 0;
+        box-shadow: 0 -8px 24px rgba(22, 19, 15, 0.22);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    body.assistant-open { overflow: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .assistant-launcher, .assistant-chip { transition: none; }
+}
+
+/* The products toggle points the way it will move: down to reveal, up to
+   collapse. The arrow that used to sit here pointed right, which was honest
+   when the button navigated to /shop and misleading now that it expands. */
+.toggle-chevron { transition: transform var(--dur) var(--ease); }
+#productsToggle.is-open .toggle-chevron { transform: rotate(180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+    .toggle-chevron { transition: none; }
 }

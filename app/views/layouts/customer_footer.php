@@ -1,5 +1,49 @@
 </main>
 
+<?php
+// Consent state for the cookie notice.
+//
+// This used to be read inline as `$user['cookie_accepted']`, with a fallback
+// of 0 when $user was not set — and $user is only populated by a couple of
+// controller actions. On every other page the fallback said "has not
+// accepted", so once the notice actually started running it reappeared on
+// each page no matter how many times it was dismissed.
+//
+// The session carries the answer now, and is filled from the users table on
+// the first page that needs it, so this costs at most one query per session.
+$cookieAccepted = 0;
+if (Auth::check()) {
+    if (isset($_SESSION['cookie_accepted'])) {
+        $cookieAccepted = (int)$_SESSION['cookie_accepted'];
+    } elseif (isset($user['cookie_accepted'])) {
+        $cookieAccepted = (int)$user['cookie_accepted'];
+        $_SESSION['cookie_accepted'] = $cookieAccepted;
+    } elseif (isset($db) && $db instanceof PDO) {
+        try {
+            $stmt = $db->prepare("SELECT cookie_accepted FROM users WHERE id = ?");
+            $stmt->execute([Auth::userId()]);
+            $cookieAccepted = (int)$stmt->fetchColumn();
+            $_SESSION['cookie_accepted'] = $cookieAccepted;
+        } catch (\PDOException $e) {
+            // Leave it at 0 and show the notice rather than failing the page.
+        }
+    }
+}
+?>
+
+    <?php if (!empty($checkoutMode)): ?>
+    <footer class="co-footer">
+        <div class="container co-footer-inner">
+            <nav class="co-footer-links" aria-label="<?= t('footer.legal') ?>">
+                <a href="/terms" target="_blank" rel="noopener"><?= t('footer.terms') ?></a>
+                <a href="/privacy" target="_blank" rel="noopener"><?= t('footer.privacy') ?></a>
+                <a href="/returns" target="_blank" rel="noopener"><?= t('footer.returns') ?></a>
+                <a href="/contact" target="_blank" rel="noopener"><?= t('footer.contact') ?></a>
+            </nav>
+            <p><?= I18n::t('footer.copyright', ['year' => date('Y')]) ?></p>
+        </div>
+    </footer>
+    <?php else: ?>
     <footer class="site-footer">
         <div class="container">
             <div class="footer-grid">
@@ -58,6 +102,7 @@
             </div>
         </div>
     </footer>
+    <?php endif; // checkout mode ?>
 
     <script>
     /* Translation strings exposed to client-side JS. */
@@ -75,10 +120,65 @@
         return s;
     };
     </script>
+<?php // ---- Shop assistant ---------------------------------------------
+      // Answers come from ShopAssistant.php, which reads the shop's own FAQ,
+      // info pages, products table and pricing engine - so it can quote a
+      // real bulk price instead of guessing one. No third-party script, no
+      // API key, and nothing about the customer leaves this server.
+      //
+      // Rendered on every customer page except the studio, where the CSS
+      // hides it: someone mid-design already has a tools drawer on one edge
+      // and an action bar on the other. Not on checkout either: the floating
+      // button sat on top of the Pay bar on phones, and help is linked there. ?>
+<?php if (empty($checkoutMode)): ?>
+<button type="button" class="assistant-launcher" id="assistantLauncher"
+        aria-expanded="false" aria-controls="assistantPanel"
+        aria-label="<?= t('assistant.open') ?>">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    <span class="assistant-launcher-label"><?= t('assistant.title') ?></span>
+</button>
+
+<div class="assistant-panel" id="assistantPanel" role="dialog" aria-modal="false"
+     aria-labelledby="assistantTitle" hidden>
+    <div class="assistant-head">
+        <div>
+            <h2 id="assistantTitle"><?= t('assistant.title') ?></h2>
+            <p><?= t('assistant.subtitle') ?></p>
+        </div>
+        <button type="button" class="assistant-close" id="assistantClose"
+                aria-label="<?= t('assistant.close') ?>">&times;</button>
+    </div>
+
+    <?php // aria-live so a screen reader hears each reply as it arrives,
+          // rather than the panel changing silently underneath it. ?>
+    <div class="assistant-log" id="assistantLog" aria-live="polite" aria-atomic="false"></div>
+
+    <form class="assistant-form" id="assistantForm" autocomplete="off">
+        <label class="visually-hidden" for="assistantInput"><?= t('assistant.placeholder') ?></label>
+        <input type="text" id="assistantInput" name="q" maxlength="500"
+               placeholder="<?= t('assistant.placeholder') ?>">
+        <button type="submit"><?= t('assistant.send') ?></button>
+    </form>
+
+    <p class="assistant-note"><?= t('assistant.disclaimer') ?></p>
+</div>
+<?php endif; ?>
+
     <script src="<?= htmlspecialchars(Asset::url('/js/ui.js')) ?>" defer></script>
     <script src="<?= htmlspecialchars(Asset::url('/js/app.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(Asset::url('/js/assistant.js')) ?>" defer></script>
     <script>
-    initCookiePopup(<?= json_encode(Auth::check()) ?>, <?= isset($user) ? (int)$user['cookie_accepted'] : 0 ?>);
+    /* Deferred scripts run AFTER the document is parsed, but this inline
+       script runs DURING parsing — so calling initCookiePopup() directly
+       here always threw "initCookiePopup is not defined" and the cookie
+       notice never appeared on any page. DOMContentLoaded fires after
+       deferred scripts have executed, which is the point where app.js has
+       actually defined it. */
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof initCookiePopup === 'function') {
+            initCookiePopup(<?= json_encode(Auth::check()) ?>, <?= (int)$cookieAccepted ?>);
+        }
+    });
     </script>
 </body>
 </html>

@@ -30,12 +30,16 @@ $currentLocale   = I18n::locale();
     <meta name="twitter:image" content="/images/og-card.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sofia+Sans:wght@400..800&family=Sofia+Sans+Extra+Condensed:wght@600..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/style.css')) ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/customer.css')) ?>">
     <?php if (!empty($extraCss)): foreach ($extraCss as $css): ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url($css)) ?>">
     <?php endforeach; endif; ?>
+    <?php // Last on purpose. mobile.css holds every phone-specific decision in
+          // one readable layer, and loading it after the per-page stylesheets
+          // lets it win on specificity ties without a single !important. ?>
+    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/mobile.css')) ?>">
     <!-- Client-side pricing mirror (previews only; server is authoritative) -->
     <script src="<?= htmlspecialchars(Asset::url('/js/pricing.js')) ?>" defer></script>
     <!-- Exact mockup tint chains for colours the generic filter formula renders badly -->
@@ -47,6 +51,26 @@ $currentLocale   = I18n::locale();
 </head>
 <body>
     <a href="#main-content" class="skip-link"><?= t('header.skip_to_content') ?></a>
+    <?php if (!empty($checkoutMode)): ?>
+    <?php // Checkout gets a bare header: no shop navigation, account menu or
+          // banners to lead someone away mid-payment — just where they are,
+          // that it's secure, and the one way back. ?>
+    <header class="co-header">
+        <div class="container co-header-inner">
+            <a href="/" class="co-header-logo">
+                <img src="/images/logo.png" alt="<?= t('site.brand') ?>">
+            </a>
+            <span class="co-header-secure">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="1"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                <?= t('checkout.modal.title') ?>
+            </span>
+            <a href="/cart" class="co-header-back">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                <span><?= t('checkout.page.back_to_cart') ?></span>
+            </a>
+        </div>
+    </header>
+    <?php else: ?>
     <header class="site-header">
         <div class="container header-inner">
             <a href="/" class="logo">
@@ -80,8 +104,12 @@ $currentLocale   = I18n::locale();
                             <button type="submit" class="btn btn-sm btn-danger"><?= t('header.logout') ?></button>
                         </form>
                     <?php else: ?>
-                        <a href="/login" class="btn btn-sm"><?= t('header.login') ?></a>
-                        <a href="/register" class="btn btn-sm btn-success"><?= t('header.register') ?></a>
+                        <?php // Register is the primary action, Login the quiet one.
+                              // They were a vermillion button beside a GREEN one, and
+                              // green carries no meaning in this palette — it is the
+                              // success colour, not an identity. ?>
+                        <a href="/login" class="btn btn-sm btn-secondary"><?= t('header.login') ?></a>
+                        <a href="/register" class="btn btn-sm"><?= t('header.register') ?></a>
                     <?php endif; ?>
                     <div class="lang-switcher" role="group" aria-label="Language">
                         <a href="/lang/en" class="<?= $currentLocale === 'en' ? 'active' : '' ?>" hreflang="en">EN</a>
@@ -194,4 +222,5 @@ $currentLocale   = I18n::locale();
         </div>
     </div>
     <?php endif; ?>
+    <?php endif; // checkout mode ?>
     <main id="main-content">

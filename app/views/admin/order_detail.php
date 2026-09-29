@@ -59,7 +59,11 @@ if (!function_exists('adminOrderProductColorFilter')) {
         <div class="info-row"><span class="label">Tracking Number</span><span class="value" style="letter-spacing:0.08em;"><?= htmlspecialchars($order['tracking_token']) ?></span></div>
         <?php endif; ?>
         <?php if (!empty($order['shipping_address'])): ?>
-        <div class="info-row"><span class="label">Shipping Address</span><span class="value"><?= htmlspecialchars($order['shipping_address']) ?></span></div>
+        <?php // Newer orders carry the collection point + contact here, one item per line. ?>
+        <div class="info-row"><span class="label"><?= !empty($order['delivery_method']) ? 'Collection' : 'Shipping Address' ?></span><span class="value"><?= nl2br(htmlspecialchars($order['shipping_address'])) ?></span></div>
+        <?php if ((float)($order['shipping_fee'] ?? 0) > 0): ?>
+        <div class="info-row"><span class="label">Pickup Fee</span><span class="value">€<?= number_format((float)$order['shipping_fee'], 2) ?></span></div>
+        <?php endif; ?>
         <?php endif; ?>
     </div>
 
@@ -96,7 +100,7 @@ if (!function_exists('adminOrderProductColorFilter')) {
         <div class="info-row"><span class="label">Billing ZIP</span><span class="value"><?= htmlspecialchars($payment['billing_zip'] ?? '—') ?></span></div>
         <?php endif; ?>
         <div class="info-row"><span class="label">Amount Charged</span><span class="value" style="color:#28a745; font-size:1.1rem;">€<?= number_format($payment['amount'], 2) ?></span></div>
-        <div class="info-row"><span class="label">Payment Status</span><span class="value"><span class="status status-delivered"><?= htmlspecialchars($payment['status']) ?></span></span></div>
+        <div class="info-row"><span class="label">Payment Status</span><span class="value"><span class="status status-<?= $payment['status'] === 'paid' ? 'delivered' : 'cancelled' ?>"><?= htmlspecialchars(str_replace('_', ' ', $payment['status'])) ?></span></span></div>
         <?php else: ?>
         <p style="color:#999;">No payment information recorded.</p>
         <?php endif; ?>

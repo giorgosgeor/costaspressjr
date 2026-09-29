@@ -1,81 +1,146 @@
 /* ============================================================
-   COSTAS PRESS JR. — ZINE THEME (style.css)
-   Base tokens, typography, buttons, forms, auth, admin nav,
-   stats, tables, alerts. The DIY/Risograph zine look.
+   COSTAS PRESS JR. — PRESS FLOOR (style.css)
+   The shop's own production language: newsprint stock, warm
+   press black, two spot inks, hard offset shadows, square
+   corners. Base tokens, type, buttons, forms, auth, admin.
+
+   The theme this file used to declare ("zine / risograph") had
+   been neutralised token by token into Inter on grey — which is
+   the default-template look the redesign exists to get away
+   from. The identity now lives in the tokens below rather than
+   in a comment describing one.
    ============================================================ */
 
 :root {
-    /* Surfaces */
-    --paper:        #FFFFFF;   /* page background */
-    --paper-soft:   #F4F4F6;   /* section background */
-    --paper-2:      #FAFAFB;   /* card background */
-    --ink:          #1A1A1F;   /* primary text */
-    --ink-soft:     #4A4A55;   /* secondary text */
-    --ink-muted:    #8A8A95;   /* tertiary text */
+    /* ---- PAPER STOCK -------------------------------------------------
+       Warm newsprint, not white. The page is a sheet coming off the
+       press. One caveat drove the extra token: every product mockup we
+       own is shot on a white background, so an image dropped straight
+       onto cream shows a grey rectangle around the garment. Anything
+       holding a product photo uses --stock (true white) as its panel,
+       which is also why the shop reads as spec sheets pinned to paper. */
+    --paper:        #F4F0E6;   /* page — newsprint */
+    --paper-2:      #FBF9F3;   /* card — lighter stock */
+    --paper-soft:   #E8E1D1;   /* banded section — kraft */
+    --paper-3:      #E8E1D1;   /* alias of the above, by intent */
+    --stock:        #FFFFFF;   /* true white — product panels only */
 
-    /* Accents.
-       The primary accent is a deep neutral rather than a saturated blue: the
-       garments are the colourful thing on the page, and a loud accent competed
-       with them. --spot-rgb carries the same value as channels so translucent
-       tints (focus rings, hovers, shadows) follow the accent automatically
-       instead of being hardcoded and drifting when it changes. */
-    --spot:         #4A4A55;   /* primary CTA */
-    --spot-rgb:     74, 74, 85;
-    --spot-hover:   #33333B;
-    --spot-2:       #E04E2A;   /* warm accent for tags / promos */
-    --spot-3:       #16A34A;
-    --spot-yellow:  #F5C642;
+    /* ---- PRESS BLACK -------------------------------------------------
+       Warm black, never #000: a real ink lay-down on cream stock is
+       never neutral, and pure black against this paper looks like a
+       rendering bug rather than a print. */
+    --ink:          #16130F;   /* 16.3:1 on --paper */
+    --ink-soft:     #4A4337;   /*  8.6:1 */
+    --ink-muted:    #6B6254;   /*  5.3:1 — still passes AA as body text */
 
-    /* Status */
-    --ok:    #16A34A;
-    --warn:  #E08628;
-    --bad:   #DC2626;
-    --info:  #2A4FE0;
+    /* ---- SPOT INKS ---------------------------------------------------
+       A real screen-printed job runs a small number of spot colours, so
+       the palette is exactly that: black plus two inks and a highlight.
+       Every value here was measured, not eyeballed — the previous
+       palette shipped a 3.41:1 text colour, so the ratios are recorded
+       next to each entry to make a regression obvious in review.
 
-    /* Borders */
-    --border:       #E5E5EA;   /* light divider */
-    --border-strong:#D4D4DA;
+       --spot was tuned from #D6371C, which failed at 4.17:1 on cream. */
+    --spot:         #C83017;   /* vermillion — 4.74 on paper, 5.40 on white */
+    --spot-rgb:     200, 48, 23;
+    --spot-hover:   #A82611;   /* 6.25 on paper, white-on-it 7.12 */
+    --spot-2:       #1B3A6B;   /* process blue — 9.90 on paper */
+    --spot-3:       #1F7A46;   /* success green, warmed to sit on cream */
+    --spot-yellow:  #E0A517;   /* ochre highlight */
 
-    /* Soft drop shadows (not hard offsets) */
-    --stamp:      0 4px 12px rgba(20, 20, 30, 0.08), 0 1px 3px rgba(20, 20, 30, 0.04);
-    --stamp-sm:   0 2px 6px rgba(20, 20, 30, 0.06), 0 1px 2px rgba(20, 20, 30, 0.04);
-    --stamp-xs:   0 1px 3px rgba(20, 20, 30, 0.05);
-    --stamp-spot: 0 4px 14px rgba(var(--spot-rgb), 0.25), 0 1px 3px rgba(var(--spot-rgb), 0.12);
-    --stamp-blue: 0 4px 14px rgba(var(--spot-rgb), 0.25), 0 1px 3px rgba(var(--spot-rgb), 0.12);
+    /* Ochre is a BACKGROUND ink only. As text on paper it measures
+       1.93:1 — far under AA. Ink on ochre is 8.43:1, so use it as a
+       fill with --ink on top (stamps, tags, highlight bands). */
+    --ochre:        #E0A517;
+    --ochre-ink:    var(--ink);
 
-    /* Type — one family, deliberately.
-       There used to be three tokens (--font-display / --font-type / --font-body)
-       that all resolved to Inter, which implied a distinction the site never
-       made and invited people to "pick one" at random. One family now, with
-       hierarchy carried by size, weight and tracking instead of a second face —
-       that also avoids a second webfont request and the flash it brings.
-       The old names are kept as aliases so existing rules keep working. */
-    --font:         'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --font-display: var(--font);
-    --font-type:    var(--font);
+    /* Deep press blue. The anime collection is printed on this ground at the
+       shop owner's request, so it is a real brand surface and belongs in the
+       tokens rather than in one page's inline style block.
+       Measured on this blue: paper 12.8:1, white 14.5:1, ochre 6.6:1 — but
+       VERMILLION IS ONLY 2.7:1. The spot ink must never be used as text or a
+       thin line on this surface; ochre is the accent here. */
+    --ink-blue:     #14294A;
+
+    /* ---- STATUS ------------------------------------------------------ */
+    --ok:    #1F7A46;
+    --warn:  #B5701A;
+    --bad:   #B3271B;
+    --info:  #1B3A6B;
+
+    /* ---- RULES -------------------------------------------------------
+       Printed matter divides space with ruled lines, not with the pale
+       grey hairlines of a dashboard. --border stays soft for dense UI
+       (tables, form rows) where a full ink rule would stripe the page;
+       --border-strong is the real thing. */
+    --border:        #D8D0BD;
+    --border-strong: #16130F;
+    --rule:          1.5px solid var(--ink);
+    --rule-hair:     1px solid var(--border);
+
+    /* ---- LETTERPRESS -------------------------------------------------
+       Hard offset shadows, no blur. A blurred drop shadow is the single
+       clearest tell of a template; an offset block reads as ink pressed
+       into stock. The default scale stays restrained so it can be used
+       everywhere, and --press is the deliberate, full-strength version
+       for the few elements that should feel physically stamped. */
+    --stamp-xs:   0 1px 0 rgba(22, 19, 15, 0.10);
+    --stamp-sm:   2px 2px 0 rgba(22, 19, 15, 0.14);
+    --stamp:      3px 3px 0 rgba(22, 19, 15, 0.16);
+    --stamp-spot: 3px 3px 0 rgba(var(--spot-rgb), 0.28);
+    --stamp-blue: 3px 3px 0 rgba(var(--spot-rgb), 0.28);
+    --press:      4px 4px 0 var(--ink);
+    --press-sm:   2px 2px 0 var(--ink);
+    --press-spot: 4px 4px 0 var(--spot);
+
+    /* ---- TYPE --------------------------------------------------------
+       Sofia Sans, in two widths from one superfamily. The obvious picks
+       for this look — Oswald, Anton, Archivo Black, Bebas, Barlow
+       Condensed — are all Latin-only on Google Fonts, and this site
+       ships Greek. Greek headings in those faces fall back silently to
+       a system font, so half our customers would see a different
+       website. Sofia Sans covers Latin and Greek in both widths, and
+       the Extra Condensed cut carries the press-stencil voice.
+
+       --font-type stays equal to the body face: it is applied in 100
+       places across these stylesheets, so pointing it at the mono would
+       turn paragraphs into code. Use --font-mono deliberately instead. */
+    --font:         'Sofia Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-display: 'Sofia Sans Extra Condensed', 'Sofia Sans', Impact, sans-serif;
     --font-body:    var(--font);
+    --font-type:    var(--font);
+    --font-mono:    'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
-    /* Tracking: the display end of the scale needs to be tighter, since Inter
-       loosens visually as it gets larger. */
-    --tracking-tight: -0.02em;
-    --tracking-snug:  -0.01em;
+    /* Extra Condensed is drawn tight; it needs air when set as caps at
+       small sizes, and none at display sizes. */
+    --tracking-tight: -0.01em;
+    --tracking-snug:   0;
+    --tracking-caps:   0.06em;
+    --tracking-mono:   0.02em;
 
-    /* Tick glyph used as a CSS mask for feature lists, so the marker is a real
-       icon that inherits the palette rather than a text character in the copy. */
     --check-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
 
-    /* Rounded corners (modest) */
-    --radius:      10px;
-    --radius-sm:   6px;
-    --radius-lg:   16px;
+    /* ---- TEXTURE -----------------------------------------------------
+       Both are CSS, not image files: nothing extra to download, and they
+       recolour with the palette instead of being baked into a PNG.
+       --halftone is the dot screen a press lays down for tone;
+       --grain is the tooth of uncoated stock. Apply them on a pseudo
+       element with low opacity, never on the element itself. */
+    --halftone: radial-gradient(circle at center, var(--ink) 1.1px, transparent 1.2px);
+    --halftone-size: 7px 7px;
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
+
+    /* ---- CORNERS -----------------------------------------------------
+       Effectively square. Printed matter is cut, not rounded, and the
+       10px radius everything used to carry was doing more to make the
+       site look generic than any single colour. Pills survive only for
+       stamps and tags, where the shape is the point. */
+    --radius:      2px;
+    --radius-sm:   1px;
+    --radius-lg:   3px;
     --radius-pill: 9999px;
 
-    /* Spacing — a 4px grid.
-       Sizes were previously picked per component (26px here, 1.4rem there,
-       18px next door), so nothing lined up between sections and every new
-       block invented its own rhythm. Snap to these instead of typing a number:
-       the small end is fine-grained for controls, the large end jumps so
-       section breaks stay distinct from padding inside a card. */
+    /* ---- SPACING — 4px grid ------------------------------------------ */
     --space-1:  4px;
     --space-2:  8px;
     --space-3: 12px;
@@ -85,10 +150,12 @@
     --space-7: 48px;
     --space-8: 64px;
 
-    /* Motion — one duration and easing so components don't each pick their own. */
-    --ease:      cubic-bezier(0.4, 0, 0.2, 1);
-    --dur-fast:  .12s;
-    --dur:       .2s;
+    /* ---- MOTION ------------------------------------------------------
+       Snappier than the old easing and with no overshoot. A press makes
+       a hard, fast, mechanical movement; springy UI motion fights that. */
+    --ease:      cubic-bezier(0.2, 0, 0.1, 1);
+    --dur-fast:  .09s;
+    --dur:       .16s;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -108,23 +175,74 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    /* Sofia Sans ships oldstyle-ish defaults; lining tabular figures keep
+       prices and quantities from jittering as they update live. */
+    font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* The tooth of uncoated stock. Fixed, so it stays put while the page
+   scrolls like a texture in the paper rather than a pattern glued to the
+   content, and pointer-events:none so it never eats a click. Very low
+   opacity — it should be felt, not seen. */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: var(--grain);
+    opacity: 0.16;
+    mix-blend-mode: multiply;
+}
+
+/* Anything that paints must sit above the grain layer. */
+body > * { position: relative; z-index: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
 }
 
 img { max-width: 100%; height: auto; }
 
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: var(--tracking-snug);
-    line-height: 1.2;
+    line-height: 1.05;
     color: var(--ink);
+    text-wrap: balance;
 }
 
-h1 { font-size: 2.5rem; letter-spacing: var(--tracking-tight); }
-h2 { font-size: 1.875rem; }
-h3 { font-size: 1.375rem; }
-h4 { font-size: 1.125rem; }
-h5 { font-size: 1rem; }
+/* h1 and h2 are always our own editorial copy — page titles and section
+   titles, translated in en.json and el.json — so setting them as caps is
+   safe. h3 and below carry content we do not write (product names,
+   design titles, customer text) and stay sentence case.
+
+   Greek note: uppercasing Greek must drop the accents (ΚΑΛΗΜΕΡΑ, not
+   ΚΑΛΗΜΈΡΑ). Browsers only apply that Unicode special-casing when the
+   language is declared, which customer_header.php does on <html lang>.
+   If a heading is ever rendered outside that layout, it needs its own
+   lang attribute or the Greek will come out typographically wrong. */
+h1, h2 {
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-tight);
+    font-weight: 900;
+}
+
+/* Extra Condensed is narrow, so it needs more size than a normal-width
+   face to carry the same optical weight in a layout.
+
+   Note how low the clamp MINIMUMS are relative to the maximums. The first
+   pass set them at 2.6rem and 1.9rem, which meant the minimum — not the
+   fluid vw term — governed on every phone: a 42px h1 on a 390px screen,
+   which is what made the site feel oversized on mobile. The floor now sits
+   below the fluid value at phone widths so the vw term actually does the
+   scaling it was added for, and only catches on very narrow screens. */
+h1 { font-size: clamp(1.75rem, 7vw, 4rem);     line-height: 0.94; }
+h2 { font-size: clamp(1.4rem, 5vw, 2.75rem);   line-height: 0.98; }
+h3 { font-size: clamp(1.15rem, 3vw, 1.4rem);  font-weight: 700; }
+h4 { font-size: 1.1rem;  font-weight: 700; }
+h5 { font-size: 0.98rem; font-weight: 700; }
 
 p { margin: 0; }
 
@@ -294,26 +412,33 @@ a:hover {
 
 .form-group { margin-bottom: 16px; }
 
+/* Labels read as the printed caption above a field on a job ticket. */
 .form-group label {
     display: block;
     margin-bottom: 6px;
+    font-family: var(--font-mono);
     font-weight: 500;
-    font-size: 0.875rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
     color: var(--ink-soft);
 }
 
+/* Fields are boxes ruled onto the form, so: white stock inside an ink
+   rule, square corners. The 2px inset ink rule on :focus reads as the
+   field being selected with a pen rather than glowing. */
 .form-group input,
 .form-group select,
 .form-group textarea {
     width: 100%;
     padding: 11px 14px;
-    border: 1px solid var(--border);
+    border: 1.5px solid var(--border-strong);
     border-radius: var(--radius);
-    background: var(--paper);
+    background: var(--stock);
     color: var(--ink);
     font-size: 15px;
     font-family: var(--font-body);
-    transition: border-color .15s, box-shadow .15s;
+    transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
 .form-group input:focus,
@@ -321,8 +446,11 @@ a:hover {
 .form-group textarea:focus {
     outline: none;
     border-color: var(--spot);
-    box-shadow: 0 0 0 3px rgba(var(--spot-rgb), 0.15);
+    box-shadow: inset 0 0 0 2px var(--spot);
 }
+
+.form-group input::placeholder,
+.form-group textarea::placeholder { color: var(--ink-muted); opacity: 1; }
 
 .form-group select { cursor: pointer; }
 .form-group textarea { resize: vertical; }
@@ -331,7 +459,7 @@ a:hover {
 .form-group select.error,
 .form-group textarea.error {
     border-color: var(--bad);
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+    box-shadow: inset 0 0 0 2px var(--bad);
 }
 
 .field-error-msg {
@@ -345,46 +473,66 @@ a:hover {
 /* ============================================================
    BUTTONS — primary CTA blue, modest rounded corners, soft hover
    ============================================================ */
+/* Buttons are blocks of ink, and nothing else.
+
+   The first pass gave them a colour fill, a black rule and a hard black
+   offset. That is neo-brutalism, which is its own instantly recognisable
+   template look right now — so the one component meant to prove the site
+   was not built from a template was the one that most looked like it was.
+
+   What is left is a solid rectangle of ink: square cut, caps, no border,
+   no shadow. The print character comes from the colour and the cut, not
+   from an effect sitting behind the element. Every intent keeps identical
+   box metrics (a transparent 2px border that outlined variants simply
+   colour in), so swapping intent never shifts a layout by a pixel. */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 11px 22px;
+    padding: 12px 24px;
     background: var(--spot);
     color: #fff;
-    border: 1px solid var(--spot);
+    border: 2px solid transparent;
     border-radius: var(--radius);
     cursor: pointer;
     font-family: var(--font-body);
     font-size: 0.95rem;
-    font-weight: 600;
-    letter-spacing: 0;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
     text-align: center;
     text-decoration: none;
     white-space: nowrap;
-    box-shadow: var(--stamp-xs);
-    transition: background .15s, border-color .15s, box-shadow .15s, transform .12s;
+    box-shadow: none;
+    transition: background var(--dur) var(--ease),
+                color var(--dur) var(--ease),
+                border-color var(--dur) var(--ease),
+                transform var(--dur-fast) var(--ease);
     user-select: none;
 }
 
 .btn:hover {
     background: var(--spot-hover);
-    border-color: var(--spot-hover);
     color: #fff;
     text-decoration: none;
-    box-shadow: var(--stamp-sm);
-    transform: translateY(-1px);
+    box-shadow: none;
+    transform: none;
 }
 
-.btn:active {
-    transform: translateY(0);
-    box-shadow: var(--stamp-xs);
-}
+/* A 1px nudge on press — the whole of the physical feedback. Felt rather
+   than seen, which is the point: at 4px it was an animation, at 1px it is
+   just a button that responds. */
+.btn:active { transform: translateY(1px); }
 
 .btn:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(var(--spot-rgb), 0.35);
+    outline: 3px solid var(--ink);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .btn, .btn:hover, .btn:active { transition: none; transform: none; }
+}
 }
 
 .btn:disabled,
@@ -458,67 +606,56 @@ a:hover {
 /* ---- Sizes ---- */
 .btn-sm {
     padding: var(--space-2) var(--space-3);
-    font-size: 0.875rem;
+    font-size: 0.8rem;
 }
 
 .btn-lg {
-    padding: var(--space-3) var(--space-6);
-    font-size: 1rem;
+    padding: 15px var(--space-6);
+    font-size: 1.02rem;
 }
 
 /* ---- Intents ---- */
-.btn-danger {
-    background: var(--bad);
-    color: #fff;
-    border-color: var(--bad);
-}
-.btn-danger:hover {
-    background: #B91C1C;
-    border-color: #B91C1C;
-    color: #fff;
-}
-.btn-danger:focus-visible { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.35); }
+/* Each intent only sets a fill; metrics come from the base. */
+.btn-danger { background: var(--bad); color: #fff; }
+.btn-danger:hover { background: #8E1F16; color: #fff; }
 
-.btn-success {
-    background: var(--spot-3);
-    color: #fff;
-    border-color: var(--spot-3);
-}
-.btn-success:hover {
-    background: #15803D;
-    border-color: #15803D;
-    color: #fff;
-}
-.btn-success:focus-visible { box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.35); }
+.btn-success { background: var(--spot-3); color: #fff; }
+.btn-success:hover { background: #176035; color: #fff; }
 
-/* Secondary: the everyday partner to a primary action. */
+/* Secondary: the unprinted sheet. A ruled outline, no fill — it colours
+   in the transparent border the base already reserves, so it occupies
+   exactly the same box as a filled button beside it. */
 .btn-secondary,
 .btn-outline {
-    background: #fff;
+    background: transparent;
     color: var(--ink);
-    border: 1px solid var(--border);
-    box-shadow: none;
+    border-color: var(--ink);
 }
 .btn-secondary:hover,
 .btn-outline:hover {
-    background: var(--paper-soft);
-    color: var(--ink);
-    border-color: var(--border-strong);
-    box-shadow: none;
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
 }
 
-/* Ghost: lowest emphasis — for tertiary actions like Cancel. */
+/* Solid ink. For the decisive action on a page that already has a
+   vermillion button doing something else. */
+.btn-ink { background: var(--ink); color: var(--paper); }
+.btn-ink:hover { background: #000; color: var(--paper); }
+
+/* Ghost: lowest emphasis — Cancel and friends. */
 .btn-ghost {
     background: transparent;
     color: var(--ink-soft);
     border-color: transparent;
-    box-shadow: none;
 }
 .btn-ghost:hover {
-    background: var(--paper-soft);
+    background: transparent;
     color: var(--ink);
     border-color: transparent;
-    box-shadow: none;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 2px;
 }
 
 /* Note: .btn-outline-light and .btn-danger-outline are coloured further down,
@@ -753,11 +890,20 @@ a:hover {
     -webkit-overflow-scrolling: touch;
 }
 
+/* The 600px floor that used to live here applied to EVERY table on the
+   site. Inside .table-container that is deliberate and harmless — that
+   wrapper scrolls horizontally, so a wide admin table stays wide and the
+   frame scrolls. Everywhere else it forced ordinary little tables to 600px
+   on a 375px screen and gave the whole document a horizontal scrollbar;
+   it is what made the volume-pricing table run off the product page, and
+   no amount of width:100% or table-layout:fixed on those tables could win
+   against a min-width. Scoped to the wrapper it was written for. */
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 600px;
 }
+
+.table-container table { min-width: 600px; }
 
 table th,
 table td {
@@ -1543,3 +1689,165 @@ td.actions { white-space: nowrap; }
     white-space: nowrap;
 }
 .toast-action:hover { color: #fff; opacity: 0.85; }
+
+/* Small secondary link under a field — "Forgot password?" below the password
+   box. Right-aligned and de-emphasised so it never competes with the submit
+   button, but still sits in the flow where you look after typing. */
+.form-hint-link {
+    display: block;
+    margin-top: var(--space-2);
+    text-align: right;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+}
+.form-hint-link:hover,
+.form-hint-link:focus-visible { color: var(--spot); text-decoration: underline; }
+
+/* ============================================================
+   PRESS FLOOR PRIMITIVES
+
+   The small vocabulary the redesign is built from. Every one of
+   these is drawn in CSS rather than shipped as an image: they
+   recolour with the palette, cost no requests, and stay sharp at
+   any zoom. Used across the customer pages; kept here because
+   the admin side gets the same language.
+   ============================================================ */
+
+/* ---- Ruled lines --------------------------------------------------
+   Printed matter separates things with a rule. --rule is the ink one;
+   the hairline is for dense UI where a full ink line would stripe. */
+.rule-ink {
+    border: 0;
+    border-top: var(--rule);
+    margin: 0;
+}
+.rule-hair { border: 0; border-top: var(--rule-hair); margin: 0; }
+
+/* A double rule, the way a masthead or a rate card is closed off. */
+.rule-double {
+    border: 0;
+    border-top: 1.5px solid var(--ink);
+    border-bottom: 1.5px solid var(--ink);
+    height: 4px;
+    margin: 0;
+}
+
+/* ---- Spec text -----------------------------------------------------
+   Mono, caps, letterspaced: job numbers, SKUs, counts, the little
+   captions that make the page read as production paperwork. This is
+   the deliberate use of --font-mono that --font-type must not become. */
+.spec {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    color: var(--ink-muted);
+}
+.spec-ink { color: var(--ink); }
+.spec-spot { color: var(--spot); }
+
+/* A numbered section marker — "01 / RATE CARD". The number is set in
+   the spot ink so a scanning eye can count sections down the page. */
+.spec-num { color: var(--spot); font-weight: 700; }
+
+/* ---- Stamp ---------------------------------------------------------
+   A rubber-stamped label. The rotation is what sells it; it is applied
+   here rather than at each call site so every stamp on the site leans
+   the same way. Two modifiers cover the cases we actually have. */
+.stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    color: var(--ink);
+    background: var(--ochre);
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    transform: rotate(-2deg);
+}
+.stamp-spot { background: var(--spot); color: #fff; }
+.stamp-quiet { background: transparent; color: var(--ink); }
+.stamp-flat { transform: none; }
+
+/* ---- Sheet ---------------------------------------------------------
+   A panel of stock laid on the page: true white, ink rule, hard
+   offset. White specifically because every product mockup we own is
+   shot on white — on cream they would show a grey box around the
+   garment. The offset is on the container, so a grid of these reads as
+   a stack of printed sheets rather than a row of web cards. */
+.sheet {
+    background: var(--stock);
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: var(--press-sm);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.sheet-lift:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--press);
+}
+@media (prefers-reduced-motion: reduce) {
+    .sheet, .sheet-lift:hover { transition: none; transform: none; }
+}
+
+/* ---- Halftone ------------------------------------------------------
+   The dot screen a press lays down to fake a tone with one ink. Used
+   as a fading band behind hero type and section breaks. Always on a
+   pseudo element with a mask so it dissolves instead of stopping at a
+   hard edge, which is what would give it away as a CSS pattern. */
+.halftone {
+    position: relative;
+    isolation: isolate;
+}
+.halftone::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--halftone);
+    background-size: var(--halftone-size);
+    opacity: 0.16;
+    -webkit-mask: linear-gradient(to bottom, #000, transparent 78%);
+            mask: linear-gradient(to bottom, #000, transparent 78%);
+}
+.halftone-up::after {
+    -webkit-mask: linear-gradient(to top, #000, transparent 78%);
+            mask: linear-gradient(to top, #000, transparent 78%);
+}
+
+/* ---- Ink chip ------------------------------------------------------
+   A garment colour shown the way a printer shows an ink: a square chip
+   with a rule, not a soft circle. --chip carries the colour so the
+   markup only sets one custom property. */
+.ink-chip {
+    --chip: #fff;
+    display: inline-block;
+    width: 26px;
+    height: 26px;
+    flex: none;
+    padding: 0;
+    background: var(--chip);
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.ink-chip:hover { transform: translate(-1px, -1px); box-shadow: 2px 2px 0 var(--ink); }
+.ink-chip[aria-pressed="true"],
+.ink-chip.is-selected {
+    box-shadow: 0 0 0 2px var(--stock), 0 0 0 4px var(--spot);
+}
+
+/* ---- Perforated edge ------------------------------------------------
+   A tear-off line, for anything that behaves like a coupon or a stub. */
+.perf-top {
+    border-top: 2px dashed var(--ink);
+}

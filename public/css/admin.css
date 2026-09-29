@@ -31,6 +31,7 @@
 
 .payment-paid    { background: var(--spot-3);     color: var(--paper); }
 .payment-pending { background: var(--spot-yellow); color: var(--ink);  }
+.payment-refunded { background: var(--bad);        color: var(--paper); }
 .payment-card-icon { font-size: 1.1rem; }
 
 /* ── Active / inactive status pill ── */

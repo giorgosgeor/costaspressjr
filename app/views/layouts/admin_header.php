@@ -9,7 +9,7 @@
     <title><?= htmlspecialchars($title ?? 'Admin Panel') ?> — Costaspressjr</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sofia+Sans:wght@400..800&family=Sofia+Sans+Extra+Condensed:wght@600..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/style.css')) ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/admin.css')) ?>">
     <?php if (!empty($extraCss)): foreach ($extraCss as $css): ?>
@@ -37,6 +37,7 @@
         <a href="/admin/products/design-area" class="<?= adminNavActive('/admin/products/design-area', $currentPath) ?>">Design Areas</a>
         <a href="/admin/premade" class="<?= adminNavActive('/admin/premade', $currentPath) ?>">Premade</a>
         <a href="/admin/orders" class="<?= adminNavActive('/admin/orders', $currentPath) ?>">Orders</a>
+        <a href="/admin/pickup-points" class="<?= adminNavActive('/admin/pickup-points', $currentPath) ?>">Pickup Points</a>
         <a href="/admin/colors" class="<?= adminNavActive('/admin/colors', $currentPath) ?>">Colors</a>
         <a href="/admin/tools/bg-remover" class="<?= adminNavActive('/admin/tools/bg-remover', $currentPath) ?>">BG Remover</a>
         <a href="/admin/tools/image-cropper" class="<?= adminNavActive('/admin/tools/image-cropper', $currentPath) ?>">Cropper</a>

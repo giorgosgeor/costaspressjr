@@ -5,7 +5,16 @@ Env::load(__DIR__ . '/../.env');
 $appEnv = Env::get('APP_ENV', 'production');
 $isProd = $appEnv === 'production';
 
-ini_set('display_errors', $isProd ? '0' : '1');
+// Development shows PHP notices on the page — but never inside a JSON
+// response, where one stray "Deprecated: …" line makes the whole reply
+// unreadable (that is how PHP 8.5's curl_close() notice silently broke the
+// checkout). They are still logged either way.
+$reqPath   = (string)parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$wantsJson = str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json')
+    || str_contains($_SERVER['CONTENT_TYPE'] ?? '', 'application/json')
+    || str_starts_with($reqPath, '/api/')
+    || $reqPath === '/stripe/webhook';
+ini_set('display_errors', ($isProd || $wantsJson) ? '0' : '1');
 ini_set('display_startup_errors', $isProd ? '0' : '1');
 ini_set('log_errors', '1');
 error_reporting(E_ALL);
@@ -43,9 +52,19 @@ require __DIR__ . '/../app/core/Log.php';
 require __DIR__ . '/../app/core/I18n.php';
 require __DIR__ . '/../app/core/Pricing.php';
 require __DIR__ . '/../app/core/Tint.php';
+require __DIR__ . '/../app/core/LlmClient.php';
+require __DIR__ . '/../app/core/ShopAssistant.php';
+require __DIR__ . '/../app/core/AcsClient.php';
+require __DIR__ . '/../app/core/Pickup.php';
+require __DIR__ . '/../app/core/OrderPlacement.php';
+require __DIR__ . '/../app/core/PaymentAlert.php';
 Asset::setPublicRoot(__DIR__);
 I18n::init();
-Csrf::validateRequest();
+// Stripe's webhook can't carry our CSRF token; it is authenticated by its
+// signature instead (Stripe::verifyWebhook).
+if (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) !== '/stripe/webhook') {
+    Csrf::validateRequest();
+}
 
 $db = (require __DIR__ . '/../app/config/database.php');
 
@@ -96,6 +115,7 @@ $router->get('/orders', [$customerController, 'orderList']);
 $router->get('/orders/view', [$customerController, 'orderDetail']);
 $router->get('/shop', [$customerController, 'shop']);
 $router->get('/product', [$customerController, 'product']);
+$router->post('/assistant/ask', [$customerController, 'assistantAsk']);
 $router->get('/shop/custom_product', [$customerController, 'customProduct']);
 $router->get('/shop/premade', [$customerController, 'shopPremade']);
 $router->get('/shop/premade/anime', [$customerController, 'shopAnime']);
@@ -152,6 +172,11 @@ $router->post('/admin/colors/delete', [$adminController, 'deleteColor']);
 $router->get('/admin/orders', [$adminController, 'orders']);
 $router->get('/admin/orders/view', [$adminController, 'orderDetail']);
 $router->post('/admin/orders/status', [$adminController, 'updateOrderStatus']);
+$router->get('/admin/pickup-points', [$adminController, 'pickupPoints']);
+$router->post('/admin/pickup-points/add', [$adminController, 'addPickupPoint']);
+$router->post('/admin/pickup-points/toggle', [$adminController, 'togglePickupPoint']);
+$router->post('/admin/pickup-points/delete', [$adminController, 'deletePickupPoint']);
+$router->post('/admin/pickup-points/sync', [$adminController, 'syncPickupPoints']);
 
 // Admin Premade Designs Routes
 $router->get('/admin/premade', [$adminController, 'premadeDesigns']);
@@ -177,8 +202,11 @@ $router->post('/cart/add', [$customerController, 'cartAdd']);
 $router->post('/cart/remove', [$customerController, 'cartRemove']);
 $router->post('/cart/update-quantity', [$customerController, 'cartUpdateQuantity']);
 $router->post('/cart/save-previews', [$customerController, 'cartSavePreviews']);
-$router->post('/checkout', [$customerController, 'checkout']);
+$router->get('/checkout', [$customerController, 'checkoutPage']);
 $router->post('/api/create-payment-intent', [$customerController, 'createPaymentIntent']);
+$router->get('/checkout/complete', [$customerController, 'checkoutComplete']);
+$router->post('/stripe/webhook', [$customerController, 'stripeWebhook']);
+$router->get('/api/pickup-points', [$customerController, 'pickupPoints']);
 $router->post('/account/cookie-consent', [$customerController, 'cookieConsent']);
 $router->post('/custom-design/save', [$customDesignController, 'save']);
 $router->post('/custom-design/update', [$customDesignController, 'update']);

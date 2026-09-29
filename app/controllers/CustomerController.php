@@ -1094,13 +1094,58 @@ class CustomerController {
         }
     }
 
+    /** What the checkout can offer right now. */
+    private function checkoutOptions(): array {
+        return [
+            'acsAvailable' => Pickup::acsAvailable($this->db),
+            'acsFee'       => Pickup::acsFee(),
+            'storeAddress' => Pickup::storeAddress(),
+        ];
+    }
+
+    /** The logged-in customer's email; null for guests, who type one at checkout. */
+    private function accountEmail(): ?string {
+        if (!Auth::check()) {
+            return null;
+        }
+        $stmt = $this->db->prepare("SELECT email FROM users WHERE id = ?");
+        $stmt->execute([Auth::userId()]);
+        $email = (string)$stmt->fetchColumn();
+        return $email !== '' ? $email : null;
+    }
+
+    /** GET /api/pickup-points — the ACS points for the checkout map. */
+    public function pickupPoints(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: private, max-age=300');
+        $points = Pickup::acsAvailable($this->db) ? Pickup::activePoints($this->db) : [];
+        echo json_encode(['points' => $points], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Payment step: validate the collection choice, price the cart, and create
+     * the PaymentIntent that the Payment Element confirms.
+     *
+     * Everything needed to place the order is written to pending_checkouts
+     * here, BEFORE the customer pays. A redirect payment (Revolut Pay, PayPal)
+     * can come back in a different browser, and the webhook has no session.
+     */
     public function createPaymentIntent(): void {
         header('Content-Type: application/json');
         // Guests check out too. No guest row yet means no cart — nothing to pay.
         $userId = $this->effectiveUserId(false);
         if (!$userId) {
             http_response_code(400);
-            echo json_encode(['error' => 'Cart is empty']);
+            echo json_encode(['error' => I18n::t('checkout.errors.cart_empty')]);
+            return;
+        }
+
+        $data   = json_decode(file_get_contents('php://input'), true);
+        $data   = is_array($data) ? $data : [];
+        $choice = Pickup::validateChoice($this->db, $data, $this->accountEmail());
+        if (isset($choice['error'])) {
+            http_response_code(422);
+            echo json_encode(['error' => $choice['error']]);
             return;
         }
 
@@ -1108,401 +1153,262 @@ class CustomerController {
         $cartModel = new \Cart($this->db);
         $cartId    = $cartModel->getOrCreateCartId($userId);
 
-        // A NULL unit_price row would silently drop out of SUM() here while
-        // checkout() still counts the item — the charge would then never match
-        // the order total, and the mismatch only surfaces AFTER the customer
-        // has paid. Refuse to create the intent instead.
+        // A NULL unit_price row would silently drop out of SUM() here while the
+        // order still counts the item — the charge would then never match the
+        // order total. Refuse to create the intent instead.
         $bad = $this->db->prepare("SELECT COUNT(*) FROM cart_items WHERE cart_id = ? AND (unit_price IS NULL OR unit_price <= 0)");
         $bad->execute([$cartId]);
         if ((int)$bad->fetchColumn() > 0) {
             http_response_code(409);
-            echo json_encode(['error' => 'An item in your cart has no valid price. Please remove it and add it again.']);
+            echo json_encode(['error' => I18n::t('checkout.errors.bad_price')]);
             return;
         }
 
-        $stmt = $this->db->prepare("
-            SELECT SUM((ci.unit_price + ci.custom_design_fee) * ci.quantity) AS total
-            FROM cart_items ci
-            WHERE ci.cart_id = ?
-        ");
+        $stmt = $this->db->prepare("SELECT SUM((unit_price + custom_design_fee) * quantity) FROM cart_items WHERE cart_id = ?");
         $stmt->execute([$cartId]);
-        $total = (float)($stmt->fetchColumn() ?: 0);
-
-        if ($total <= 0) {
+        $itemsTotal = (float)($stmt->fetchColumn() ?: 0);
+        if ($itemsTotal <= 0) {
             http_response_code(400);
-            echo json_encode(['error' => 'Cart is empty']);
+            echo json_encode(['error' => I18n::t('checkout.errors.cart_empty')]);
+            return;
+        }
+        $amountCents = (int)round(($itemsTotal + $choice['fee']) * 100);
+
+        // The customer is looking at a total. If the cart changed in another
+        // tab since the page loaded, stop rather than charge a different sum.
+        if (isset($data['expected_amount']) && (int)$data['expected_amount'] !== $amountCents) {
+            http_response_code(409);
+            echo json_encode(['error' => I18n::t('checkout.errors.cart_changed'), 'reload' => true]);
             return;
         }
 
         try {
-            $intent = \Stripe::createPaymentIntent(
-                (int)round($total * 100),
-                'eur',
-                ['user_id' => $userId, 'cart_id' => $cartId]
-            );
-            echo json_encode(['clientSecret' => $intent['client_secret']]);
+            $intent = \Stripe::createPaymentIntent($amountCents, 'eur', [
+                'user_id'  => $userId,
+                'cart_id'  => $cartId,
+                'checkout' => OrderPlacement::TAG,
+                'delivery' => $choice['method'],
+            ]);
         } catch (\Throwable $e) {
             error_log('Stripe createPaymentIntent error: ' . $e->getMessage());
             http_response_code(500);
-            echo json_encode(['error' => 'Payment initialisation failed. Please try again.']);
-        }
-    }
-
-    public function checkout(): void {
-        // Guests place orders through their session's guest user row. No row
-        // means no cart was ever created — nothing to check out.
-        $userId = $this->effectiveUserId(false);
-        if (!$userId) {
-            header('Content-Type: application/json');
-            http_response_code(400);
-            echo json_encode(['error' => 'Cart is empty']);
+            echo json_encode(['error' => I18n::t('checkout.errors.payment_init')]);
             return;
-        }
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo 'Method Not Allowed';
-            return;
-        }
-
-        $data = json_decode(file_get_contents('php://input'), true);
-        if (!$data) {
-            http_response_code(400);
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Invalid request data']);
-            return;
-        }
-
-        // Shipping address is mandatory — these are physical goods. Validate it
-        // FIRST, before touching Stripe, so a rejected order never follows a
-        // successful charge. Client sends structured fields; we store a
-        // formatted text block in orders.shipping_address.
-        $ship = is_array($data['shipping_address'] ?? null) ? $data['shipping_address'] : [];
-        $shipFields = [];
-        foreach (['name' => 100, 'phone' => 30, 'street' => 200, 'city' => 80, 'postal' => 16, 'country' => 60] as $key => $maxLen) {
-            $val = trim((string)($ship[$key] ?? ''));
-            // Strip control characters; keep everything printable (names and
-            // streets are free text in two alphabets here).
-            $val = preg_replace('/[\x00-\x1F\x7F]/u', ' ', $val);
-            if ($val === '' || mb_strlen($val) > $maxLen) {
-                http_response_code(422);
-                header('Content-Type: application/json');
-                echo json_encode(['error' => 'Please provide a complete shipping address.']);
-                return;
-            }
-            $shipFields[$key] = $val;
-        }
-        $shippingAddress = $shipFields['name'] . "\n"
-            . $shipFields['street'] . "\n"
-            . $shipFields['city'] . ' ' . $shipFields['postal'] . ', ' . $shipFields['country'] . "\n"
-            . 'Tel: ' . $shipFields['phone'];
-
-        // Guests have no account email, so a contact email is required with the
-        // order. It rides along in the shipping_address block (always visible to
-        // the admin) and is also copied onto the guest user row when it doesn't
-        // collide with a registered account.
-        if (!Auth::check()) {
-            $guestEmail = trim((string)($ship['email'] ?? ''));
-            if (!filter_var($guestEmail, FILTER_VALIDATE_EMAIL) || mb_strlen($guestEmail) > 254) {
-                http_response_code(422);
-                header('Content-Type: application/json');
-                echo json_encode(['error' => 'Please provide a valid email address for order updates.']);
-                return;
-            }
-            $shippingAddress .= "\n" . 'Email: ' . $guestEmail;
-            try {
-                $this->db->prepare("UPDATE users SET email = ? WHERE id = ? AND role = 'guest'")
-                    ->execute([$guestEmail, $userId]);
-            } catch (PDOException $e) {
-                // Duplicate of a registered email — keep the placeholder; the
-                // address block above still carries the contact email.
-            }
-        }
-
-        $paymentMethod = trim($data['payment_method'] ?? 'card');
-        // Only 'card' (Stripe) actually collects and verifies a payment. The
-        // Revolut/PayPal/Apple Pay/Google Pay buttons in the UI are not wired to
-        // any payment gateway yet, so accepting them here would create a fully
-        // valid, "paid" order without a single cent changing hands. Until those
-        // flows are implemented, reject anything but the verified card flow.
-        $allowedMethods = ['card'];
-        if (!in_array($paymentMethod, $allowedMethods, true)) {
-            http_response_code(400);
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'This payment method is not available yet. Please pay by card.']);
-            return;
-        }
-
-        // Card payments must be verified through Stripe
-        $cardName   = '';
-        $cardLast4  = '';
-        $cardBrand  = '';
-        $expMonth   = 0;
-        $expYear    = 0;
-        $billingZip = '';
-
-        if ($paymentMethod === 'card') {
-            $piId = trim($data['stripe_payment_intent_id'] ?? '');
-            if (!$piId || !preg_match('/^pi_[A-Za-z0-9_]+$/', $piId)) {
-                http_response_code(400);
-                header('Content-Type: application/json');
-                echo json_encode(['error' => 'Missing Stripe payment reference']);
-                return;
-            }
-
-            try {
-                $pi = \Stripe::retrievePaymentIntent($piId);
-            } catch (\Throwable $e) {
-                error_log('Stripe retrieve error: ' . $e->getMessage());
-                http_response_code(502);
-                header('Content-Type: application/json');
-                echo json_encode(['error' => 'Could not verify payment. Please contact support.']);
-                return;
-            }
-
-            if (($pi['status'] ?? '') !== 'succeeded') {
-                http_response_code(402);
-                header('Content-Type: application/json');
-                echo json_encode(['error' => 'Payment was not completed']);
-                return;
-            }
-
-            // Replay guard: a succeeded PaymentIntent may only ever back one
-            // order. Without this, a customer could re-post the same verified
-            // pi_… (after re-filling the cart to the same total) and get extra
-            // orders fulfilled for a single payment. The UNIQUE index on
-            // order_payments.payment_intent_id is the hard backstop below;
-            // this check returns a clean error for the common case.
-            try {
-                $dupe = $this->db->prepare("SELECT COUNT(*) FROM order_payments WHERE payment_intent_id = ?");
-                $dupe->execute([$piId]);
-                if ((int)$dupe->fetchColumn() > 0) {
-                    http_response_code(409);
-                    header('Content-Type: application/json');
-                    echo json_encode(['error' => 'This payment has already been processed.']);
-                    return;
-                }
-            } catch (PDOException $e) {
-                // Column missing (migration not yet applied) — log and continue;
-                // the amount check still applies. Run database/migrate.php.
-                error_log('payment_intent_id dedup check skipped: ' . $e->getMessage());
-            }
-
-            // Pull card details from the charge attached to the intent
-            $charge    = $pi['latest_charge'] ?? [];
-            $cardDetails = $charge['payment_method_details']['card'] ?? [];
-            $cardBrand  = $cardDetails['brand'] ?? '';
-            $cardLast4  = $cardDetails['last4'] ?? '';
-            $expMonth   = (int)($cardDetails['exp_month'] ?? 0);
-            $expYear    = (int)($cardDetails['exp_year'] ?? 0);
-            $cardName   = $charge['billing_details']['name'] ?? '';
-            $billingZip = $charge['billing_details']['address']['postal_code'] ?? '';
-        }
-
-        require_once __DIR__ . '/../models/Cart.php';
-        $cartModel = new \Cart($this->db);
-        $cartId = $cartModel->getOrCreateCartId($userId);
-
-        $stmt = $this->db->prepare("
-            SELECT ci.*,
-                   p.base_price,
-                   ps.size_name, 
-                   ac.color_name,
-                   ac.color_hex AS color_hex
-            FROM cart_items ci
-            LEFT JOIN products p ON ci.product_id = p.id
-            LEFT JOIN product_sizes ps ON ci.size_id = ps.id
-            LEFT JOIN available_colors ac ON ci.color_id = ac.id
-            WHERE ci.cart_id = ?
-        ");
-        $stmt->execute([$cartId]);
-        $cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        if (empty($cartItems)) {
-            http_response_code(400);
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Cart is empty']);
-            return;
-        }
-
-        $totalProducts = 0;
-        $totalPrice = 0.0;
-        foreach ($cartItems as $item) {
-            $qty = (int)($item['quantity'] ?? 0);
-            // unit_price (retail) is authoritative and must be present — the
-            // same rule createPaymentIntent() enforces before charging. A
-            // base_price fallback here would diverge from the charged amount
-            // (base_price is the raw supplier cost) and fail the order AFTER
-            // payment. Reject instead; the customer re-adds the item.
-            $unitBase = (float)($item['unit_price'] ?? 0);
-            if ($unitBase <= 0) {
-                http_response_code(409);
-                header('Content-Type: application/json');
-                echo json_encode(['error' => 'An item in your cart has no valid price. Please remove it and add it again.']);
-                return;
-            }
-            $fee = (float)($item['custom_design_fee'] ?? 0);
-            $totalProducts += $qty;
-            $totalPrice += ($unitBase + $fee) * $qty;
-        }
-
-        // Verify the Stripe charge amount matches the cart total (within 1 cent rounding)
-        if ($paymentMethod === 'card' && isset($pi)) {
-            $expectedCents = (int)round($totalPrice * 100);
-            $chargedCents  = (int)($pi['amount'] ?? 0);
-            if (abs($chargedCents - $expectedCents) > 1) {
-                http_response_code(400);
-                header('Content-Type: application/json');
-                echo json_encode(['error' => 'Payment amount does not match cart total']);
-                return;
-            }
-        }
-
-        // orders.status is the FULFILLMENT lifecycle:
-        //   ENUM('pending','processing','in-transit','delivered','cancelled')
-        // 'paid' is NOT a member — under STRICT_TRANS_TABLES inserting it threw,
-        // the transaction rolled back, and the customer was charged by Stripe
-        // with no order recorded. Every order starts at 'pending'; whether it is
-        // paid lives in order_payments.status.
-        $orderStatus = 'pending';
-
-        // Public tracking number (see database/add_order_tracking.php): the
-        // customer's key to /track-order — guests especially, who have no order
-        // history page. Unambiguous alphabet, 12 chars ≈ 59 random bits.
-        $trackingAlphabet = 'ABCDEFGHJKMNPQRSTVWXYZ23456789';
-        $trackingToken = '';
-        for ($i = 0; $i < 12; $i++) {
-            $trackingToken .= $trackingAlphabet[random_int(0, strlen($trackingAlphabet) - 1)];
         }
 
         try {
-            $this->db->beginTransaction();
-
-            $stmt = $this->db->prepare("INSERT INTO orders (user_id, status, tracking_token, total_price, total_products, shipping_address) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$userId, $orderStatus, $trackingToken, $totalPrice, $totalProducts, $shippingAddress]);
-            $orderId = (int)$this->db->lastInsertId();
-
-            $orderItemStmt = $this->db->prepare("
-                INSERT INTO order_items 
-                (order_id, product_id, variant_id, size_name, color_name, color_hex, quantity, unit_price, custom_design_fee, is_custom_design, design_id, preview_images) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-
-            $orderDesignStmt = $this->db->prepare("
-                INSERT INTO order_item_designs (order_item_id, design_data) VALUES (?, ?)
-            ");
-
-            $orderUploadStmt = $this->db->prepare("
-                INSERT INTO order_item_uploads (order_item_id, original_filename, stored_file_path, placement, position_x, position_y, width, height)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-
-            foreach ($cartItems as $item) {
-                // Validated > 0 in the totals pass above.
-                $unitBase = (float)($item['unit_price'] ?? 0);
-                $fee = (float)($item['custom_design_fee'] ?? 0);
-                $isCustom = !empty($item['is_custom_design']) || !empty($item['design_data']);
-                
-                // Use preview_images from cart_items (generated at add-to-cart time with the cart-selected color)
-                // Falls back to custom_designs previews if cart item has none
-                $designId = $item['design_id'] ?? null;
-                $previewImages = $item['preview_images'] ?? null;
-                if (!$previewImages && $designId) {
-                    $previewStmt = $this->db->prepare("SELECT preview_images FROM custom_designs WHERE id = ?");
-                    $previewStmt->execute([$designId]);
-                    $designRow = $previewStmt->fetch(PDO::FETCH_ASSOC);
-                    $previewImages = $designRow['preview_images'] ?? null;
-                }
-
-                $orderItemStmt->execute([
-                    $orderId,
-                    $item['product_id'],
-                    $item['variant_id'] ?? null,
-                    $item['size_name'] ?? null,
-                    $item['color_name'] ?? null,
-                    $item['color_hex'] ?? null,
-                    $item['quantity'],
-                    $unitBase,
-                    $fee,
-                    $isCustom ? 1 : 0,
-                    $designId,
-                    $previewImages
-                ]);
-
-                $orderItemId = (int)$this->db->lastInsertId();
-
-                if (!empty($item['design_data'])) {
-                    $orderDesignStmt->execute([$orderItemId, $item['design_data']]);
-                }
-
-                $uploadsStmt = $this->db->prepare("SELECT * FROM cart_item_uploads WHERE cart_item_id = ?");
-                $uploadsStmt->execute([$item['id']]);
-                $uploads = $uploadsStmt->fetchAll(PDO::FETCH_ASSOC);
-                foreach ($uploads as $upload) {
-                    $orderUploadStmt->execute([
-                        $orderItemId,
-                        $upload['original_filename'] ?? null,
-                        $upload['stored_file_path'] ?? ($upload['file_path'] ?? ''),
-                        $upload['placement'] ?? 'front',
-                        $upload['position_x'] ?? 0,
-                        $upload['position_y'] ?? 0,
-                        $upload['width'] ?? 80,
-                        $upload['height'] ?? 80
-                    ]);
-                }
+            $this->db->prepare("
+                INSERT INTO pending_checkouts
+                    (payment_intent_id, user_id, cart_id, delivery_method, pickup_point_id, pickup_point,
+                     contact_name, contact_phone, contact_email, shipping_fee, amount_cents)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ")->execute([
+                $intent['id'], $userId, $cartId, $choice['method'],
+                $choice['point'] ? (int)$choice['point']['id'] : null, Pickup::snapshot($choice['point']),
+                $choice['name'], $choice['phone'], $choice['email'], $choice['fee'], $amountCents,
+            ]);
+            // Unpaid intents leave rows behind; paid ones are deleted when the
+            // order is placed. A week outlasts Stripe's webhook retries.
+            if (random_int(1, 20) === 1) {
+                $this->db->exec("DELETE FROM pending_checkouts WHERE created_at < NOW() - INTERVAL 7 DAY");
             }
-
-            $paymentStmt = $this->db->prepare("
-                INSERT INTO order_payments
-                (order_id, payment_method, card_brand, card_holder, card_last4, card_exp_month, card_exp_year, billing_zip, amount, status, payment_intent_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', ?)
-            ");
-            $paymentStmt->execute([
-                $orderId,
-                $paymentMethod,
-                $paymentMethod === 'card' ? $cardBrand : null,
-                $paymentMethod === 'card' ? $cardName : null,
-                $paymentMethod === 'card' ? $cardLast4 : null,
-                $paymentMethod === 'card' ? $expMonth : null,
-                $paymentMethod === 'card' ? $expYear : null,
-                $paymentMethod === 'card' ? $billingZip : null,
-                $totalPrice,
-                $paymentMethod === 'card' ? ($piId ?? null) : null
-            ]);
-
-            $stmt = $this->db->prepare("DELETE FROM cart_item_uploads WHERE cart_item_id IN (SELECT id FROM cart_items WHERE cart_id = ?)");
-            $stmt->execute([$cartId]);
-            $stmt = $this->db->prepare("DELETE FROM cart_items WHERE cart_id = ?");
-            $stmt->execute([$cartId]);
-
-            $this->db->commit();
-            $_SESSION['cart_count'] = 0;
-
-            header('Content-Type: application/json');
-            echo json_encode([
-                'success' => true,
-                'order_id' => $orderId,
-                'tracking_number' => $trackingToken,
-            ]);
         } catch (PDOException $e) {
-            $this->db->rollBack();
-            error_log('Checkout error: ' . $e->getMessage());
+            // Nothing has been charged yet — the intent is simply abandoned.
+            error_log('pending checkout insert failed: ' . $e->getMessage());
             http_response_code(500);
-            header('Content-Type: application/json');
-            // Never surface raw DB/exception detail to the client.
-            echo json_encode(['error' => 'We could not complete your order. Please try again or contact support.']);
+            echo json_encode(['error' => I18n::t('checkout.errors.generic')]);
+            return;
+        }
+
+        echo json_encode(['clientSecret' => $intent['client_secret'], 'amount' => $amountCents]);
+    }
+
+    /**
+     * GET /checkout/complete — where every payment ends. Stripe.js redirects
+     * here after confirming (cards and wallets straight away, Revolut Pay and
+     * PayPal after their own page) with ?payment_intent=…&payment_intent_client_secret=….
+     */
+    public function checkoutComplete(): void {
+        $piId   = (string)($_GET['payment_intent'] ?? '');
+        $secret = (string)($_GET['payment_intent_client_secret'] ?? '');
+        if (!preg_match('/^pi_[A-Za-z0-9_]+$/', $piId) || $secret === '') {
+            header('Location: /cart');
+            return;
+        }
+
+        $result = null;
+        try {
+            $pi = \Stripe::retrievePaymentIntent($piId);
+        } catch (\Throwable $e) {
+            error_log('checkout complete: retrieve failed: ' . $e->getMessage());
+            $state   = 'failed';
+            $message = I18n::t('checkout.errors.verify');
+            require __DIR__ . '/../views/customer/checkout_complete.php';
+            return;
+        }
+
+        // The client secret proves this browser started the payment. That is
+        // what lets the order be shown even when the customer's banking app
+        // returns them in a browser with no session.
+        if (!hash_equals((string)($pi['client_secret'] ?? ''), $secret)) {
+            header('Location: /cart');
+            return;
+        }
+
+        $status = $pi['status'] ?? '';
+        if ($status === 'succeeded') {
+            $result = (new OrderPlacement($this->db))->place($piId, null, $pi);
+            if ($result['status'] === 'failed') {
+                $state   = 'failed';
+                $message = $result['error'];
+            } else {
+                $state = 'placed';
+                if ((int)$result['user_id'] === (int)$this->effectiveUserId(false)) {
+                    $_SESSION['cart_count'] = 0;
+                }
+                $placed = $this->orderForConfirmation((int)$result['order_id']);
+            }
+        } elseif ($status === 'processing') {
+            $state = 'processing';
+        } else {
+            // Back from the bank without paying (cancelled or declined).
+            $state = 'not_paid';
+        }
+
+        require __DIR__ . '/../views/customer/checkout_complete.php';
+    }
+
+    /**
+     * What the confirmation page shows: the order, its lines and how it was
+     * paid. Null if it can't be read — the page still shows the number.
+     */
+    private function orderForConfirmation(int $orderId): ?array {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT o.id, o.tracking_token, o.total_price, o.shipping_fee, o.delivery_method, o.pickup_point,
+                       op.payment_method, op.card_brand, op.card_last4
+                FROM orders o LEFT JOIN order_payments op ON op.order_id = o.id
+                WHERE o.id = ?
+            ");
+            $stmt->execute([$orderId]);
+            $order = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$order) {
+                return null;
+            }
+            $stmt = $this->db->prepare("
+                SELECT oi.quantity, oi.size_name, oi.color_name, oi.unit_price, oi.custom_design_fee,
+                       oi.preview_images, p.name AS product_name, p.image_path AS product_image
+                FROM order_items oi LEFT JOIN products p ON p.id = oi.product_id
+                WHERE oi.order_id = ?
+                ORDER BY oi.id
+            ");
+            $stmt->execute([$orderId]);
+            $order['items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $point = $order['pickup_point'] ? json_decode($order['pickup_point'], true) : null;
+            $order['point'] = is_array($point) ? $point : null;
+            return $order;
+        } catch (PDOException $e) {
+            error_log('order confirmation: ' . $e->getMessage());
+            return null;
         }
     }
+
+    /**
+     * POST /stripe/webhook — the backstop. If the customer paid and closed the
+     * tab before coming back, this still places the order (or refunds it).
+     * It also keeps order_payments.status in step with refunds and disputes
+     * made outside the site.
+     * Configure in Stripe: events payment_intent.succeeded, charge.refunded,
+     * charge.dispute.created and charge.dispute.closed; signing secret in
+     * STRIPE_WEBHOOK_SECRET.
+     */
+    public function stripeWebhook(): void {
+        header('Content-Type: application/json');
+        $payload = (string)file_get_contents('php://input');
+        $event   = \Stripe::verifyWebhook($payload, (string)($_SERVER['HTTP_STRIPE_SIGNATURE'] ?? ''));
+        if (!$event) {
+            http_response_code(400);
+            echo json_encode(['error' => 'invalid signature']);
+            return;
+        }
+
+        // The payload is only trusted for the intent id; everything else is
+        // re-fetched from the API.
+        $type   = (string)($event['type'] ?? '');
+        $object = is_array($event['data']['object'] ?? null) ? $event['data']['object'] : [];
+        $retry  = false;
+
+        if ($type === 'payment_intent.succeeded') {
+            $piId = is_string($object['id'] ?? null) ? $object['id'] : '';
+            if (preg_match('/^pi_[A-Za-z0-9_]+$/', $piId)) {
+                $result = (new OrderPlacement($this->db))->place($piId, null);
+                // Retry while the payment is neither an order nor refunded:
+                // the Stripe API or the database was unreachable, or the
+                // refund itself failed.
+                $refunded = $result['refunded'] ?? null;
+                $retry = $result['status'] === 'failed'
+                    && ($refunded === false || ($refunded === null && ($result['http'] ?? 0) >= 500));
+            }
+        } elseif (in_array($type, ['charge.refunded', 'charge.dispute.created', 'charge.dispute.closed'], true)) {
+            // Charges and disputes both carry the intent they belong to.
+            $piId = is_string($object['payment_intent'] ?? null) ? $object['payment_intent'] : '';
+            if (preg_match('/^pi_[A-Za-z0-9_]+$/', $piId)) {
+                try {
+                    $retry = !(new OrderPlacement($this->db))->syncPaymentStatus($piId);
+                } catch (\PDOException $e) {
+                    error_log('payment status sync: database error: ' . $e->getMessage());
+                    $retry = true;
+                }
+            }
+        }
+
+        if ($retry) {
+            http_response_code(500);
+            echo json_encode(['retry' => true]);
+            return;
+        }
+        echo json_encode(['received' => true]);
+    }
     
-        public function cart(): void {
+    public function cart(): void {
         // Read path: never mint a guest row just for viewing — crawlers hit
         // /cart constantly. No session user of either kind = empty cart.
         $userId = $this->effectiveUserId(false);
-        if (!$userId) {
-            $cartItems = [];
-            $cartTotal = 0;
-            require __DIR__ . '/../views/customer/cart.php';
+        [$cartItems, $cartTotal] = $userId ? $this->cartContents($userId) : [[], 0];
+        require __DIR__ . '/../views/customer/cart.php';
+    }
+
+    /**
+     * GET /checkout — the payment page. Everything is on one page: the
+     * customer's details, how they collect, and the Stripe Payment Element,
+     * with the order summary beside it. Nothing to pay for → back to the cart.
+     */
+    public function checkoutPage(): void {
+        $userId = $this->effectiveUserId(false);
+        [$cartItems, $cartTotal] = $userId ? $this->cartContents($userId) : [[], 0];
+        if (!$cartItems) {
+            header('Location: /cart');
             return;
         }
+
+        $checkout     = $this->checkoutOptions();
+        $accountEmail = $this->accountEmail();
+        $accountPhone = null;
+        if (Auth::check()) {
+            $stmt = $this->db->prepare("SELECT phone FROM users WHERE id = ?");
+            $stmt->execute([Auth::userId()]);
+            $accountPhone = ((string)$stmt->fetchColumn()) ?: null;
+        }
+        require __DIR__ . '/../views/customer/checkout.php';
+    }
+
+    /**
+     * The cart's lines as the cart and checkout pages show them — prices,
+     * preview image, premade design overlay — and their total.
+     *
+     * @return array{0: array, 1: float}
+     */
+    private function cartContents(int $userId): array {
         require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartId = $cartModel->getOrCreateCartId($userId);
@@ -1590,9 +1496,9 @@ class CustomerController {
         foreach ($cartItems as $item) {
             $cartTotal += (float)($item['line_total'] ?? 0);
         }
-        
-        require __DIR__ . '/../views/customer/cart.php';
-        }
+
+        return [$cartItems, $cartTotal];
+    }
 
     public function home(): void {
         $user = null;
@@ -1610,6 +1516,13 @@ class CustomerController {
         }
 
         // Featured products: the best sellers, by units actually ordered.
+        //
+        // The whole catalogue is fetched, not the top eight, because the home
+        // page now expands the grid in place instead of sending people to
+        // /shop. Eight are shown until the shopper asks for the rest. The 60
+        // cap is a guard, not a feature: it is far above the current
+        // fourteen, and if the catalogue ever approaches it this should
+        // become a paged or lazily-loaded grid rather than a bigger number.
         // Cancelled orders don't count. Products without a mockup PNG are excluded
         // — the card is all image, so one without artwork is just a broken tile.
         // Ties (including everything at zero on a fresh install) fall back to
@@ -1626,7 +1539,7 @@ class CustomerController {
               AND p.image_path <> ''
             GROUP BY p.id, p.name, p.slug, p.base_price, p.image_path, p.active
             ORDER BY ordered_qty DESC, p.id DESC
-            LIMIT 8
+            LIMIT 60
         ");
         $featuredProducts = $stmt->fetchAll();
 
@@ -1642,6 +1555,28 @@ class CustomerController {
             );
         }
         unset($fp);
+
+        // Headline bulk-discount figure for the home page.
+        //
+        // Computed, not typed. A per-product rate card was tried here and
+        // pulled: the shop sells tees around EUR 13 and hoodies around EUR 37,
+        // so one garment's ladder read as THE price list. A percentage is the
+        // one number that is honest for the whole catalogue.
+        //
+        // The saving depends only on the margin bands, not on what the blank
+        // costs: price = cost / (1 - margin), so the cost cancels out of
+        // price(100) / price(1) and what is left is (1 - m1) / (1 - m100).
+        // Taking the best category and rounding DOWN to a multiple of five
+        // keeps the "up to" claim true even after the tier table is edited.
+        $bulkSaving = 0.0;
+        foreach (['tshirt', 'hoodie'] as $cat) {
+            $m1   = Pricing::marginFor($cat, 1);
+            $m100 = Pricing::marginFor($cat, 100);
+            if ($m100 < 1.0) {
+                $bulkSaving = max($bulkSaving, 1 - (1 - $m1) / (1 - $m100));
+            }
+        }
+        $bulkSavingPct = (int)(floor($bulkSaving * 20) * 5);
 
         require __DIR__ . '/../views/customer/home.php';
     }
@@ -1764,6 +1699,18 @@ class CustomerController {
         // every customer forever. The shipping page states items print in 3–5
         // business days, so quote the far end of that window, skipping weekends.
         $deliveryEstimate = $this->businessDaysFromNow(5);
+
+        // Single-unit retail price, for the sticky action bar on phones.
+        // products.base_price is the SUPPLIER cost, so it has to go through
+        // the pricing engine — rendering it raw would advertise a EUR 2.14
+        // t-shirt. price-tiers.js takes over as soon as it has run; this is
+        // what the bar shows on the first paint, so that it never flashes a
+        // zero before the script catches up.
+        $retailPrice = Pricing::unitPrice(
+            (float)($product['base_price'] ?? 0),
+            Pricing::categoryFor($product['slug'] ?? '', $product['name'] ?? ''),
+            1
+        );
 
         require __DIR__ . '/../views/customer/custom_product.php';
     }
@@ -2102,6 +2049,87 @@ class CustomerController {
         require __DIR__ . '/../views/customer/info/track_order.php';
     }
 
+    /**
+     * Shop assistant endpoint.
+     *
+     * Public on purpose: most of these questions ("how much for 50 shirts?",
+     * "do you deliver?") are asked BEFORE someone has an account, and putting
+     * them behind a login would mean the bot only ever talks to people who
+     * are already customers.
+     *
+     * Public also means it needs its own limits, since nothing upstream is
+     * rate-limiting an anonymous visitor: a CSRF token ties the request to a
+     * real session, the question is length-capped, and a per-session counter
+     * caps the rate. Answering costs nothing here, but the endpoint should
+     * still not be usable as a free amplifier, and the same limits keep the
+     * cost bounded if this is ever pointed at a paid language model.
+     */
+    public function assistantAsk(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+
+        $raw  = file_get_contents('php://input') ?: '';
+        $body = json_decode($raw, true);
+        if (!is_array($body)) {
+            $body = [];
+        }
+
+        // Csrf::tokenFromRequest() would re-read php://input, which has
+        // already been consumed above, so the token is taken from the header
+        // (or the parsed body) and handed to Csrf::check() directly.
+        $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($body['_csrf'] ?? '');
+        if (!Csrf::check(is_string($token) ? $token : '')) {
+            http_response_code(419);
+            echo json_encode(['error' => 'csrf']);
+            return;
+        }
+
+        // A ROLLING WINDOW, not a lifetime counter.
+        //
+        // This was a running total that never reset, so the 30th question
+        // locked a visitor out of the assistant for the rest of their session
+        // with no way back — including anyone who was simply curious and
+        // clicked a few suggested questions. A window recovers on its own:
+        // ask a lot, wait a few minutes, carry on.
+        //
+        // The cap is deliberately generous because answering is nearly free:
+        // the matcher handles most questions on this server at no cost, and
+        // the model calls behind it have their own, tighter limit in
+        // ShopAssistant. This one exists only to stop automated abuse.
+        $now    = time();
+        $window = 600;   // 10 minutes
+        $hits   = $_SESSION['assistant_hits'] ?? [];
+        // Previously an int; drop any old value rather than crash on it.
+        if (!is_array($hits)) {
+            $hits = [];
+        }
+        $hits = array_values(array_filter($hits, static fn($t) => is_int($t) && $t > $now - $window));
+        $hits[] = $now;
+        $_SESSION['assistant_hits'] = $hits;
+
+        if (count($hits) > 40) {
+            http_response_code(429);
+            header('Retry-After: ' . $window);
+            echo json_encode([
+                'intent' => 'rate_limited',
+                'text'   => t('assistant.rate_limited', false),
+                'links'  => [['label' => t('assistant.link.contact', false), 'href' => '/contact']],
+                'suggestions' => [],
+            ]);
+            return;
+        }
+
+        $question = (string)($body['q'] ?? '');
+        // Cut rather than reject: someone pasting a long order description
+        // should still get an answer, not an error.
+        if (mb_strlen($question) > 500) {
+            $question = mb_substr($question, 0, 500);
+        }
+
+        $assistant = new ShopAssistant($this->db, I18n::locale());
+        echo json_encode($assistant->answer($question), JSON_UNESCAPED_UNICODE);
+    }
+
     public function cookieConsent(): void {
         Auth::requireLogin();
         $userId = Auth::userId();
@@ -2109,6 +2137,11 @@ class CustomerController {
             $val = ($_POST['accept'] == '1') ? 1 : 2;
             $stmt = $this->db->prepare("UPDATE users SET cookie_accepted = ? WHERE id = ?");
             $stmt->execute([$val, $userId]);
+            // Mirror the choice into the session. The footer needs this value
+            // on EVERY page, and most controller actions never load the user
+            // row, so reading it from $user alone meant the banner reappeared
+            // on every page that happened not to fetch it.
+            $_SESSION['cookie_accepted'] = $val;
             echo 'OK';
         } else {
             http_response_code(400);

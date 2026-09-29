@@ -29,7 +29,11 @@
         window.fetch = function (input, init) {
             init = init || {};
             var method = (init.method || (input && input.method) || 'GET').toUpperCase();
-            var url = typeof input === 'string' ? input : (input && input.url) || '';
+            // A Request carries .url; a string or URL object stringifies to
+            // it. (Reading only .url made a URL object look like '' — i.e.
+            // same-origin — and put our token on cross-origin requests, which
+            // then fail CORS preflight.)
+            var url = (input && typeof input.url === 'string') ? input.url : String(input || '');
             if (MUTATING[method] && isSameOrigin(url)) {
                 var headers = new Headers(init.headers || (input && input.headers) || {});
                 if (!headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', token());
@@ -64,7 +68,28 @@ document.addEventListener('DOMContentLoaded', function() {
             mainNav.classList.toggle('active', open);
             mobileMenuToggle.classList.toggle('active', open);
             mobileMenuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            // Lock the page behind the drawer. Without this the body keeps
+            // scrolling under an open menu on a phone, so closing it returns
+            // the reader somewhere they never chose to go.
+            document.body.classList.toggle('nav-open', open);
         };
+
+        // A tap on a link inside the drawer navigates, but on a same-page
+        // anchor nothing unloads, and the menu would stay open over the
+        // content it just scrolled to.
+        mainNav.addEventListener('click', function (e) {
+            if (e.target.closest('a')) setMenu(false);
+        });
+
+        // If the viewport grows past the breakpoint while the drawer is open
+        // (rotating a phone, or a desktop window being widened), the menu
+        // becomes the normal nav again and the scroll lock must come off with
+        // it — otherwise the page is left frozen with no visible cause.
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 768 && mainNav.classList.contains('active')) {
+                setMenu(false);
+            }
+        });
 
         mobileMenuToggle.addEventListener('click', function (e) {
             e.stopPropagation();   // don't let this reach the outside-click handler
@@ -220,22 +245,36 @@ function redirectToLoginWithPendingCart(payload) {
 }
 
 function initCookiePopup(loggedIn, cookieAccepted) {
+    function T(key, fallback) {
+        var v = (window.I18N && window.I18N.messages && window.I18N.messages[key]);
+        return v || fallback;
+    }
+
     if (!loggedIn || cookieAccepted !== 0) return;
 
+    // Markup only — every dimension and colour is in customer.css, so this
+    // notice follows the palette instead of carrying its own gradient and
+    // rounded corners from a theme the site no longer uses. It also has to
+    // work as a bottom sheet on a phone, which inline styles made awkward.
     var popup = document.createElement('div');
     popup.id = 'cookie-popup';
-    popup.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid #e2e8f0;box-shadow:0 4px 24px rgba(0,0,0,0.12);border-radius:14px;padding:20px 24px;z-index:9999;width:560px;max-width:95vw;';
-    popup.innerHTML = `
-        <h3 style="margin:0 0 8px;font-size:1rem;color:#1a1a2e;">🍪 We use cookies</h3>
-        <p style="margin:0 0 16px;font-size:0.875rem;line-height:1.6;color:#555;">
-            We use essential cookies to keep the site working and, with your consent, optional cookies to improve your experience and analyse usage.
-            See our <a href="/cookies" style="color:#15130E;">Cookie Policy</a> and <a href="/privacy" style="color:#15130E;">Privacy Policy</a> for details.
-        </p>
-        <div style="display:flex;gap:10px;justify-content:flex-end;">
-            <button id="rejectCookieBtn" style="padding:8px 18px;border:1.5px solid #cbd5e1;border-radius:8px;background:#fff;color:#555;font-size:0.875rem;font-weight:600;cursor:pointer;">Reject optional</button>
-            <button id="acceptCookieBtn" style="padding:8px 18px;border:none;border-radius:8px;background:linear-gradient(135deg,#15130E,#E63946);color:#fff;font-size:0.875rem;font-weight:600;cursor:pointer;">Accept all</button>
-        </div>
-    `;
+    popup.setAttribute('role', 'dialog');
+    popup.setAttribute('aria-live', 'polite');
+    popup.setAttribute('aria-label', (window.I18N && window.I18N.t)
+        ? window.I18N.t('cookie.title') : 'Cookies');
+    popup.innerHTML =
+        '<h3 class="cookie-popup-title">' + T('cookie.title', 'We use cookies') + '</h3>'
+      + '<p class="cookie-popup-text">' + T('cookie.text',
+            'We use essential cookies to keep the site working and, with your consent, optional cookies to improve your experience and analyse usage.')
+      + ' <a href="/cookies">' + T('cookie.policy', 'Cookie Policy') + '</a>'
+      + ' · <a href="/privacy">' + T('cookie.privacy', 'Privacy Policy') + '</a></p>'
+      + '<div class="cookie-popup-actions">'
+      + '<button type="button" id="rejectCookieBtn" class="btn btn-sm btn-secondary">'
+      + T('cookie.reject', 'Reject optional') + '</button>'
+      + '<button type="button" id="acceptCookieBtn" class="btn btn-sm">'
+      + T('cookie.accept', 'Accept all') + '</button>'
+      + '</div>';
+
     document.body.appendChild(popup);
 
     function sendConsent(value) {

@@ -1,0 +1,562 @@
+/* ============================================================
+   COSTAS PRESS JR. — MOBILE
+
+   Every phone-specific rule on the customer side, in one file,
+   loaded LAST so it settles the cascade without a single
+   !important. The rest of the stylesheets stay desktop-first and
+   readable; this is where the phone gets its own decisions.
+
+   Why one file rather than a @media block appended to each:
+   this codebase already carries the same component defined in
+   three or four places (.main-image had four, .btn-lg had two
+   with different padding), and which one applied depended on
+   stylesheet order. Adding a fifth partial override per file
+   would deepen exactly that problem. One layer, loaded last,
+   is the thing a reviewer can read top to bottom and trust.
+
+   Breakpoints used here:
+     900px  layout stops being two columns
+     768px  the masthead collapses into a drawer
+     640px  phone proper: grids, chips, sticky action bar
+     380px  very small phones
+   ============================================================ */
+
+
+/* ============================================================
+   1. TOUCH — applies wherever the pointer is coarse
+   ============================================================ */
+
+/* A device with a coarse pointer, at any width. A tablet in landscape is
+   wider than every breakpoint below and still has no hover and no mouse. */
+@media (pointer: coarse) {
+
+    /* The grey flash iOS paints over a tapped element; we give our own
+       feedback, so the default just looks like a rendering fault. */
+    a, button, [role="button"], .product-card, .category-card, .flip-card-inner {
+        -webkit-tap-highlight-color: rgba(200, 48, 23, 0.18);
+    }
+
+    /* Removes the 300ms click delay some engines still apply, and stops a
+       double-tap from zooming a control the user meant to press twice. */
+    a, button, input, select, textarea, [role="button"] {
+        touch-action: manipulation;
+    }
+
+    /* Hover styles latch on touch: the finger leaves, the :hover state stays
+       painted until something else is tapped. Anything whose hover MOVES an
+       element is disabled here — the state that sticks is a card sitting 3px
+       out of line, which reads as a bug. Colour hovers are left alone. */
+    .product-card:hover,
+    .sheet-lift:hover,
+    .ink-chip:hover,
+    .color-swatch:hover,
+    .flip-card-inner:hover,
+    #productThumbnails img:hover {
+        transform: none;
+    }
+
+    /* The anime cards flip on hover, which a touch device cannot express:
+       the first tap flipped the card AND followed the link. Show the front
+       only; the design page behind the card shows both sides properly. */
+    .flip-card-inner:hover .flip-front { transform: rotateY(0deg); }
+    .flip-card-inner:hover .flip-back  { transform: rotateY(180deg); }
+}
+
+
+/* ============================================================
+   2. PHONE AND TABLET LAYOUT  (<= 900px)
+   ============================================================ */
+@media (max-width: 900px) {
+
+    /* iOS Safari zooms the whole page when a focused field is under 16px,
+       then leaves the layout scaled and the rest of the page overflowing.
+       It is the single most common "the site is broken on my phone" cause,
+       and the fix is simply never to go below 16px on a control. */
+    input, select, textarea {
+        font-size: 16px;
+    }
+
+    .container {
+        padding-left: var(--space-4);
+        padding-right: var(--space-4);
+    }
+
+    /* A phone is held in one hand and read at arm's length; the desktop
+       measure is too generous and the leading too loose. */
+    .section { padding: var(--space-6) 0; }
+}
+
+
+/* ============================================================
+   3. MASTHEAD AND DRAWER  (<= 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+
+    .site-header { border-bottom-width: 2px; }
+
+    .header-inner {
+        padding: var(--space-2) 0;
+        gap: var(--space-2);
+        flex-wrap: nowrap;
+    }
+
+    .logo img { height: 38px; }
+
+    /* "Login" and "My Account" as words cost more width than they earn next
+       to a cart and a menu button. The icon stays, the label goes to the
+       accessible name so it is still announced. */
+    .icon-link-label {
+        position: absolute;
+        width: 1px; height: 1px;
+        padding: 0; margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+
+    /* The language switcher lives in the drawer on a phone, not the bar. */
+    .header-actions > .lang-switcher { display: none; }
+
+    .header-actions { gap: var(--space-1); }
+
+    .icon-link,
+    .cart-link {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* A stamped square, matching the buttons rather than being the one
+       rounded control left in the masthead. */
+    .mobile-menu-toggle {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        background: transparent;
+        border: 1.5px solid var(--ink);
+        border-radius: var(--radius);
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .mobile-menu-toggle span {
+        display: block;
+        width: 20px;
+        height: 2px;
+        background: var(--ink);
+        transition: transform var(--dur) var(--ease), opacity var(--dur-fast) var(--ease);
+    }
+
+    .mobile-menu-toggle.active { background: var(--ink); }
+    .mobile-menu-toggle.active span { background: var(--paper); }
+    .mobile-menu-toggle.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .mobile-menu-toggle.active span:nth-child(2) { opacity: 0; }
+    .mobile-menu-toggle.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ---- The drawer ----
+       A panel that hangs from the masthead and can scroll on its own. It is
+       capped to the space below the header so a long menu on a short phone
+       scrolls inside the drawer instead of running off the screen, and
+       overscroll-behavior stops that scroll chaining to the page behind. */
+    .main-nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--paper-2);
+        border-top: 2px solid var(--ink);
+        border-bottom: 2px solid var(--ink);
+        flex-direction: column;
+        padding: var(--space-2) var(--space-4) var(--space-4);
+        gap: 0;
+        z-index: 49;
+        max-height: calc(100dvh - 100%);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        box-shadow: 0 12px 24px rgba(22, 19, 15, 0.12);
+    }
+
+    .main-nav.active { display: flex; }
+
+    /* Full-width rows, ranged left, separated by rules — a printed index,
+       and a 52px target that is comfortable rather than merely legal. */
+    .main-nav > a:not(.btn) {
+        width: 100%;
+        text-align: left;
+        padding: var(--space-4) 0;
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        font-size: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    /* The sliding underline is a pointer affordance; on a phone the current
+       page is better marked by something simply visible. The :not(.btn) and
+       .active parts are here only to out-specify the base rule in
+       customer.css, which is otherwise more specific than this one and left
+       the active row carrying a dash AND an underline. */
+    .main-nav > a::after,
+    .main-nav > a:not(.btn)::after,
+    .main-nav > a.active:not(.btn)::after { content: none; }
+
+    .main-nav > a.active {
+        color: var(--spot);
+    }
+    .main-nav > a.active::before {
+        content: "";
+        width: 14px;
+        height: 3px;
+        background: var(--spot);
+        margin-right: var(--space-3);
+        flex: none;
+    }
+
+    .nav-mobile-tail {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+        width: 100%;
+        margin-top: var(--space-4);
+        padding-top: var(--space-4);
+        border-top: 2px solid var(--ink);
+    }
+
+    .nav-mobile-tail .btn {
+        width: 100%;
+        min-height: 48px;
+        font-size: 0.95rem;
+    }
+
+    /* These were repainted to solid ink regardless of intent, so Register
+       and Sign Out looked identical to every other row. They keep their own
+       scheme now; only the width and height are imposed. */
+    .nav-mobile-tail .logout-form { width: 100%; }
+    .nav-mobile-tail .logout-form .btn { width: 100%; }
+
+    /* The switcher carries a white pill background and a border of its own
+       on desktop; stretched across the drawer that read as two blank panels
+       flanking EN and GR. Stripped back to just the two buttons. */
+    .nav-mobile-tail .lang-switcher {
+        align-self: stretch;
+        display: flex;
+        justify-content: center;
+        gap: var(--space-2);
+        margin-top: var(--space-1);
+        background: transparent;
+        border: 0;
+        padding: 0;
+    }
+    .nav-mobile-tail .lang-switcher a {
+        min-width: 56px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1.5px solid var(--ink);
+        border-radius: var(--radius);
+        color: var(--ink);
+        background: transparent;
+        font-weight: 700;
+    }
+    .nav-mobile-tail .lang-switcher a.active {
+        background: var(--ink);
+        color: var(--paper);
+    }
+    .nav-mobile-tail .lang-switcher .sep { display: none; }
+
+    /* Keeps the page still behind an open drawer. Paired with the class
+       app.js puts on <body>; without it the page scrolls under the menu and
+       the reader loses their place. */
+    body.nav-open { overflow: hidden; }
+}
+
+
+/* ============================================================
+   4. PHONE  (<= 640px)
+   ============================================================ */
+@media (max-width: 640px) {
+
+    /* ---- Hero ---- */
+    .hero { padding: var(--space-5) 0 var(--space-6); }
+    .hero-buttons { flex-direction: column; align-items: stretch; gap: var(--space-3); }
+    .hero-buttons .btn { width: 100%; }
+
+    /* ---- Section headers ----
+       The heading and its action stop competing for one line. */
+    .section-head { flex-direction: column; align-items: stretch; gap: var(--space-3); }
+    .section-head-action { align-self: flex-start; }
+
+    /* ---- Product grids ----
+       Two across, not one. A single column turned fourteen products into
+       roughly five thousand pixels of scrolling, and a garment mockup reads
+       perfectly well at half width — shoppers compare shapes and colours
+       here, they do not study the weave. */
+    .products-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-3);
+    }
+
+    /* .product-list-grid is deliberately NOT set here. That page carries an
+       inline <style> block, which sits after every <link> and therefore wins
+       on document order no matter what this file says — so its columns are
+       defined at the source instead, with a min(46%, 210px) track that gives
+       two across on a phone without needing an override at all. Restating it
+       here would look authoritative and quietly do nothing. */
+    .product-list-card {
+        padding: var(--space-2) var(--space-2) var(--space-3);
+    }
+
+    .product-list-card .product-name { font-size: 0.98rem; }
+    .product-list-card .product-desc { display: none; }
+    .product-list-card .price-label  { font-size: 1.05rem; }
+    .product-list-card .color-dot    { width: 16px; height: 16px; }
+
+    .product-image img { padding: var(--space-2); }
+    .product-info { padding: var(--space-3); }
+    .product-name { font-size: 0.95rem; }
+
+    /* ---- Filter chips ----
+       A wrapping row of chips ate four lines before the first product. One
+       scrolling row keeps the goods on screen; the gradient at the edge and
+       a chip deliberately half-cut at the fold are what tell a reader it
+       scrolls, so no instruction is needed. */
+    .picker-filters {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+        gap: var(--space-2);
+        margin: 0 calc(var(--space-4) * -1) var(--space-3);
+        padding: 0 var(--space-4) var(--space-2);
+        scrollbar-width: none;
+    }
+    .picker-filters::-webkit-scrollbar { display: none; }
+
+    .picker-chip {
+        flex: none;
+        scroll-snap-align: start;
+        min-height: 40px;
+        border-radius: var(--radius);
+        border-width: 1.5px;
+        white-space: nowrap;
+    }
+
+    /* .picker-filters is itself a flex item inside .picker-toolbar, and a
+       flex item's automatic minimum size is its CONTENT — so a nowrap row of
+       chips refused to shrink and pushed the toolbar past the screen edge
+       even though it has overflow-x:auto. min-width:0 is what actually lets
+       it scroll instead of overflow. */
+    .picker-toolbar { flex-wrap: wrap; }
+    .picker-filters { min-width: 0; max-width: 100%; }
+
+    .picker-sort {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        gap: var(--space-3);
+    }
+    .picker-sort select { flex: 1; min-height: 44px; }
+
+    /* ---- Categories / steps ---- */
+    .categories-grid { grid-template-columns: 1fr; gap: var(--space-3); }
+    .category-card { padding: var(--space-4); padding-right: var(--space-7); }
+    .how-grid { gap: var(--space-4); }
+
+    /* ---- Product page ---- */
+    .custom-product-grid { gap: var(--space-4); }
+
+    /* A snap-scrolling strip rather than a wrapping block of thumbnails. */
+    #productThumbnails {
+        display: flex;
+        flex-direction: row;
+        gap: var(--space-2);
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+        scrollbar-width: none;
+        padding-bottom: var(--space-1);
+    }
+    #productThumbnails::-webkit-scrollbar { display: none; }
+    #productThumbnails img {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+        flex: none;
+        scroll-snap-align: start;
+        background: var(--stock);
+        border: 1.5px solid var(--ink);
+    }
+
+    .main-image { padding: var(--space-2); }
+
+    /* ---- Quantity stepper ---- */
+    .qty-btn, .quantity-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+    .qty-input, .quantity-input {
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    /* ---- Cart ---- */
+    .cart-item {
+        grid-template-columns: 84px minmax(0, 1fr);
+        gap: var(--space-3);
+        align-items: start;
+    }
+    .cart-item-image-wrapper { width: 84px; height: 84px; }
+
+    /* ---- Footer ----
+       Two columns of links, brand across the top. Four columns squeezed
+       into a phone gave one word per line. */
+    .footer-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-5) var(--space-4);
+    }
+    .footer-section:first-child { grid-column: 1 / -1; }
+    .footer-section ul li { margin-bottom: var(--space-2); }
+    .footer-section ul a {
+        display: inline-block;
+        padding: var(--space-1) 0;
+        min-height: 32px;
+    }
+    /* Raising these to a 44px touch target made four icons wider than the
+       half-width footer column they sit in (4 x 44 + gaps = 200px in ~180px),
+       so the last one hung 21px past the screen edge and gave every page a
+       horizontal scroll. Allowing the row to wrap keeps the target size. */
+    .social-links { flex-wrap: wrap; }
+    .social-links a {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* ---- Forms ---- */
+    .form-container { padding: var(--space-5) var(--space-4); }
+    .form-group input,
+    .form-group select,
+    .form-group textarea { min-height: 48px; }
+    .btn-block, .form-container .btn { min-height: 48px; }
+
+    /* ---- Tables ----
+       Wide data tables scroll inside their own frame instead of widening
+       the document, which is what put a horizontal scrollbar on the whole
+       product page before. */
+    .table-wrap, .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+
+/* ============================================================
+   5. STICKY ACTION BAR  (<= 640px)
+
+   The decisive action on a product page sits below the colour,
+   size and price blocks — a long way down a phone screen, and
+   gone again the moment the shopper scrolls back up to look at
+   the garment. Pinning it to the bottom means the price and the
+   button are always one thumb-reach away.
+   ============================================================ */
+@media (max-width: 640px) {
+
+    .mobile-action-bar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 60;
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        /* Clears the iOS home indicator; resolves to 0 everywhere else. */
+        padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+        background: var(--paper-2);
+        border-top: 2px solid var(--ink);
+        box-shadow: 0 -6px 18px rgba(22, 19, 15, 0.10);
+    }
+
+    .mobile-action-bar .mab-price {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.05;
+        min-width: 0;
+    }
+    .mobile-action-bar .mab-label {
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        text-transform: uppercase;
+        letter-spacing: var(--tracking-caps);
+        color: var(--ink-muted);
+    }
+    .mobile-action-bar .mab-amount {
+        font-family: var(--font-display);
+        font-size: 1.5rem;
+        font-weight: 900;
+    }
+    .mobile-action-bar .btn {
+        flex: 1;
+        min-height: 48px;
+        white-space: nowrap;
+    }
+
+    /* Room for the bar so it never covers the last of the page. */
+    body.has-action-bar main { padding-bottom: 96px; }
+
+    /* The in-page CTA is redundant once the bar is pinned above it, and the
+       two collided near the foot of the page. It stays in the DOM rather
+       than being removed, because the bar forwards its tap to this button —
+       .click() still fires on a display:none element, so there remains
+       exactly one code path for starting a design. */
+    body.has-action-bar #startDesigningBtn { display: none; }
+}
+
+/* The bar is a phone affordance only; above 640 the real action is already
+   on screen beside the garment. */
+@media (min-width: 641px) {
+    .mobile-action-bar { display: none; }
+}
+
+
+/* ============================================================
+   6. VERY SMALL PHONES  (<= 380px)
+   ============================================================ */
+@media (max-width: 380px) {
+    .products-grid,
+    .product-list-grid { gap: var(--space-2); }
+
+    .product-info { padding: var(--space-2); }
+    .product-name { font-size: 0.88rem; }
+
+    .mobile-action-bar { gap: var(--space-2); padding-left: var(--space-3); padding-right: var(--space-3); }
+    .mobile-action-bar .mab-amount { font-size: 1.3rem; }
+
+    .footer-grid { grid-template-columns: 1fr; }
+}
+
+
+/* ============================================================
+   7. LANDSCAPE PHONES
+
+   A phone on its side has plenty of width and almost no height,
+   so the tall hero padding tuned for portrait eats the screen.
+   ============================================================ */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
+    .hero { padding: var(--space-4) 0; }
+    .hero h1 { font-size: clamp(1.8rem, 5vh, 2.6rem); }
+    .main-nav { max-height: calc(100dvh - 60px); }
+}

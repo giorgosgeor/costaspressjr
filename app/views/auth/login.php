@@ -27,6 +27,9 @@
         <div class="form-group">
             <label for="password"><?= t('auth.login.password') ?></label>
             <input type="password" id="password" name="password" placeholder="<?= t('auth.login.password_placeholder') ?>" required>
+            <?php // The reset flow already existed but nothing linked to it, so it
+                  // was unreachable for anyone who had actually forgotten. ?>
+            <a href="/forgot-password" class="form-hint-link"><?= t('auth.login.forgot') ?></a>
         </div>
         <button type="submit" class="btn btn-block" style="margin-top:8px;"><?= t('auth.login.button') ?></button>
     </form>
