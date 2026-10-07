@@ -75,3 +75,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === this) closeModal();
     });
 });
+
+// The placement editor for one design, in its own window
+// (data-on-click="openPositionEditor" in views/admin/premade/index.php).
+function openPositionEditor(designId) {
+    window.open('/admin/premade/position/' + designId, '_blank', 'width=900,height=700');
+}

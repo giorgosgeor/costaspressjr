@@ -12,6 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sofia+Sans:wght@400..800&family=Sofia+Sans+Extra+Condensed:wght@600..900&display=swap" rel="stylesheet">
     <?php // Standalone page, outside the admin layout — base.css holds the var()
           // definitions this stylesheet is built on and must load first. ?>
+    <?php // data-* behaviour (replaces inline on* handlers); before any image can fail ?>
+    <?= View::script('/js/site/actions.js') ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/base.css')) ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/admin/design-area.css')) ?>">
     <script src="/js/vendor/interact.min.js"></script>
@@ -55,7 +57,7 @@
     <div class="dae-controls">
         <div class="dae-section">
             <h3>Product</h3>
-            <select class="dae-select" id="productSelect" onchange="loadProduct()">
+            <select class="dae-select" id="productSelect" data-on-change="loadProduct">
                 <option value="">— Select a product —</option>
                 <?php foreach ($products as $p): ?>
                 <option value="<?= $p['id'] ?>"
@@ -80,19 +82,19 @@
             <div class="coord-grid">
                 <div class="coord-field">
                     <label>Left (X)</label>
-                    <input type="number" id="inX" min="0" max="100" step="0.1" oninput="applyFromInputs()">
+                    <input type="number" id="inX" min="0" max="100" step="0.1" data-on-input="applyFromInputs">
                 </div>
                 <div class="coord-field">
                     <label>Top (Y)</label>
-                    <input type="number" id="inY" min="0" max="100" step="0.1" oninput="applyFromInputs()">
+                    <input type="number" id="inY" min="0" max="100" step="0.1" data-on-input="applyFromInputs">
                 </div>
                 <div class="coord-field">
                     <label>Width (W)</label>
-                    <input type="number" id="inW" min="1" max="100" step="0.1" oninput="applyFromInputs()">
+                    <input type="number" id="inW" min="1" max="100" step="0.1" data-on-input="applyFromInputs">
                 </div>
                 <div class="coord-field">
                     <label>Height (H)</label>
-                    <input type="number" id="inH" min="1" max="100" step="0.1" oninput="applyFromInputs()">
+                    <input type="number" id="inH" min="1" max="100" step="0.1" data-on-input="applyFromInputs">
                 </div>
             </div>
             <p class="coord-hint">Values are percentages of the mockup image size (0–100).</p>
@@ -101,14 +103,14 @@
         <div class="dae-section">
             <h3>Copy to other views</h3>
             <div class="dae-copy-row">
-                <button class="btn-copy" onclick="copyToView('front')">→ Front</button>
-                <button class="btn-copy" onclick="copyToView('back')">→ Back</button>
-                <button class="btn-copy" onclick="copyToView('lsleeve')">→ L.Sleeve</button>
-                <button class="btn-copy" onclick="copyToView('rsleeve')">→ R.Sleeve</button>
+                <button class="btn-copy" data-on-click="copyToView" data-args='["front"]'>→ Front</button>
+                <button class="btn-copy" data-on-click="copyToView" data-args='["back"]'>→ Back</button>
+                <button class="btn-copy" data-on-click="copyToView" data-args='["lsleeve"]'>→ L.Sleeve</button>
+                <button class="btn-copy" data-on-click="copyToView" data-args='["rsleeve"]'>→ R.Sleeve</button>
             </div>
         </div>
 
-        <button class="btn-save" onclick="saveAll()">💾 Save Design Area</button>
+        <button class="btn-save" data-on-click="saveAll">💾 Save Design Area</button>
     </div>
 </div>
 

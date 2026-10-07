@@ -63,7 +63,7 @@ $visibleCount = 8;
               // The photo is WEBSITE_KEY_INFO/basic_pic.png cut off its white
               // background and trimmed to the subject, as a WebP. ?>
         <div class="hero-visual">
-            <img src="/images/hero/hero-tee.webp" alt="" width="969" height="1122" onerror="this.remove()">
+            <img src="/images/hero/hero-tee.webp" alt="" width="969" height="1122" data-remove-on-error>
             <aside class="bulk-card">
                 <span class="bulk-tag"><?= t('home.bulk.tag') ?></span>
                 <h2 class="bulk-title"><?= t('home.bulk.title') ?></h2>
@@ -115,7 +115,7 @@ $visibleCount = 8;
                      <?= $i >= $visibleCount ? 'hidden' : '' ?>
                      data-product-id="<?= (int)$product['id'] ?>" role="link" tabindex="0" aria-label="<?= htmlspecialchars($product['name']) ?>">
                     <div class="product-image">
-                        <img src="/<?= htmlspecialchars($product['image_path'] ?? '') ?>" alt="<?= htmlspecialchars($product['name']) ?>" loading="lazy" onerror="this.src='/images/placeholder.svg'">
+                        <img src="/<?= htmlspecialchars($product['image_path'] ?? '') ?>" alt="<?= htmlspecialchars($product['name']) ?>" loading="lazy" data-fallback="/images/placeholder.svg">
                         <?php if (!$product['active']): ?>
                             <span class="product-badge badge-soldout"><?= t('home.featured.sold_out') ?></span>
                         <?php endif; ?>

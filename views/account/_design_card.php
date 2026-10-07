@@ -109,7 +109,7 @@ $pct = function ($v, $of) { return $of > 0 ? ($v / $of) * 100 : 0; };
         <div class="design-card-product"><?= htmlspecialchars($design['product_name'] ?? t('custom.title', false)) ?></div>
         <div class="design-card-date"><?= I18n::t('account.created', ['date' => date('M j, Y', strtotime($design['created_at']))]) ?></div>
         <div class="design-card-actions">
-            <button class="btn btn-primary" onclick="addDesignToCart(<?= htmlspecialchars(json_encode([
+            <button class="btn btn-primary" data-on-click="addDesignToCart" data-args="<?= htmlspecialchars(json_encode([[
                 'id' => $design['id'],
                 'productId' => $design['product_id'],
                 'productName' => $design['product_name'] ?? 'Custom Product',
@@ -129,11 +129,11 @@ $pct = function ($v, $of) { return $of > 0 ? ($v / $of) * 100 : 0; };
                 'frontDesignPreviewPath' => null,
                 'editorDAWidth'  => $phpEditorDAW,
                 'editorDAHeight' => $phpEditorDAH,
-            ]), ENT_QUOTES, 'UTF-8') ?>)">
+            ]]), ENT_QUOTES, 'UTF-8') ?>">
                 <?= t('account.add_to_cart') ?>
             </button>
             <a href="/shop/custom?load=<?= $design['id'] ?>" class="btn btn-outline"><?= t('account.edit') ?></a>
-            <button class="btn btn-danger" onclick="deleteDesign(<?= $design['id'] ?>, '<?= htmlspecialchars(addslashes($design['name'])) ?>')"><?= t('account.delete') ?></button>
+            <button class="btn btn-danger" data-on-click="deleteDesign" data-args="<?= e(json_encode([(int)$design['id'], (string)$design['name']])) ?>"><?= t('account.delete') ?></button>
         </div>
     </div>
 </div>

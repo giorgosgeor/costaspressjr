@@ -202,8 +202,8 @@ $viewLabels = [
                     $previewUrl = '/' . ltrim($previewPath, '/');
                     $label = $viewLabels[$view] ?? ucfirst(str_replace('-', ' ', $view));
                 ?>
-                <div class="preview-card" onclick="openPreviewModal('<?= htmlspecialchars($previewUrl) ?>', '<?= htmlspecialchars($label) ?> — <?= htmlspecialchars($item['product_name'] ?? '') ?>')">
-                    <img src="<?= htmlspecialchars($previewUrl) ?>" alt="<?= htmlspecialchars($label) ?>" onerror="this.parentElement.style.display='none'">
+                <div class="preview-card" data-on-click="openPreviewModal" data-args="<?= e(json_encode([$previewUrl, $label . ' — ' . ($item['product_name'] ?? '')])) ?>">
+                    <img src="<?= htmlspecialchars($previewUrl) ?>" alt="<?= htmlspecialchars($label) ?>" data-hide-parent-on-error>
                     <div class="preview-label"><?= htmlspecialchars($label) ?></div>
                 </div>
                 <?php endforeach; ?>
@@ -236,23 +236,23 @@ $viewLabels = [
                         <img src="<?= htmlspecialchars($productImg) ?>"
                              alt="<?= htmlspecialchars($item['product_name'] ?? 'Product') ?>"
                              style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; filter: <?= htmlspecialchars($colorFilter) ?>;"
-                             onerror="this.style.display='none'">
+                             data-hide-on-error>
                         <?php endif; ?>
                         <?php if ($designImg): ?>
                         <img src="<?= htmlspecialchars($designImg) ?>"
                              alt="<?= htmlspecialchars($item['premade_design_name'] ?? 'Design') ?>"
                              style="position:absolute; left:<?= $overlayLeft ?>%; top:<?= $overlayTop ?>%; width:<?= $overlayW ?>%; transform:translate(-50%,-50%); pointer-events:none;"
-                             onerror="this.style.display='none'">
+                             data-hide-on-error>
                         <?php endif; ?>
                     </div>
                     <div class="preview-label">Front (with design)</div>
                 </div>
                 <?php if ($designImg): ?>
-                <div class="preview-card" onclick="openPreviewModal('<?= htmlspecialchars($designImg) ?>', 'Premade Design — <?= htmlspecialchars($item['premade_design_name'] ?? '') ?>')">
+                <div class="preview-card" data-on-click="openPreviewModal" data-args="<?= e(json_encode([$designImg, 'Premade Design — ' . ($item['premade_design_name'] ?? '')])) ?>">
                     <img src="<?= htmlspecialchars($designImg) ?>"
                          alt="<?= htmlspecialchars($item['premade_design_name'] ?? 'Design') ?>"
                          style="background:#fafafa; object-fit:contain;"
-                         onerror="this.parentElement.style.display='none'">
+                         data-hide-parent-on-error>
                     <div class="preview-label">Design only</div>
                 </div>
                 <?php endif; ?>
@@ -312,7 +312,7 @@ $viewLabels = [
                     <div class="prod-thumb">
                         <?php if ($exists): ?>
                             <img src="<?= htmlspecialchars($web) ?>" alt="" loading="lazy"
-                                 onclick="openPreviewModal('<?= htmlspecialchars($web) ?>', '<?= htmlspecialchars($orig) ?>')">
+                                 data-on-click="openPreviewModal" data-args="<?= e(json_encode([$web, $orig])) ?>">
                         <?php else: ?>
                             <span class="prod-missing">file missing</span>
                         <?php endif; ?>
@@ -397,9 +397,9 @@ $viewLabels = [
 <?php endforeach; ?>
 
 <!-- Fullscreen Preview Modal -->
-<div class="preview-modal-overlay" id="previewModal" onclick="closePreviewModal(event)">
-    <div class="preview-modal-content" onclick="event.stopPropagation()">
-        <button class="preview-modal-close" onclick="closePreviewModal()">&times;</button>
+<div class="preview-modal-overlay" id="previewModal" data-on-click="closePreviewModal" data-args='["$event"]'>
+    <div class="preview-modal-content" data-stop-click>
+        <button class="preview-modal-close" data-on-click="closePreviewModal">&times;</button>
         <img id="previewModalImg" src="" alt="Design Preview">
         <div class="preview-modal-label" id="previewModalLabel"></div>
     </div>

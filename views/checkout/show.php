@@ -66,7 +66,7 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                             <div class="co-thumb-frame">
                                 <img src="<?= htmlspecialchars($image) ?>" alt="" loading="lazy"
                                      <?= $tint !== '' ? 'style="filter: ' . htmlspecialchars($tint) . ';"' : '' ?>
-                                     onerror="this.onerror=null;this.src='/images/placeholder.png'">
+                                     data-fallback="/images/placeholder.png">
                                 <?php if ($preview === '' && !empty($item['premade_design_image'])):
                                     $posX = (float)($item['premade_pos_x'] ?? 0);
                                     $posY = (float)($item['premade_pos_y'] ?? 0);

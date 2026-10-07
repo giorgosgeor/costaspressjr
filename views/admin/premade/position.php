@@ -12,6 +12,8 @@
     <?php // This page renders standalone, outside the admin layout, so it has to
           // pull in base.css itself — every colour, radius and font below is a
           // var() defined there. Without it the controls render unstyled. ?>
+    <?php // data-* behaviour (replaces inline on* handlers); before any image can fail ?>
+    <?= View::script('/js/site/actions.js') ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/base.css')) ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/admin/premade-position.css')) ?>">
     <script src="/js/vendor/interact.min.js"></script>
@@ -52,7 +54,7 @@
     <div class="pe-mockup-panel">
         <?php if (!empty($products)): ?>
         <div class="pe-product-select">
-            <select id="productSelect" onchange="loadProductImage()">
+            <select id="productSelect" data-on-change="loadProductImage">
                 <?php foreach ($products as $p): ?>
                 <option value="<?= $p['id'] ?>"
                         <?= (int)$p['id'] === (int)($selected['id'] ?? 0) ? 'selected' : '' ?>
@@ -72,8 +74,8 @@
         <?php endif; ?>
 
         <div class="pe-side-toggle">
-            <button type="button" class="pe-side-btn active" id="btnFront" onclick="switchSide('front')">Front</button>
-            <button type="button" class="pe-side-btn" id="btnBack" onclick="switchSide('back')">Back</button>
+            <button type="button" class="pe-side-btn active" id="btnFront" data-on-click="switchSide" data-args='["front"]'>Front</button>
+            <button type="button" class="pe-side-btn" id="btnBack" data-on-click="switchSide" data-args='["back"]'>Back</button>
         </div>
 
         <div class="pe-mockup-container" id="mockupContainer">
@@ -128,17 +130,17 @@
             <label class="pe-upload-label" for="backImageInput">
                 <?= !empty($design['back_image_path']) ? 'Replace' : 'Upload back image' ?>
             </label>
-            <input type="file" name="back_image" id="backImageInput" accept="image/*" style="display:none;" onchange="previewBackImage(this)">
+            <input type="file" name="back_image" id="backImageInput" accept="image/*" style="display:none;" data-on-change="previewBackImage" data-args='["$this"]'>
             <?php if (!empty($design['back_image_path'])): ?>
-            <span class="pe-remove-btn" onclick="confirmRemoveBack()">Remove</span>
+            <span class="pe-remove-btn" data-on-click="confirmRemoveBack">Remove</span>
             <?php endif; ?>
         </div>
 
         <div class="pe-section">
             <h3>Position Controls</h3>
             <div class="pe-pos-controls">
-                <button type="button" class="pe-pos-btn" onclick="resetPosition()">Reset</button>
-                <button type="button" class="pe-pos-btn" onclick="centerDesign()">Center</button>
+                <button type="button" class="pe-pos-btn" data-on-click="resetPosition">Reset</button>
+                <button type="button" class="pe-pos-btn" data-on-click="centerDesign">Center</button>
             </div>
         </div>
 

@@ -51,27 +51,27 @@
                 <div class="color-picker-row">
                     <input type="color" id="bgColor" value="#ffffff">
                     <span>Click to pick the background color</span>
-                    <button class="btn btn-secondary" onclick="enableColorPicker()" id="pickerBtn"> Pick from Image</button>
+                    <button class="btn btn-secondary" data-on-click="enableColorPicker" id="pickerBtn"> Pick from Image</button>
                 </div>
             </div>
 
             <div class="control-group">
                 <label>Tolerance: <span id="toleranceValue">30</span>%</label>
-                <input type="range" id="tolerance" min="0" max="100" value="30" oninput="updateToleranceValue()">
+                <input type="range" id="tolerance" min="0" max="100" value="30" data-on-input="updateToleranceValue">
                 <div class="range-value">Lower = more precise, Higher = removes more similar colors</div>
             </div>
 
             <div class="control-group">
                 <label>Edge Softness: <span id="softnessValue">0</span>px</label>
-                <input type="range" id="softness" min="0" max="10" value="0" oninput="updateSoftnessValue()">
+                <input type="range" id="softness" min="0" max="10" value="0" data-on-input="updateSoftnessValue">
                 <div class="range-value">Smooths edges of the cutout</div>
             </div>
         </div>
 
         <div class="btn-group" style="margin-top: 20px;">
-            <button class="btn btn-primary" onclick="processImage()" id="processBtn" disabled>🔄 Remove Background</button>
-            <button class="btn btn-success" onclick="downloadResult()" id="downloadBtn" disabled>💾 Download PNG</button>
-            <button class="btn btn-secondary" onclick="resetAll()">🗑️ Clear</button>
+            <button class="btn btn-primary" data-on-click="processImage" id="processBtn" disabled>🔄 Remove Background</button>
+            <button class="btn btn-success" data-on-click="downloadResult" id="downloadBtn" disabled>💾 Download PNG</button>
+            <button class="btn btn-secondary" data-on-click="resetAll">🗑️ Clear</button>
         </div>
     </div>
 

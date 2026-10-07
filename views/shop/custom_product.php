@@ -30,7 +30,7 @@
                         <b><?= t('custom_product.sizes') ?></b>
                         <?php if (!empty($product['size_chart_image'])): ?>
                         <a href="#"
-                           onclick="event.preventDefault(); openSizeGuide('<?= htmlspecialchars($product['size_chart_image']) ?>', '<?= htmlspecialchars($product['name'] ?? 'Product') ?>');"
+                           data-on-click="openSizeGuide" data-prevent-default data-args="<?= e(json_encode([$product['size_chart_image'], $product['name'] ?? 'Product'])) ?>"
                            style="font-size:0.82em; color:#2A4FE0; text-decoration:none; font-weight:500;">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:4px;"><path d="M2 12h20"/><path d="M6 9v6M10 7v10M14 9v6M18 7v10"/></svg>Size guide
                         </a>

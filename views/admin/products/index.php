@@ -73,7 +73,7 @@
                     </span>
                 </td>
                 <td class="actions">
-                    <button type="button" class="btn btn-sm" onclick="openEditModal(<?= $product['id'] ?>)">Edit</button>
+                    <button type="button" class="btn btn-sm" data-on-click="openEditModal" data-args="[<?= (int)$product['id'] ?>]">Edit</button>
                     <form method="post" action="/admin/products/delete/<?= $product['id'] ?>" style="display:inline;" class="delete-form">
                         <?= Csrf::field() ?>
                         <button type="submit" class="btn btn-sm btn-danger delete-confirm">Delete</button>
@@ -91,7 +91,7 @@
     <div class="modal-content modal-large">
         <div class="modal-header">
             <h3>Edit Product</h3>
-            <button type="button" class="modal-close" onclick="closeEditModal()">&times;</button>
+            <button type="button" class="modal-close" data-on-click="closeEditModal">&times;</button>
         </div>
         <div class="modal-body">
             <div id="editModalLoading" class="modal-loading">
@@ -124,10 +124,10 @@
                         <div id="editCurrentImage" class="current-image-preview"></div>
                         <input type="file" id="editImage" name="image" accept="image/*">
                         <input type="hidden" id="removeImage" name="remove_image" value="0">
-                        <button type="button" id="removeImageBtn" class="btn btn-sm btn-danger" style="margin-top:5px; display:none;" onclick="removeProductImage()">Remove Image</button>
+                        <button type="button" id="removeImageBtn" class="btn btn-sm btn-danger" style="margin-top:5px; display:none;" data-on-click="removeProductImage">Remove Image</button>
                         <div class="paste-zone" data-for="editImage" tabindex="0">📋 Click here then Ctrl+V to paste</div>
                         <div class="paste-preview" id="paste-preview-editImage" style="display:none;">
-                            <img id="paste-img-editImage" alt=""><button type="button" class="paste-clear-btn" onclick="clearPaste('editImage')">✕</button>
+                            <img id="paste-img-editImage" alt=""><button type="button" class="paste-clear-btn" data-on-click="clearPaste" data-args='["editImage"]'>✕</button>
                         </div>
                     </div>
                     <div class="form-group">
@@ -135,10 +135,10 @@
                         <div id="editCurrentBackImage" class="current-image-preview"></div>
                         <input type="file" id="editBackImage" name="back_image" accept="image/*">
                         <input type="hidden" id="removeBackImage" name="remove_back_image" value="0">
-                        <button type="button" id="removeBackImageBtn" class="btn btn-sm btn-danger" style="margin-top:5px; display:none;" onclick="removeProductBackImage()">Remove Back Image</button>
+                        <button type="button" id="removeBackImageBtn" class="btn btn-sm btn-danger" style="margin-top:5px; display:none;" data-on-click="removeProductBackImage">Remove Back Image</button>
                         <div class="paste-zone" data-for="editBackImage" tabindex="0">📋 Click here then Ctrl+V to paste</div>
                         <div class="paste-preview" id="paste-preview-editBackImage" style="display:none;">
-                            <img id="paste-img-editBackImage" alt=""><button type="button" class="paste-clear-btn" onclick="clearPaste('editBackImage')">✕</button>
+                            <img id="paste-img-editBackImage" alt=""><button type="button" class="paste-clear-btn" data-on-click="clearPaste" data-args='["editBackImage"]'>✕</button>
                         </div>
                         <small style="display:block; margin-top:5px; color:#666;">Optional: For front/back design placement</small>
                     </div>
@@ -147,10 +147,10 @@
                         <div id="editCurrentLeftSleeveImage" class="current-image-preview"></div>
                         <input type="file" id="editLeftSleeveImage" name="left_sleeve_image" accept="image/*">
                         <input type="hidden" id="removeLeftSleeveImage" name="remove_left_sleeve_image" value="0">
-                        <button type="button" id="removeLeftSleeveImageBtn" class="btn btn-sm btn-danger" style="margin-top:5px; display:none;" onclick="removeProductLeftSleeveImage()">Remove Left Sleeve</button>
+                        <button type="button" id="removeLeftSleeveImageBtn" class="btn btn-sm btn-danger" style="margin-top:5px; display:none;" data-on-click="removeProductLeftSleeveImage">Remove Left Sleeve</button>
                         <div class="paste-zone" data-for="editLeftSleeveImage" tabindex="0">📋 Click here then Ctrl+V to paste</div>
                         <div class="paste-preview" id="paste-preview-editLeftSleeveImage" style="display:none;">
-                            <img id="paste-img-editLeftSleeveImage" alt=""><button type="button" class="paste-clear-btn" onclick="clearPaste('editLeftSleeveImage')">✕</button>
+                            <img id="paste-img-editLeftSleeveImage" alt=""><button type="button" class="paste-clear-btn" data-on-click="clearPaste" data-args='["editLeftSleeveImage"]'>✕</button>
                         </div>
                         <small style="display:block; margin-top:5px; color:#666;">Optional: For shirts with sleeve designs</small>
                     </div>
@@ -159,10 +159,10 @@
                         <div id="editCurrentRightSleeveImage" class="current-image-preview"></div>
                         <input type="file" id="editRightSleeveImage" name="right_sleeve_image" accept="image/*">
                         <input type="hidden" id="removeRightSleeveImage" name="remove_right_sleeve_image" value="0">
-                        <button type="button" id="removeRightSleeveImageBtn" class="btn btn-sm btn-danger" style="margin-top:5px; display:none;" onclick="removeProductRightSleeveImage()">Remove Right Sleeve</button>
+                        <button type="button" id="removeRightSleeveImageBtn" class="btn btn-sm btn-danger" style="margin-top:5px; display:none;" data-on-click="removeProductRightSleeveImage">Remove Right Sleeve</button>
                         <div class="paste-zone" data-for="editRightSleeveImage" tabindex="0">📋 Click here then Ctrl+V to paste</div>
                         <div class="paste-preview" id="paste-preview-editRightSleeveImage" style="display:none;">
-                            <img id="paste-img-editRightSleeveImage" alt=""><button type="button" class="paste-clear-btn" onclick="clearPaste('editRightSleeveImage')">✕</button>
+                            <img id="paste-img-editRightSleeveImage" alt=""><button type="button" class="paste-clear-btn" data-on-click="clearPaste" data-args='["editRightSleeveImage"]'>✕</button>
                         </div>
                         <small style="display:block; margin-top:5px; color:#666;">Optional: For shirts with sleeve designs</small>
                     </div>
@@ -181,21 +181,21 @@
                     
                     <div class="size-presets">
                         <span>Quick Add:</span>
-                        <button type="button" class="btn btn-sm" onclick="addClothingSizesEdit()">Clothing</button>
-                        <button type="button" class="btn btn-sm" onclick="addMugSizesEdit()">Mug</button>
+                        <button type="button" class="btn btn-sm" data-on-click="addClothingSizesEdit">Clothing</button>
+                        <button type="button" class="btn btn-sm" data-on-click="addMugSizesEdit">Mug</button>
                     </div>
 
                     <div id="editSizesContainer">
                         <!-- Size rows loaded dynamically -->
                     </div>
                     
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="addSizeRowEdit()">+ Add Size</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-on-click="addSizeRowEdit">+ Add Size</button>
                 </div>
             </form>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="saveProduct()">Save Changes</button>
+            <button type="button" class="btn btn-secondary" data-on-click="closeEditModal">Cancel</button>
+            <button type="button" class="btn btn-primary" data-on-click="saveProduct">Save Changes</button>
         </div>
     </div>
 </div>
@@ -205,7 +205,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h3>Select Colors for <span id="modalSizeName">Size</span></h3>
-            <button type="button" class="modal-close" onclick="closeColorModal()">&times;</button>
+            <button type="button" class="modal-close" data-on-click="closeColorModal">&times;</button>
         </div>
         <div class="modal-body">
             <div id="colorCheckboxes" class="color-checkbox-grid">
@@ -213,8 +213,8 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeColorModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="saveColorSelection()">Save Selection</button>
+            <button type="button" class="btn btn-secondary" data-on-click="closeColorModal">Cancel</button>
+            <button type="button" class="btn btn-primary" data-on-click="saveColorSelection">Save Selection</button>
         </div>
     </div>
 </div>

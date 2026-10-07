@@ -589,3 +589,11 @@ function showCartSuccessNotification() {
         notification.style.display = 'none';
     }, 3000);
 }
+
+// "Size guide" link in the add-to-cart modal: the chart of whichever product
+// is in the studio (data-on-click="openCurrentProductSizeGuide").
+function openCurrentProductSizeGuide() {
+    if (window.currentProduct && window.currentProduct.sizeChartImage) {
+        openSizeGuide(window.currentProduct.sizeChartImage, window.currentProduct.name || 'Product');
+    }
+}

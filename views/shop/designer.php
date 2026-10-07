@@ -5,9 +5,9 @@
       // be printed before the layout, ahead of <!DOCTYPE html>, which put the whole
       // page in the browser's quirks mode. ?>
 <!-- Add to Cart Modal (with size/color/quantity selection) -->
-<div id="addToCartModal" style="display:none; position:fixed; z-index:35000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25); align-items:center; justify-content:center;" onclick="if(event.target === this) closeAddToCartModal();">
-    <div style="background:#fff; border-radius:18px; max-width:520px; width:95vw; margin:auto; box-shadow:0 2px 24px rgba(0,0,0,0.16); padding:2rem; position:relative; max-height:90vh; overflow-y:auto;" onclick="event.stopPropagation();">
-        <button onclick="closeAddToCartModal()" style="position:absolute; top:1rem; right:1rem; background:none; border:none; font-size:2rem; color:#888; cursor:pointer;">&times;</button>
+<div id="addToCartModal" style="display:none; position:fixed; z-index:35000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25); align-items:center; justify-content:center;" data-on-click="closeAddToCartModal" data-click-self>
+    <div style="background:#fff; border-radius:18px; max-width:520px; width:95vw; margin:auto; box-shadow:0 2px 24px rgba(0,0,0,0.16); padding:2rem; position:relative; max-height:90vh; overflow-y:auto;" data-stop-click>
+        <button data-on-click="closeAddToCartModal" style="position:absolute; top:1rem; right:1rem; background:none; border:none; font-size:2rem; color:#888; cursor:pointer;">&times;</button>
         <h2 style="font-size:1.4rem; font-weight:700; margin-bottom:1rem; text-align:center; color:#333;"><?= t('studio.cart.title') ?></h2>
         
         <!-- Design Preview - HTML based for reliability -->
@@ -25,7 +25,7 @@
             <label style="font-weight:600; display:block; margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center;">
                 <span><?= t('studio.cart.size') ?></span>
                 <a id="studioSizeGuideLink" href="#"
-                   onclick="event.preventDefault(); if (window.currentProduct && window.currentProduct.sizeChartImage) openSizeGuide(window.currentProduct.sizeChartImage, window.currentProduct.name || 'Product');"
+                   data-on-click="openCurrentProductSizeGuide" data-prevent-default
                    style="display:none; font-size:0.8rem; color:#2A4FE0; text-decoration:none; font-weight:500;">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:4px;"><path d="M2 12h20"/><path d="M6 9v6M10 7v10M14 9v6M18 7v10"/></svg>Size guide
                 </a>
@@ -51,9 +51,9 @@
         <div style="margin-bottom:1.5rem;">
             <label style="font-weight:600; display:block; margin-bottom:0.5rem;"><?= t('studio.cart.quantity') ?></label>
             <div style="display:flex; align-items:center; gap:12px;">
-                <button onclick="adjustCartQuantity(-1)" style="width:36px; height:36px; background:#eee; border:1px solid #ddd; border-radius:8px; font-size:1.2rem; cursor:pointer;">−</button>
+                <button data-on-click="adjustCartQuantity" data-args='[-1]' style="width:36px; height:36px; background:#eee; border:1px solid #ddd; border-radius:8px; font-size:1.2rem; cursor:pointer;">−</button>
                 <input id="cartQuantity" type="number" value="1" min="1" max="100" style="width:60px; text-align:center; padding:8px; border:1px solid #ddd; border-radius:8px; font-size:1rem;">
-                <button onclick="adjustCartQuantity(1)" style="width:36px; height:36px; background:#eee; border:1px solid #ddd; border-radius:8px; font-size:1.2rem; cursor:pointer;">+</button>
+                <button data-on-click="adjustCartQuantity" data-args='[1]' style="width:36px; height:36px; background:#eee; border:1px solid #ddd; border-radius:8px; font-size:1.2rem; cursor:pointer;">+</button>
             </div>
         </div>
         
@@ -80,7 +80,7 @@
         <button id="confirmAddToCartBtn" style="width:100%; background:#2d5fff; color:#fff; font-weight:600; font-size:1.1rem; padding:12px 0; border:none; border-radius:8px; cursor:pointer; margin-bottom:0.7rem;"><?= t('studio.cart.add') ?></button>
 
         <!-- Go to Checkout Button -->
-        <button id="goToCheckoutFromCartBtn" onclick="window.location.href='/cart'" style="width:100%; background:#28a745; color:#fff; font-weight:600; font-size:1rem; padding:10px 0; border:none; border-radius:8px; cursor:pointer;"><?= t('studio.cart.checkout') ?></button>
+        <button id="goToCheckoutFromCartBtn" data-href="/cart" style="width:100%; background:#28a745; color:#fff; font-weight:600; font-size:1rem; padding:10px 0; border:none; border-radius:8px; cursor:pointer;"><?= t('studio.cart.checkout') ?></button>
     </div>
 </div>
 
@@ -89,17 +89,17 @@
 <!-- Design Saved Success Modal -->
 <div id="designSavedModal" style="display:none; position:fixed; z-index:30000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.18); align-items:center; justify-content:center;">
     <div style="background:#fff; border-radius:18px; max-width:420px; width:92vw; margin:auto; box-shadow:0 2px 24px rgba(0,0,0,0.13); padding:2.2rem 2.2rem 1.5rem 2.2rem; position:relative; text-align:center;">
-        <button onclick="closeDesignSavedModal()" style="position:absolute; top:1.1rem; right:1.1rem; background:none; border:none; font-size:2rem; color:#888; cursor:pointer;">&times;</button>
+        <button data-on-click="closeDesignSavedModal" style="position:absolute; top:1.1rem; right:1.1rem; background:none; border:none; font-size:2rem; color:#888; cursor:pointer;">&times;</button>
         <h2 style="font-size:1.5rem; font-weight:700; margin-bottom:0.7rem; color:#2d5fff;"><?= t('studio.saved.title') ?></h2>
         <div style="font-size:1.08rem; color:#444; margin-bottom:1.2rem;"><?= t('studio.saved.lead') ?></div>
         <button id="addToCartNowBtn" style="background:#2d5fff; color:#fff; font-weight:600; font-size:1.1rem; padding:12px 32px; border-radius:8px; border:none; margin-bottom:0.7rem; cursor:pointer; width:100%;"><?= t('studio.saved.add_to_cart') ?></button>
-        <button onclick="closeDesignSavedModal(); window.location.href='/';" style="background:#eee; color:#666; font-weight:600; font-size:1rem; padding:10px 24px; border-radius:8px; border:none; cursor:pointer; width:100%;"><?= t('studio.saved.exit') ?></button>
+        <button data-on-click="closeDesignSavedModal" data-href="/" style="background:#eee; color:#666; font-weight:600; font-size:1rem; padding:10px 24px; border-radius:8px; border:none; cursor:pointer; width:100%;"><?= t('studio.saved.exit') ?></button>
     </div>
 </div>
 <!-- Save Design Modal -->
 <div id="saveDesignModal" style="display:none; position:fixed; z-index:20000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.18); align-items:center; justify-content:center;">
     <div style="background:#fff; border-radius:18px; max-width:420px; width:95vw; margin:auto; box-shadow:0 2px 24px rgba(0,0,0,0.13); padding:2.2rem 2.2rem 1.5rem 2.2rem; position:relative;">
-        <button onclick="closeSaveDesignModal()" style="position:absolute; top:1.1rem; right:1.1rem; background:none; border:none; font-size:2rem; color:#888; cursor:pointer;">&times;</button>
+        <button data-on-click="closeSaveDesignModal" style="position:absolute; top:1.1rem; right:1.1rem; background:none; border:none; font-size:2rem; color:#888; cursor:pointer;">&times;</button>
         <h2 id="saveModalTitle" style="font-size:2rem; font-weight:700; margin-bottom:0.5rem; text-align:center;"><?= t('studio.save_modal.title') ?></h2>
         <div style="text-align:center; color:#444; font-size:1.08rem; margin-bottom:1.2rem;"><?= t('studio.save_modal.subtitle') ?></div>
         
@@ -118,7 +118,7 @@
         <div id="saveLoginNotice" style="display:none; background:#fff3cd; border:1.5px solid #ffc107; border-radius:10px; padding:1rem 1.2rem; margin-bottom:1.2rem; text-align:center;">
             <div style="font-size:1rem; font-weight:600; color:#856404; margin-bottom:0.5rem;"><?= t('studio.save_modal.login_title') ?></div>
             <div style="font-size:0.9rem; color:#856404; margin-bottom:0.8rem;"><?= t('studio.save_modal.login_note') ?></div>
-            <a href="/login" target="_blank" onclick="this.closest('#saveLoginNotice').querySelector('.retry-hint').style.display='block'" style="display:inline-block; background:#2d5fff; color:#fff; font-weight:600; padding:8px 24px; border-radius:7px; text-decoration:none; font-size:1rem;"><?= t('studio.save_modal.login_btn') ?></a>
+            <a href="/login" target="_blank" data-on-click="showSaveRetryHint" data-args='["$this"]' style="display:inline-block; background:#2d5fff; color:#fff; font-weight:600; padding:8px 24px; border-radius:7px; text-decoration:none; font-size:1rem;"><?= t('studio.save_modal.login_btn') ?></a>
             <div class="retry-hint" style="display:none; margin-top:0.7rem; font-size:0.88rem; color:#555;"><?= t('studio.save_modal.login_retry', false) ?></div>
         </div>
 
@@ -237,12 +237,12 @@
                     <!-- Upload Editor Modal -->
                     <div id="uploadEditorModal" class="upload-editor-modal" style="display:none;">
                         <div class="upload-editor-content">
-                            <button class="upload-editor-close" onclick="closeUploadEditor()">&times;</button>
+                            <button class="upload-editor-close" data-on-click="closeUploadEditor">&times;</button>
                             <h2 style="font-size:1.1rem;margin-bottom:0.7rem;padding-right:2.5rem;"><?= t('studio.upload.title') ?></h2>
-                            <div id="uploadDropArea" class="upload-drop-area" style="padding:0.7rem;" ondrop="handleUploadDrop(event)" ondragover="event.preventDefault();this.classList.add('dragover');" ondragleave="this.classList.remove('dragover');">
-                                <button type="button" class="upload-browse-btn" onclick="document.getElementById('uploadFileInput').click()"><?= t('studio.upload.browse') ?></button>
+                            <div id="uploadDropArea" class="upload-drop-area" style="padding:0.7rem;" data-on-drop="handleUploadDrop" data-args='["$event"]' data-on-dragover="uploadDragOver" data-args='["$event", "$this"]' data-on-dragleave="uploadDragLeave" data-args='["$this"]'>
+                                <button type="button" class="upload-browse-btn" data-on-click="openUploadPicker"><?= t('studio.upload.browse') ?></button>
                                 <div class="upload-or" style="font-size:0.85rem;margin:0.3rem 0;"><?= t('studio.upload.drag', false) ?></div>
-                                <input type="file" id="uploadFileInput" accept="image/*" style="display:none;" onchange="handleUploadFile(this.files)">
+                                <input type="file" id="uploadFileInput" accept="image/*" style="display:none;" data-on-change="handleUploadFile" data-args='["$files"]'>
                             </div>
                             <div class="upload-hint" style="font-size:0.78rem;color:#999;margin-top:0.4rem;text-align:center;"><?= t('studio.upload.hint') ?></div>
                             <div id="uploadRecentList" style="display:none;margin-top:0.7rem;width:100%;min-width:0;box-sizing:border-box;">
@@ -254,7 +254,7 @@
                     <!-- Text Editor Modal (styled like upload) -->
                     <div id="textEditorModal" class="upload-editor-modal" style="display:none;">
                         <div class="upload-editor-content">
-                            <button class="upload-editor-close" onclick="hideTextEditor()">&times;</button>
+                            <button class="upload-editor-close" data-on-click="hideTextEditor">&times;</button>
                             <h2 id="textEditorTitle" style="margin-bottom:18px;"><?= t('studio.text.title') ?></h2>
                             <div class="option-group" style="margin-bottom:14px;">
                                 <label for="textContent" style="font-weight:500;"><?= t('studio.text.label') ?>:</label>
@@ -302,18 +302,18 @@
                     <div class="whats-next-actions">
                         <div id="imageEditorPanel" style="display:none;">
                             <div class="upload-editor-content">
-                                <button class="upload-editor-close" onclick="hideImageEditor()">&times;</button>
+                                <button class="upload-editor-close" data-on-click="hideImageEditor">&times;</button>
                                 <h2 style="margin-bottom:18px;"><?= t('studio.image_edit.title') ?></h2>
                                 <div style="margin-bottom:12px;">
                                     <div style="font-size:13px; color:#888;"><?= t('studio.image_edit.size') ?></div>
                                     <div style="display:flex; gap:8px; align-items:center; margin-top:2px;">
-                                        <input id="imgEditWidth" type="number" min="0.1" step="0.01" style="width:60px;" onchange="updateImageSize('width')"> in ×
-                                        <input id="imgEditHeight" type="number" min="0.1" step="0.01" style="width:60px;" onchange="updateImageSize('height')"> in
+                                        <input id="imgEditWidth" type="number" min="0.1" step="0.01" style="width:60px;" data-on-change="updateImageSize" data-args='["width"]'> in ×
+                                        <input id="imgEditHeight" type="number" min="0.1" step="0.01" style="width:60px;" data-on-change="updateImageSize" data-args='["height"]'> in
                                     </div>
                                 </div>
                                 <div style="margin-bottom:10px; display:flex; align-items:center; gap:10px;">
                                     <label style="font-size:13px;"><?= t('studio.image_edit.color') ?></label>
-                                    <input id="imgEditColor" type="color" onchange="updateImageColor()">
+                                    <input id="imgEditColor" type="color" data-on-change="updateImageColor">
                                 </div>
                                 <div style="margin-bottom:10px; display:flex; align-items:center; gap:10px;">
                                     <!-- Background remover removed for customers -->
@@ -321,32 +321,32 @@
                                 <?= View::script('/js/pages/designer/image-editor.js') ?>
                                 <hr style="margin:12px 0;">
                                 <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-                                    <button class="img-edit-btn" onclick="centerImage()"><?= t('studio.image_edit.center') ?></button>
-                                    <button class="img-edit-btn" onclick="layerImage('up')"><?= t('studio.image_edit.layer') ?></button>
-                                    <button class="img-edit-btn" onclick="flipImage()"><?= t('studio.image_edit.flip') ?></button>
-                                    <button class="img-edit-btn" onclick="duplicateImage()"><?= t('studio.image_edit.duplicate') ?></button>
-                                    <button class="img-edit-btn" onclick="cropImage()"><?= t('studio.image_edit.crop') ?></button>
+                                    <button class="img-edit-btn" data-on-click="centerImage"><?= t('studio.image_edit.center') ?></button>
+                                    <button class="img-edit-btn" data-on-click="layerImage" data-args='["up"]'><?= t('studio.image_edit.layer') ?></button>
+                                    <button class="img-edit-btn" data-on-click="flipImage"><?= t('studio.image_edit.flip') ?></button>
+                                    <button class="img-edit-btn" data-on-click="duplicateImage"><?= t('studio.image_edit.duplicate') ?></button>
+                                    <button class="img-edit-btn" data-on-click="cropImage"><?= t('studio.image_edit.crop') ?></button>
                                 </div>
                                 <!-- Save Design button moved to main panel below -->
                                 <div style="margin-bottom:10px;">
                                     <label style="font-size:13px;"><?= t('studio.image_edit.rotation') ?></label>
-                                    <input id="imgEditRotation" type="range" min="0" max="360" value="0" style="width:140px; vertical-align:middle;" oninput="updateImageRotation()">
-                                    <input id="imgEditRotationVal" type="number" min="0" max="360" value="0" style="width:48px;" oninput="updateImageRotation()">
+                                    <input id="imgEditRotation" type="range" min="0" max="360" value="0" style="width:140px; vertical-align:middle;" data-on-input="updateImageRotation">
+                                    <input id="imgEditRotationVal" type="number" min="0" max="360" value="0" style="width:48px;" data-on-input="updateImageRotation">
                                 </div>
                                 <div style="display:flex; gap:10px; margin-top:10px;">
-                                    <button class="img-edit-btn" style="flex:1; background:#eee; color:#888;" onclick="resetImageEdit()"><?= t('studio.image_edit.reset') ?></button>
+                                    <button class="img-edit-btn" style="flex:1; background:#eee; color:#888;" data-on-click="resetImageEdit"><?= t('studio.image_edit.reset') ?></button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                        <div class="whats-next-action" onclick="openUploadEditor()">
+                        <div class="whats-next-action" data-on-click="openUploadEditor">
                             <div class="whats-next-icon">
                                 <!-- Upload Icon -->
                                 <svg width="48" height="48" fill="none" stroke="#15130E" stroke-width="2" viewBox="0 0 48 48"><path d="M24 34V14M24 14l-8 8M24 14l8 8"/><rect x="8" y="36" width="32" height="6" rx="3"/></svg>
                             </div>
                             <div class="whats-next-label"><?= t('studio.action.uploads') ?></div>
                         </div>
-                        <div class="whats-next-action" onclick="triggerWhatsNextAddText()">
+                        <div class="whats-next-action" data-on-click="triggerWhatsNextAddText">
                             <!-- Hidden input for uploads (for Whats Next panel) -->
                             <div class="whats-next-icon">
                                 <!-- Text Icon -->
@@ -354,14 +354,14 @@
                             </div>
                             <div class="whats-next-label"><?= t('studio.action.add_text') ?></div>
                         </div>
-                        <div class="whats-next-action" onclick="openChangeColorModal()">
+                        <div class="whats-next-action" data-on-click="openChangeColorModal">
                             <div class="whats-next-icon">
                                 <!-- Palette Icon -->
                                 <svg width="48" height="48" fill="none" stroke="#15130E" stroke-width="2" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="#f8fafd" stroke="#15130E"/><circle cx="16" cy="20" r="3" fill="#15130E"/><circle cx="32" cy="20" r="3" fill="#15130E"/><circle cx="24" cy="32" r="3" fill="#15130E"/></svg>
                             </div>
                             <div class="whats-next-label"><?= t('studio.action.change_color') ?></div>
                         </div>
-                        <div class="whats-next-action" onclick="window.location.href='/shop/select_product'">
+                        <div class="whats-next-action" data-href="/shop/select_product">
                             <div class="whats-next-icon">
                                 <!-- Change Products Icon -->
                                 <svg width="48" height="48" fill="none" stroke="#15130E" stroke-width="2" viewBox="0 0 48 48"><rect x="10" y="16" width="28" height="20" rx="4"/><path d="M14 16V12a4 4 0 014-4h12a4 4 0 014 4v4"/><circle cx="24" cy="26" r="4"/></svg>
@@ -374,12 +374,12 @@
                          their labels onto three lines each. -->
                     <div class="studio-actions">
                         <button id="addToCartDirectBtn" class="studio-action studio-action-primary"><?= t('studio.saved.add_to_cart') ?></button>
-                        <button id="saveDesignBtn" class="studio-action studio-action-secondary" onclick="openSaveDesignModal()"><?= t('studio.save_design') ?></button>
+                        <button id="saveDesignBtn" class="studio-action studio-action-secondary" data-on-click="openSaveDesignModal"><?= t('studio.save_design') ?></button>
                     </div>
                     <!-- Change Color Modal -->
-                    <div id="changeColorModal" class="change-color-modal" style="display:none;" onclick="if(event.target === this) closeChangeColorModal();">
-                        <div class="change-color-modal-content" onclick="event.stopPropagation();">
-                            <button class="change-color-modal-close" onclick="closeChangeColorModal()">&times;</button>
+                    <div id="changeColorModal" class="change-color-modal" style="display:none;" data-on-click="closeChangeColorModal" data-click-self>
+                        <div class="change-color-modal-content" data-stop-click>
+                            <button class="change-color-modal-close" data-on-click="closeChangeColorModal">&times;</button>
                             <h2><?= t('studio.color_modal.title') ?></h2>
                             <div id="changeColorOptions"></div>
                         </div>

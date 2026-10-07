@@ -54,14 +54,14 @@ require View::path('layouts/customer_header');
                                  alt="<?= htmlspecialchars($item['product_name'] ?? 'Product') ?>"
                                  class="cart-product-img"
                                  loading="lazy"
-                                 onerror="this.src='/images/placeholder.png'">
+                                 data-fallback="/images/placeholder.png">
                         <?php else: ?>
                             <img src="<?= htmlspecialchars($imagePath ?: '/images/placeholder.png') ?>"
                                  alt="<?= htmlspecialchars($item['product_name'] ?? 'Product') ?>"
                                  class="cart-product-img"
                                  loading="lazy"
                                  style="filter: <?= htmlspecialchars($colorFilter) ?>;"
-                                 onerror="this.src='/images/placeholder.png'">
+                                 data-fallback="/images/placeholder.png">
                             <?php if (!empty($item['premade_design_image'])): ?>
                             <img src="/<?= htmlspecialchars($item['premade_design_image']) ?>"
                                  alt=""
@@ -106,15 +106,15 @@ require View::path('layouts/customer_header');
                     
                     <div class="cart-item-actions">
                         <div class="quantity-controls">
-                            <button class="qty-btn" onclick="updateQuantity(<?= $item['id'] ?>, -1)" <?= $item['quantity'] <= 1 ? 'disabled' : '' ?>>−</button>
+                            <button class="qty-btn" data-on-click="updateQuantity" data-args="[<?= (int)$item['id'] ?>, -1]" <?= $item['quantity'] <= 1 ? 'disabled' : '' ?>>−</button>
                             <span class="qty-value" id="qty-<?= $item['id'] ?>"><?= (int)$item['quantity'] ?></span>
-                            <button class="qty-btn" onclick="updateQuantity(<?= $item['id'] ?>, 1)">+</button>
+                            <button class="qty-btn" data-on-click="updateQuantity" data-args="[<?= (int)$item['id'] ?>, 1]">+</button>
                         </div>
                         <?php // Ghost, not a red outlined button. Remove was the
                               // loudest control in every row, competing with the
                               // quantity stepper and pulling the eye toward
                               // deleting rather than buying. ?>
-                        <button class="btn btn-sm btn-ghost cart-remove-btn" onclick="removeFromCart(<?= $item['id'] ?>)">
+                        <button class="btn btn-sm btn-ghost cart-remove-btn" data-on-click="removeFromCart" data-args="[<?= (int)$item['id'] ?>]">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:5px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg><?= t('cart.item.remove') ?>
                         </button>
                     </div>
@@ -164,7 +164,7 @@ require View::path('layouts/customer_header');
 
 
 <!-- Remove Item Confirmation Modal -->
-<div id="removeConfirmOverlay" class="confirm-overlay" onclick="if(event.target===this)closeRemoveConfirm()" role="dialog" aria-modal="true" aria-labelledby="removeConfirmTitle">
+<div id="removeConfirmOverlay" class="confirm-overlay" data-on-click="closeRemoveConfirm" data-click-self role="dialog" aria-modal="true" aria-labelledby="removeConfirmTitle">
     <div class="confirm-dialog">
         <div class="confirm-icon" aria-hidden="true">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
@@ -172,8 +172,8 @@ require View::path('layouts/customer_header');
         <h3 id="removeConfirmTitle" class="confirm-title"><?= t('cart.remove.title') ?></h3>
         <p class="confirm-lead"><?= t('cart.remove.lead') ?></p>
         <div class="confirm-actions">
-            <button type="button" class="confirm-btn confirm-btn-secondary" onclick="closeRemoveConfirm()"><?= t('cart.remove.cancel') ?></button>
-            <button type="button" id="confirmRemoveBtn" class="confirm-btn confirm-btn-danger" onclick="confirmRemove()"><?= t('cart.remove.confirm') ?></button>
+            <button type="button" class="confirm-btn confirm-btn-secondary" data-on-click="closeRemoveConfirm"><?= t('cart.remove.cancel') ?></button>
+            <button type="button" id="confirmRemoveBtn" class="confirm-btn confirm-btn-danger" data-on-click="confirmRemove"><?= t('cart.remove.confirm') ?></button>
         </div>
     </div>
 </div>

@@ -93,10 +93,10 @@
                 <?php if (empty($design['is_fixed'])): ?>
                 <!-- Design controls (only for non-fixed designs) -->
                 <div class="design-controls">
-                    <button type="button" class="control-btn" onclick="resetDesignPosition()" title="<?= t('view_design.reset') ?>">
+                    <button type="button" class="control-btn" data-on-click="resetDesignPosition" title="<?= t('view_design.reset') ?>">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:5px;"><path d="M3 2v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L3 8"/></svg><?= t('view_design.reset') ?>
                     </button>
-                    <button type="button" class="control-btn" onclick="centerDesign()" title="<?= t('view_design.center') ?>">
+                    <button type="button" class="control-btn" data-on-click="centerDesign" title="<?= t('view_design.center') ?>">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:5px;"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg><?= t('view_design.center') ?>
                     </button>
                 </div>
@@ -239,7 +239,7 @@ endforeach;
                 <span class="preview-hint"><?= t('view_design.preview_hint_sizes') ?></span>
                 <?php if (!empty($product['size_chart_image'])): ?>
                 <a href="#" class="size-guide-link"
-                   onclick="event.preventDefault(); openSizeGuide('<?= htmlspecialchars($product['size_chart_image']) ?>', '<?= htmlspecialchars($product['name']) ?>');"
+                   data-on-click="openSizeGuide" data-prevent-default data-args="<?= e(json_encode([$product['size_chart_image'], $product['name']])) ?>"
                    style="margin-left:10px; font-size:0.82rem; color:var(--spot, #2A4FE0); text-decoration:none; font-weight:500;">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:4px;"><path d="M2 12h20"/><path d="M6 9v6M10 7v10M14 9v6M18 7v10"/></svg>Size guide
                 </a>
@@ -291,13 +291,13 @@ endforeach;
                         <div class="quantity-row">
                             <label for="quantity"><?= t('studio.cart.quantity') ?></label>
                             <div class="quantity-control">
-                                <button type="button" class="qty-btn" onclick="changeQuantity(-1)">−</button>
+                                <button type="button" class="qty-btn" data-on-click="changeQuantity" data-args='[-1]'>−</button>
                                 <input type="number" id="quantity" name="quantity" value="1" min="1" max="99">
-                                <button type="button" class="qty-btn" onclick="changeQuantity(1)">+</button>
+                                <button type="button" class="qty-btn" data-on-click="changeQuantity" data-args='[1]'>+</button>
                             </div>
                         </div>
 
-                        <button type="button" class="btn btn-large btn-add-cart" onclick="addToCart()">
+                        <button type="button" class="btn btn-large btn-add-cart" data-on-click="addToCart">
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-3px;margin-right:7px;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><?= t('studio.cart.add') ?>
                         </button>
                     </div>
@@ -308,9 +308,9 @@ endforeach;
 </section>
 
 <!-- Confirm Add to Cart Modal -->
-<div id="confirmCartModal" class="confirm-cart-overlay" onclick="if(event.target===this)closeConfirmCart()">
+<div id="confirmCartModal" class="confirm-cart-overlay" data-on-click="closeConfirmCart" data-click-self>
     <div class="confirm-cart-box">
-        <button class="confirm-cart-close" onclick="closeConfirmCart()">&times;</button>
+        <button class="confirm-cart-close" data-on-click="closeConfirmCart">&times;</button>
         <h2 class="confirm-cart-title"><?= t('view_design.modal.title') ?></h2>
 
         <!-- Preview -->
@@ -343,9 +343,9 @@ endforeach;
         <div class="confirm-qty-row">
             <label><?= t('studio.cart.quantity') ?></label>
             <div class="confirm-qty-ctrl">
-                <button type="button" onclick="adjustConfirmQty(-1)">−</button>
+                <button type="button" data-on-click="adjustConfirmQty" data-args='[-1]'>−</button>
                 <input type="number" id="confirmQty" value="1" min="1" max="99">
-                <button type="button" onclick="adjustConfirmQty(1)">+</button>
+                <button type="button" data-on-click="adjustConfirmQty" data-args='[1]'>+</button>
             </div>
         </div>
 
@@ -358,10 +358,10 @@ endforeach;
 
         <div id="confirmError" style="display:none;color:#dc3545;text-align:center;margin-bottom:10px;font-size:0.9rem;"></div>
 
-        <button id="doAddToCartBtn" class="btn btn-large btn-add-cart" onclick="doAddToCart()" style="margin-bottom:10px;">
+        <button id="doAddToCartBtn" class="btn btn-large btn-add-cart" data-on-click="doAddToCart" style="margin-bottom:10px;">
             <?= t('view_design.modal.title') ?>
         </button>
-        <button type="button" class="btn btn-large" onclick="window.location.href='/cart'" style="background:#28a745;color:white;border:none;">
+        <button type="button" class="btn btn-large" data-href="/cart" style="background:#28a745;color:white;border:none;">
             <?= t('view_design.modal.go_cart') ?>
         </button>
     </div>

@@ -24,8 +24,8 @@
             <div class="product-preview-column">
                 <img id="mainProductImage" src="" alt=""
                      style="max-width:350px;max-height:350px;display:none;"
-                     onload="this.style.display=this.getAttribute('src')?'':'none'"
-                     onerror="this.style.display='none'">
+                     data-show-on-load
+                     data-hide-on-error>
                 <div id="colorSwatches" style="margin:1rem 0;"></div>
             </div>
             <div class="product-options-column">

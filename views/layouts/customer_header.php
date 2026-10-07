@@ -34,6 +34,8 @@ $currentLocale   = I18n::locale();
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <?php // data-* behaviour (replaces inline on* handlers); before any image can fail ?>
+    <?= View::script('/js/site/actions.js') ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/base.css')) ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/shop.css')) ?>">
     <?php // The Studio look, over the base styles and under the page ones. ?>

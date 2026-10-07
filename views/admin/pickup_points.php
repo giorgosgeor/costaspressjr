@@ -125,7 +125,7 @@
                         <button type="submit" class="btn btn-sm"><?= $p['active'] ? 'Hide' : 'Show' ?></button>
                     </form>
                     <?php if ($p['source'] === 'manual'): ?>
-                    <form method="post" action="/admin/pickup-points/delete" onsubmit="return confirm('Delete this point?');">
+                    <form method="post" action="/admin/pickup-points/delete" data-confirm="Delete this point?">
                         <?= Csrf::field() ?>
                         <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
                         <button type="submit" class="btn btn-sm btn-danger">Delete</button>

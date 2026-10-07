@@ -4,7 +4,7 @@
 <div class="admin-header">
     <h1>Premade Designs</h1>
     <div class="admin-header-actions">
-        <button type="button" class="btn btn-success" onclick="openAddModal()">+ Add New Design</button>
+        <button type="button" class="btn btn-success" data-on-click="openAddModal">+ Add New Design</button>
     </div>
 </div>
 
@@ -13,7 +13,7 @@
 <!-- Section Filter -->
 <div class="section-filter">
     <label>Filter by Section:</label>
-    <select id="sectionFilter" onchange="filterBySection()">
+    <select id="sectionFilter" data-on-change="filterBySection">
         <option value="">All Sections</option>
         <?php foreach ($sections as $section): ?>
             <option value="<?= htmlspecialchars($section['slug']) ?>"><?= htmlspecialchars($section['name']) ?></option>
@@ -39,7 +39,7 @@
             <?php if (empty($designs)): ?>
             <tr>
                 <td colspan="8" style="text-align: center; padding: 40px; color: #666;">
-                    No premade designs found. <a href="#" onclick="openAddModal(); return false;">Add your first design</a>
+                    No premade designs found. <a href="#" data-on-click="openAddModal" data-prevent-default>Add your first design</a>
                 </td>
             </tr>
             <?php else: ?>
@@ -72,8 +72,8 @@
                     </span>
                 </td>
                 <td class="actions">
-                    <button type="button" class="btn btn-sm" onclick="openEditModal(<?= $design['id'] ?>)">Edit</button>
-                    <button type="button" class="btn btn-sm btn-position" onclick="window.open('/admin/premade/position/<?= $design['id'] ?>', '_blank', 'width=900,height=700')">Position</button>
+                    <button type="button" class="btn btn-sm" data-on-click="openEditModal" data-args="[<?= (int)$design['id'] ?>]">Edit</button>
+                    <button type="button" class="btn btn-sm btn-position" data-on-click="openPositionEditor" data-args="[<?= (int)$design['id'] ?>]">Position</button>
                     <form method="post" action="/admin/premade/delete/<?= $design['id'] ?>" style="display:inline;" class="delete-form">
                         <?= Csrf::field() ?>
                         <button type="submit" class="btn btn-sm btn-danger delete-confirm">Delete</button>
@@ -91,7 +91,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h3 id="modalTitle">Add New Design</h3>
-            <button type="button" class="modal-close" onclick="closeModal()">&times;</button>
+            <button type="button" class="modal-close" data-on-click="closeModal">&times;</button>
         </div>
         <div class="modal-body">
             <div id="modalLoading" class="modal-loading" style="display: none;">
@@ -173,7 +173,7 @@
                 </div>
                 
                 <div class="form-actions">
-                    <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+                    <button type="button" class="btn" data-on-click="closeModal">Cancel</button>
                     <button type="submit" class="btn btn-success" id="submitBtn">Add Design</button>
                 </div>
             </form>

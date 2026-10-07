@@ -17,7 +17,7 @@
     if ($prodImg && $prodImg[0] !== '/') $prodImg = '/' . $prodImg;
     if (!$prodImg) $prodImg = '/images/placeholder.svg';
 ?>
-                <img src="<?= htmlspecialchars($prodImg) ?>" alt="<?= htmlspecialchars($product['name']) ?>" onerror="this.src='/images/placeholder.svg'" id="main-product-image">
+                <img src="<?= htmlspecialchars($prodImg) ?>" alt="<?= htmlspecialchars($product['name']) ?>" data-fallback="/images/placeholder.svg" id="main-product-image">
                 </div>
             </div>
             
@@ -66,9 +66,9 @@
                     <div class="form-group">
                         <label for="quantity"><?= t('product.quantity') ?></label>
                         <div class="quantity-selector">
-                            <button type="button" class="qty-btn" onclick="changeQty(-1)">-</button>
+                            <button type="button" class="qty-btn" data-on-click="changeQty" data-args='[-1]'>-</button>
                             <input type="number" id="quantity" name="quantity" value="1" min="1" max="10">
-                            <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+                            <button type="button" class="qty-btn" data-on-click="changeQty" data-args='[1]'>+</button>
                         </div>
                     </div>
                     <div class="form-group">

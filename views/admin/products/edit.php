@@ -51,7 +51,7 @@
             <div class="current-image">
                 <p>Current front image:</p>
                 <img src="/images/products/<?= $product['id'] ?>.png?t=<?= time() ?>" alt="Front" 
-                     onerror="this.src='/images/products/<?= $product['id'] ?>.jpg?t=<?= time() ?>'"
+                     data-fallback="/images/products/<?= $product['id'] ?>.jpg?t=<?= time() ?>"
                      style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;">
                 <label class="checkbox-label remove-image-label">
                     <input type="checkbox" name="remove_image" value="1">
@@ -66,7 +66,7 @@
                 <div class="paste-zone" data-for="image" tabindex="0">📋 Or click here and press Ctrl+V to paste</div>
                 <div class="paste-preview" id="paste-preview-image" style="display:none;">
                     <img id="paste-img-image" alt="Pasted image">
-                    <button type="button" class="paste-clear-btn" onclick="clearPaste('image')">✕ Clear</button>
+                    <button type="button" class="paste-clear-btn" data-on-click="clearPaste" data-args='["image"]'>✕ Clear</button>
                 </div>
             </div>
         </div>
@@ -83,7 +83,7 @@
             <div class="current-image">
                 <p>Current back image:</p>
                 <img src="/images/products/<?= $product['id'] ?>_back.png?t=<?= time() ?>" alt="Back" 
-                     onerror="this.src='/images/products/<?= $product['id'] ?>_back.jpg?t=<?= time() ?>'"
+                     data-fallback="/images/products/<?= $product['id'] ?>_back.jpg?t=<?= time() ?>"
                      style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;">
                 <label class="checkbox-label remove-image-label">
                     <input type="checkbox" name="remove_back_image" value="1">
@@ -98,7 +98,7 @@
                 <div class="paste-zone" data-for="back_image" tabindex="0">📋 Or click here and press Ctrl+V to paste</div>
                 <div class="paste-preview" id="paste-preview-back_image" style="display:none;">
                     <img id="paste-img-back_image" alt="Pasted image">
-                    <button type="button" class="paste-clear-btn" onclick="clearPaste('back_image')">✕ Clear</button>
+                    <button type="button" class="paste-clear-btn" data-on-click="clearPaste" data-args='["back_image"]'>✕ Clear</button>
                 </div>
             </div>
         </div>
@@ -116,7 +116,7 @@
             <div class="current-image">
                 <p>Current left sleeve image:</p>
                 <img src="/images/products/<?= $product['id'] ?>_left_sleeve.png?t=<?= time() ?>" alt="Left Sleeve" 
-                     onerror="this.src='/images/products/<?= $product['id'] ?>_left_sleeve.jpg?t=<?= time() ?>'"
+                     data-fallback="/images/products/<?= $product['id'] ?>_left_sleeve.jpg?t=<?= time() ?>"
                      style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;">
                 <label class="checkbox-label remove-image-label">
                     <input type="checkbox" name="remove_left_sleeve_image" value="1">
@@ -131,7 +131,7 @@
                 <div class="paste-zone" data-for="left_sleeve_image" tabindex="0">📋 Or click here and press Ctrl+V to paste</div>
                 <div class="paste-preview" id="paste-preview-left_sleeve_image" style="display:none;">
                     <img id="paste-img-left_sleeve_image" alt="Pasted image">
-                    <button type="button" class="paste-clear-btn" onclick="clearPaste('left_sleeve_image')">✕ Clear</button>
+                    <button type="button" class="paste-clear-btn" data-on-click="clearPaste" data-args='["left_sleeve_image"]'>✕ Clear</button>
                 </div>
             </div>
         </div>
@@ -149,7 +149,7 @@
             <div class="current-image">
                 <p>Current right sleeve image:</p>
                 <img src="/images/products/<?= $product['id'] ?>_right_sleeve.png?t=<?= time() ?>" alt="Right Sleeve" 
-                     onerror="this.src='/images/products/<?= $product['id'] ?>_right_sleeve.jpg?t=<?= time() ?>'"
+                     data-fallback="/images/products/<?= $product['id'] ?>_right_sleeve.jpg?t=<?= time() ?>"
                      style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;">
                 <label class="checkbox-label remove-image-label">
                     <input type="checkbox" name="remove_right_sleeve_image" value="1">
@@ -164,7 +164,7 @@
                 <div class="paste-zone" data-for="right_sleeve_image" tabindex="0">📋 Or click here and press Ctrl+V to paste</div>
                 <div class="paste-preview" id="paste-preview-right_sleeve_image" style="display:none;">
                     <img id="paste-img-right_sleeve_image" alt="Pasted image">
-                    <button type="button" class="paste-clear-btn" onclick="clearPaste('right_sleeve_image')">✕ Clear</button>
+                    <button type="button" class="paste-clear-btn" data-on-click="clearPaste" data-args='["right_sleeve_image"]'>✕ Clear</button>
                 </div>
             </div>
         </div>
@@ -175,15 +175,15 @@
             
             <div class="size-presets">
                 <span>Quick Add:</span>
-                <button type="button" class="btn btn-sm" onclick="addClothingSizes()">Clothing (XS-3XL)</button>
-                <button type="button" class="btn btn-sm" onclick="addMugSizes()">Mug (11oz, 15oz)</button>
+                <button type="button" class="btn btn-sm" data-on-click="addClothingSizes">Clothing (XS-3XL)</button>
+                <button type="button" class="btn btn-sm" data-on-click="addMugSizes">Mug (11oz, 15oz)</button>
             </div>
 
             <div id="sizes-container">
                 <!-- Size rows will be added here -->
             </div>
             
-            <button type="button" class="btn btn-secondary" onclick="addSizeRow()">+ Add Size</button>
+            <button type="button" class="btn btn-secondary" data-on-click="addSizeRow">+ Add Size</button>
         </div>
 
         <div class="form-actions">
@@ -198,7 +198,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h3>Select Colors for <span id="modalSizeName">Size</span></h3>
-            <button type="button" class="modal-close" onclick="closeColorModal()">&times;</button>
+            <button type="button" class="modal-close" data-on-click="closeColorModal">&times;</button>
         </div>
         <div class="modal-body">
             <div id="colorCheckboxes" class="color-checkbox-grid">
@@ -215,8 +215,8 @@
             <?php endif; ?>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeColorModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="saveColorSelection()">Save Selection</button>
+            <button type="button" class="btn btn-secondary" data-on-click="closeColorModal">Cancel</button>
+            <button type="button" class="btn btn-primary" data-on-click="saveColorSelection">Save Selection</button>
         </div>
     </div>
 </div>

@@ -51,7 +51,7 @@ $designCount = count($designs ?? []);
                           // a trimmed copy of designs/design_1.png (its sheet had a
                           // border line down the right edge), kept for this page so
                           // it stays if the design itself is ever removed. ?>
-                    <img class="an-hero-char" src="/images/anime/hero-character.webp" alt="" width="829" height="1146" onerror="this.remove()">
+                    <img class="an-hero-char" src="/images/anime/hero-character.webp" alt="" width="829" height="1146" data-remove-on-error>
                     <span class="an-sfx" lang="ja">ドン!</span>
                 </div>
             </div>
@@ -195,7 +195,7 @@ $designCount = count($designs ?? []);
             <div class="an-art-stage">
                 <figure class="an-panel an-art-panel-1"><img src="/images/anime/section-cover.jpg" alt="" loading="lazy"></figure>
                 <figure class="an-panel an-art-panel-2"><img src="/images/anime/clean/anime5.webp" alt="" loading="lazy"></figure>
-                <img class="an-art-char" src="/images/anime/sticker-flowers.webp" alt="" width="534" height="707" loading="lazy" onerror="this.remove()">
+                <img class="an-art-char" src="/images/anime/sticker-flowers.webp" alt="" width="534" height="707" loading="lazy" data-remove-on-error>
                 <span class="an-art-sfx" lang="ja">ゴゴゴ</span>
             </div>
         </div>

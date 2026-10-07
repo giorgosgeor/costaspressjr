@@ -96,7 +96,7 @@ $webPath = static function (?string $p): string {
                 <li class="co-line">
                     <div class="co-thumb">
                         <div class="co-thumb-frame">
-                            <img src="<?= htmlspecialchars($image) ?>" alt="" loading="lazy" onerror="this.onerror=null;this.src='/images/placeholder.png'">
+                            <img src="<?= htmlspecialchars($image) ?>" alt="" loading="lazy" data-fallback="/images/placeholder.png">
                         </div>
                         <span class="co-qty" aria-label="<?= htmlspecialchars(I18n::t('checkout.summary.qty', ['count' => $qty])) ?>"><?= $qty ?></span>
                     </div>

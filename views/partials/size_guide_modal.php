@@ -13,7 +13,7 @@
             background:rgba(15,23,42,0.6); backdrop-filter:blur(4px);
             -webkit-backdrop-filter:blur(4px);
             align-items:center; justify-content:center; padding:20px;"
-     onclick="if(event.target===this) closeSizeGuide()">
+     data-on-click="closeSizeGuide" data-click-self>
   <div style="background:#fff; border-radius:16px; max-width:760px;
               width:100%; max-height:90vh; overflow:hidden;
               box-shadow:0 24px 64px rgba(0,0,0,0.2);
@@ -23,7 +23,7 @@
       <h3 id="sizeGuideTitle" style="margin:0; font-size:1.05rem; color:#0f172a; font-weight:600;">
         Size Guide
       </h3>
-      <button type="button" onclick="closeSizeGuide()"
+      <button type="button" data-on-click="closeSizeGuide"
               aria-label="Close"
               style="background:transparent; border:none; font-size:22px;
                      color:#64748b; line-height:1; cursor:pointer; padding:4px 8px;">

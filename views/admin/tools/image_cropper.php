@@ -58,9 +58,9 @@
             </div>
         </div>
         <div class="btn-group" style="margin-top:20px;">
-            <button class="btn btn-primary" id="applyCropBtn" disabled onclick="applyCrop()">✂️ Apply Crop</button>
-            <button class="btn btn-success" id="downloadBtn" disabled onclick="downloadResult()">💾 Download PNG</button>
-            <button class="btn btn-secondary" onclick="resetAll()">🗑️ Clear</button>
+            <button class="btn btn-primary" id="applyCropBtn" disabled data-on-click="applyCrop">✂️ Apply Crop</button>
+            <button class="btn btn-success" id="downloadBtn" disabled data-on-click="downloadResult">💾 Download PNG</button>
+            <button class="btn btn-secondary" data-on-click="resetAll">🗑️ Clear</button>
         </div>
     </div>
 

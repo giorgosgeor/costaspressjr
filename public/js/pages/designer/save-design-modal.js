@@ -247,3 +247,21 @@ function selectModalSize(sizeId) {
 // Prevent browser from opening files on window drag/drop
 window.addEventListener('dragover', function(e) { e.preventDefault(); }, false);
 window.addEventListener('drop', function(e) { e.preventDefault(); }, false);
+
+// ---- Upload drop zone and save notice (data-on-* in views/shop/designer.php)
+function uploadDragOver(e, zone) {
+    e.preventDefault();
+    zone.classList.add('dragover');
+}
+
+function uploadDragLeave(zone) {
+    zone.classList.remove('dragover');
+}
+
+function openUploadPicker() {
+    document.getElementById('uploadFileInput').click();
+}
+
+function showSaveRetryHint(link) {
+    link.closest('#saveLoginNotice').querySelector('.retry-hint').style.display = 'block';
+}

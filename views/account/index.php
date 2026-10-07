@@ -317,8 +317,8 @@
               // first line and the whole delete flow died on click. ?>
         <p class="confirm-lead"><?= I18n::t('account.delete_modal.lead', ['name' => '<span id="deleteDesignNameText"></span>']) ?><br><strong style="color:var(--ink);"><?= t('account.delete_modal.warning') ?></strong></p>
         <div class="confirm-actions">
-            <button type="button" class="confirm-btn confirm-btn-secondary" onclick="closeDeleteModal()"><?= t('account.delete_modal.cancel') ?></button>
-            <button type="button" id="confirmDeleteBtn" class="confirm-btn confirm-btn-danger" onclick="confirmDelete()"><?= t('account.delete_modal.confirm') ?></button>
+            <button type="button" class="confirm-btn confirm-btn-secondary" data-on-click="closeDeleteModal"><?= t('account.delete_modal.cancel') ?></button>
+            <button type="button" id="confirmDeleteBtn" class="confirm-btn confirm-btn-danger" data-on-click="confirmDelete"><?= t('account.delete_modal.confirm') ?></button>
         </div>
     </div>
 </div>
@@ -326,7 +326,7 @@
 <!-- Include the Add to Cart Modal from shop_custom -->
 <div id="addToCartModal" style="display:none; position:fixed; z-index:35000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
     <div style="background:var(--bg-dark-secondary, #16213e); border-radius:18px; max-width:520px; width:95vw; margin:auto; box-shadow:0 2px 24px rgba(0,0,0,0.3); padding:2rem; position:relative; max-height:90vh; overflow-y:auto; border:1px solid var(--border-light, rgba(255,255,255,0.1));">
-        <button onclick="closeAddToCartModal()" style="position:absolute; top:1rem; right:1rem; background:none; border:none; font-size:2rem; color:var(--text-light-muted, #888); cursor:pointer;">&times;</button>
+        <button data-on-click="closeAddToCartModal" style="position:absolute; top:1rem; right:1rem; background:none; border:none; font-size:2rem; color:var(--text-light-muted, #888); cursor:pointer;">&times;</button>
         <h2 style="font-size:1.4rem; font-weight:700; margin-bottom:1rem; text-align:center; color:var(--text-light, #fff);"><?= t('account.cart_modal.title') ?></h2>
         
         <div id="cartDesignPreview" style="text-align:center; margin-bottom:1.5rem; background:var(--bg-card-dark, rgba(255,255,255,0.05)); border-radius:12px; padding:1rem; position:relative;">
@@ -358,9 +358,9 @@
         <div style="margin-bottom:1.5rem;">
             <label style="font-weight:600; display:block; margin-bottom:0.5rem; color:var(--text-light, #fff);"><?= t('account.cart_modal.quantity') ?></label>
             <div style="display:flex; align-items:center; gap:12px;">
-                <button onclick="adjustCartQuantity(-1)" class="qty-btn" style="width:36px; height:36px; background:rgba(255,255,255,0.1); border:none; border-radius:8px; font-size:1.2rem; cursor:pointer; color:#fff;">âˆ’</button>
+                <button data-on-click="adjustCartQuantity" data-args='[-1]' class="qty-btn" style="width:36px; height:36px; background:rgba(255,255,255,0.1); border:none; border-radius:8px; font-size:1.2rem; cursor:pointer; color:#fff;">âˆ’</button>
                 <input id="cartQuantity" type="number" value="1" min="1" max="100" style="width:60px; text-align:center; padding:8px; border:1px solid var(--border-light, rgba(255,255,255,0.2)); border-radius:8px; font-size:1rem; background:rgba(255,255,255,0.05); color:#fff;">
-                <button onclick="adjustCartQuantity(1)" class="qty-btn" style="width:36px; height:36px; background:rgba(255,255,255,0.1); border:none; border-radius:8px; font-size:1.2rem; cursor:pointer; color:#fff;">+</button>
+                <button data-on-click="adjustCartQuantity" data-args='[1]' class="qty-btn" style="width:36px; height:36px; background:rgba(255,255,255,0.1); border:none; border-radius:8px; font-size:1.2rem; cursor:pointer; color:#fff;">+</button>
             </div>
         </div>
         

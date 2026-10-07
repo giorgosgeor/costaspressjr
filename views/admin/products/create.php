@@ -37,7 +37,7 @@
                 <div class="paste-zone" data-for="image" tabindex="0">📋 Or click here and press Ctrl+V to paste</div>
                 <div class="paste-preview" id="paste-preview-image" style="display:none;">
                     <img id="paste-img-image" alt="Pasted image">
-                    <button type="button" class="paste-clear-btn" onclick="clearPaste('image')">✕ Clear</button>
+                    <button type="button" class="paste-clear-btn" data-on-click="clearPaste" data-args='["image"]'>✕ Clear</button>
                 </div>
             </div>
         </div>
@@ -48,15 +48,15 @@
             
             <div class="size-presets">
                 <span>Quick Add:</span>
-                <button type="button" class="btn btn-sm" onclick="addClothingSizes()">Clothing (XS-3XL)</button>
-                <button type="button" class="btn btn-sm" onclick="addMugSizes()">Mug (11oz, 15oz)</button>
+                <button type="button" class="btn btn-sm" data-on-click="addClothingSizes">Clothing (XS-3XL)</button>
+                <button type="button" class="btn btn-sm" data-on-click="addMugSizes">Mug (11oz, 15oz)</button>
             </div>
 
             <div id="sizes-container">
                 <!-- Size rows will be added here -->
             </div>
             
-            <button type="button" class="btn btn-secondary" onclick="addSizeRow()">+ Add Size</button>
+            <button type="button" class="btn btn-secondary" data-on-click="addSizeRow">+ Add Size</button>
         </div>
 
         <div class="form-actions">
@@ -71,7 +71,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h3>Select Colors for <span id="modalSizeName">Size</span></h3>
-            <button type="button" class="modal-close" onclick="closeColorModal()">&times;</button>
+            <button type="button" class="modal-close" data-on-click="closeColorModal">&times;</button>
         </div>
         <div class="modal-body">
             <div id="colorCheckboxes" class="color-checkbox-grid">
@@ -88,8 +88,8 @@
             <?php endif; ?>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeColorModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="saveColorSelection()">Save Selection</button>
+            <button type="button" class="btn btn-secondary" data-on-click="closeColorModal">Cancel</button>
+            <button type="button" class="btn btn-primary" data-on-click="saveColorSelection">Save Selection</button>
         </div>
     </div>
 </div>
