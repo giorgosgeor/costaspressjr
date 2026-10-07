@@ -132,7 +132,7 @@ class CustomDesignController extends Controller {
         // legacy {designId} folder for installs that haven't run the token
         // migration yet (pathTokenFor handles that).
         $folder = $customDesignModel->getPathToken((int)$designId);
-        $previewDir = __DIR__ . '/../../public/images/designs/previews/' . $folder;
+        $previewDir = public_path('images/designs/previews/' . $folder);
         if (!is_dir($previewDir)) {
             mkdir($previewDir, 0755, true);
         }

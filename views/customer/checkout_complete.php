@@ -1,5 +1,5 @@
 <?php
-// Where every payment ends — see CustomerController::checkoutComplete().
+// Where every payment ends — see CheckoutController::complete().
 // $state: placed | processing | not_paid | failed
 // $result from OrderPlacement::place(); $placed from orderForConfirmation() (may be null)
 $title    = $state === 'placed' ? t('checkout.success.title', false) : t('checkout.complete.title', false);

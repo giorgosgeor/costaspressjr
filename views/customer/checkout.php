@@ -1,5 +1,5 @@
 <?php
-// GET /checkout — see CustomerController::checkoutPage().
+// GET /checkout — see CheckoutController::show().
 // $cartItems, $cartTotal, $checkout, $accountEmail, $accountPhone
 $title        = t('checkout.page.title', false);
 $extraCss     = ['/css/checkout.css'];

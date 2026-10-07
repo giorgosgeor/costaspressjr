@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
               // per-unit figures: a tee is ~EUR 13 and a hoodie ~EUR 37, so
               // any single ladder shown here would misread as the price list
               // for everything. The percentage is computed from the margin
-              // bands in CustomerController::home() and rounded down, so the
+              // bands in PageController::home() and rounded down, so the
               // "up to" claim stays true if the tier table is ever edited.
               // The photo is WEBSITE_KEY_INFO/basic_pic.png cut off its white
               // background and trimmed to the subject, as a WebP. ?>

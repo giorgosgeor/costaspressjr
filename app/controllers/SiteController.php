@@ -1,20 +1,9 @@
 <?php
 
-class HomeController extends Controller {
-    /**
-     * Main entry point - admins go to /admin, everyone else sees the home page
-     */
-    public function index(): void {
-        if (Auth::isAdmin()) {
-            header('Location: /admin');
-            exit;
-        }
-
-        // Guests and customers both see the home page
-        $customerController = new CustomerController($this->db);
-        $customerController->home();
-    }
-
+/**
+ * Machine-facing endpoints: the uptime health check and the sitemap.
+ */
+class SiteController extends Controller {
     /**
      * Health check endpoint for uptime monitors.
      * Returns 200 OK with a tiny JSON body when the app and DB are reachable,

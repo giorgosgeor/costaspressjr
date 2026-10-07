@@ -2,7 +2,7 @@
  * Client-side mirror of app/services/Pricing.php.
  *
  * Used ONLY for live price previews in the customizer/cart. The server
- * (Pricing.php + CustomerController) remains authoritative for what is
+ * (Pricing.php + CartPricing.php) remains authoritative for what is
  * actually charged — keep the tier tables and formula here in sync with the
  * PHP version.
  *
