@@ -8,13 +8,6 @@ class HomeController {
     }
 
     /**
-     * Public landing page - shown when not logged in
-     */
-    public function landing(): void {
-        require __DIR__ . '/../views/public/landing.php';
-    }
-
-    /**
      * Main entry point - admins go to /admin, everyone else sees the home page
      */
     public function index(): void {

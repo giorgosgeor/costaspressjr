@@ -6,45 +6,6 @@ $title = t('cart.title', false);
 $extraCss = ['/css/cart.css'];
 require __DIR__ . '/../layouts/customer_header.php';
 ?>
-<?php // (Cart-specific styles now live in /css/cart.css)
-// Helper function to convert hex to HSL
-function cartHexToHSL($hex) {
-    $hex = str_replace('#', '', $hex);
-    if (strlen($hex) === 3) {
-        $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
-    }
-    $r = hexdec(substr($hex, 0, 2)) / 255;
-    $g = hexdec(substr($hex, 2, 2)) / 255;
-    $b = hexdec(substr($hex, 4, 2)) / 255;
-    
-    $max = max($r, $g, $b);
-    $min = min($r, $g, $b);
-    $l = ($max + $min) / 2;
-    
-    $h = 0;
-    $s = 0;
-    if ($max !== $min) {
-        $d = $max - $min;
-        $s = $l > 0.5 ? $d / (2 - $max - $min) : $d / ($max + $min);
-        switch ($max) {
-            case $r: $h = (($g - $b) / $d + ($g < $b ? 6 : 0)) / 6; break;
-            case $g: $h = (($b - $r) / $d + 2) / 6; break;
-            case $b: $h = (($r - $g) / $d + 4) / 6; break;
-        }
-    }
-    return ['h' => $h * 360, 's' => $s * 100, 'l' => $l * 100];
-}
-
-// Generate CSS filter for product color.
-// Delegated to Tint, which the browser mirrors in public/js/color-tint.js, so a
-// cart line shows the same shade as the studio the item was designed in. This
-// file's own copy had drifted (hue-rotate h-50 vs h-38) and never applied the
-// solved overrides that stop deep reds flattening.
-function getCartProductColorFilter($hex) {
-    if (!$hex) return '';
-    return Tint::filterFor($hex);
-}
-?>
 
 <section class="section cart-section">
     <div class="container">
@@ -70,7 +31,7 @@ function getCartProductColorFilter($hex) {
                     $lineTotal = (float)($item['line_total'] ?? ($unitPrice * $item['quantity']));
                     $isCustom = !empty($item['is_custom_design']) || !empty($item['custom_design_fee']);
                     $colorHex = $item['color_hex'] ?? '#ffffff';
-                    $colorFilter = getCartProductColorFilter($colorHex);
+                    $colorFilter = $colorHex ? Tint::filterFor($colorHex) : '';
                     $uploads = $item['uploads'] ?? [];
 
                     // Premade design overlay position (same formula as shop_anime.php)

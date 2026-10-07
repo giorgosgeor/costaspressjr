@@ -345,39 +345,7 @@ class CustomerController {
         require __DIR__ . '/../views/customer/order_detail.php';
     }
 
-    // Store or update design draft in session
-    public function applyDesignChange(): void {
-        session_start();
-        $data = $_POST['design_item'] ?? null;
-        if (!$data) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'No design item data']);
-            return;
-        }
-        if (!isset($_SESSION['design_draft'])) {
-            $_SESSION['design_draft'] = [];
-        }
-        // Add or update item in draft
-        $_SESSION['design_draft'][] = $data;
-        echo json_encode(['success' => true, 'draft' => $_SESSION['design_draft']]);
-    }
-
-    // Finalize and save design to DB
-    public function finalizeDesign(): void {
-        session_start();
-        $draft = $_SESSION['design_draft'] ?? null;
-        if (!$draft || !is_array($draft) || count($draft) === 0) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'No design draft to save']);
-            return;
-        }
-        require_once __DIR__ . '/../models/CustomDesign.php';
-        $designId = \CustomDesign::saveDraft($draft); // You must implement saveDraft in CustomDesign.php
-        unset($_SESSION['design_draft']);
-        echo json_encode(['success' => true, 'design_id' => $designId]);
-    }
-
-    private function saveCartBase64Upload(array $upload): ?string {
+private function saveCartBase64Upload(array $upload): ?string {
         $base64 = (string)($upload['base64'] ?? '');
         if (!preg_match('/^data:image\/(png|jpe?g|gif|webp);base64,/i', $base64, $matches)) {
             return null;
@@ -1810,9 +1778,8 @@ class CustomerController {
 
         require __DIR__ . '/../views/customer/view_design.php';
     }
-        
 
-    public function shopCustom(): void {
+public function shopCustom(): void {
         // Check if loading an existing design (requires login)
         $loadDesign = null;
         if (!empty($_GET['load']) && Auth::check()) {
