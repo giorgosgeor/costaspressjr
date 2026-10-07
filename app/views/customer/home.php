@@ -110,10 +110,10 @@ document.addEventListener('DOMContentLoaded', function () {
               // for everything. The percentage is computed from the margin
               // bands in CustomerController::home() and rounded down, so the
               // "up to" claim stays true if the tier table is ever edited.
-              // The photo is a trimmed WebP of
-              // WEBSITE_KEY_INFO/design-transparent (13).png. ?>
+              // The photo is WEBSITE_KEY_INFO/basic_pic.png cut off its white
+              // background and trimmed to the subject, as a WebP. ?>
         <div class="hero-visual">
-            <img src="/images/hero/hero-tee.webp" alt="" width="585" height="669" onerror="this.remove()">
+            <img src="/images/hero/hero-tee.webp" alt="" width="969" height="1122" onerror="this.remove()">
             <aside class="bulk-card">
                 <span class="bulk-tag"><?= t('home.bulk.tag') ?></span>
                 <h2 class="bulk-title"><?= t('home.bulk.title') ?></h2>

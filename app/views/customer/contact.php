@@ -59,21 +59,27 @@
                 <h2><?= t('contact.send_message') ?></h2>
                 <form class="contact-form" action="/contact" method="post">
                     <?= Csrf::field() ?>
+                    <?php // Honeypot: off-screen and hidden from assistive tech, so
+                          // only bots that fill every field fill this one in. ?>
+                    <div aria-hidden="true" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;">
+                        <label for="website">Website</label>
+                        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+                    </div>
                     <div class="form-group">
                         <label for="name"><?= t('contact.name') ?></label>
-                        <input type="text" id="name" name="name" required>
+                        <input type="text" id="name" name="name" maxlength="100" required>
                     </div>
                     <div class="form-group">
                         <label for="email"><?= t('contact.email') ?></label>
-                        <input type="email" id="email" name="email" required>
+                        <input type="email" id="email" name="email" maxlength="191" required>
                     </div>
                     <div class="form-group">
                         <label for="subject"><?= t('contact.subject') ?></label>
-                        <input type="text" id="subject" name="subject" required>
+                        <input type="text" id="subject" name="subject" maxlength="150" required>
                     </div>
                     <div class="form-group">
                         <label for="message"><?= t('contact.message') ?></label>
-                        <textarea id="message" name="message" rows="5" required></textarea>
+                        <textarea id="message" name="message" rows="5" maxlength="5000" required></textarea>
                     </div>
                     <button type="submit" class="btn btn-block"><?= t('contact.send_button') ?></button>
                 </form>

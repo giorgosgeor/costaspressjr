@@ -72,16 +72,22 @@ class AuthController {
         return hash('sha256', $ip . '|costaspressjr');
     }
 
+    /**
+     * login_attempts.created_at is stamped by MySQL's clock, in the server's
+     * time zone (Asia/Nicosia here), so windows are measured on that same
+     * clock. Comparing it with a PHP gmdate() string stretched a 15-minute
+     * lockout to over three hours on a UTC+3 server.
+     */
+    private const SINCE_WINDOW = 'NOW() - INTERVAL ' . self::WINDOW_SECONDS . ' SECOND';
+
     private function isRateLimited(string $identifier): bool {
         try {
-            $since = gmdate('Y-m-d H:i:s', time() - self::WINDOW_SECONDS);
-
-            $stmt = $this->db->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip_hash = ? AND created_at > ?");
-            $stmt->execute([$this->ipHash(), $since]);
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip_hash = ? AND created_at > " . self::SINCE_WINDOW);
+            $stmt->execute([$this->ipHash()]);
             if ((int)$stmt->fetchColumn() >= self::MAX_ATTEMPTS_PER_IP) return true;
 
-            $stmt = $this->db->prepare("SELECT COUNT(*) FROM login_attempts WHERE identifier = ? AND created_at > ?");
-            $stmt->execute([mb_strtolower($identifier), $since]);
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM login_attempts WHERE identifier = ? AND created_at > " . self::SINCE_WINDOW);
+            $stmt->execute([mb_strtolower($identifier)]);
             return (int)$stmt->fetchColumn() >= self::MAX_ATTEMPTS_PER_USER;
         } catch (PDOException $e) {
             error_log('Login rate-limit check failed: ' . $e->getMessage());
@@ -95,8 +101,7 @@ class AuthController {
             $stmt->execute([$this->ipHash(), mb_strtolower($identifier)]);
 
             if (random_int(1, 50) === 1) {
-                $cutoff = gmdate('Y-m-d H:i:s', time() - (self::WINDOW_SECONDS * 4));
-                $this->db->prepare("DELETE FROM login_attempts WHERE created_at < ?")->execute([$cutoff]);
+                $this->db->exec("DELETE FROM login_attempts WHERE created_at < NOW() - INTERVAL " . (self::WINDOW_SECONDS * 4) . " SECOND");
             }
         } catch (PDOException $e) {
             error_log('Login attempt record failed: ' . $e->getMessage());
@@ -155,14 +160,12 @@ class AuthController {
         // can't make the INSERT throw under STRICT_TRANS_TABLES.
         $key = mb_substr($namespace . ':' . mb_strtolower($identifier), 0, 191);
         try {
-            $since = gmdate('Y-m-d H:i:s', time() - self::WINDOW_SECONDS);
-
-            $stmt = $this->db->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip_hash = ? AND identifier LIKE ? AND created_at > ?");
-            $stmt->execute([$this->ipHash(), $namespace . ':%', $since]);
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip_hash = ? AND identifier LIKE ? AND created_at > " . self::SINCE_WINDOW);
+            $stmt->execute([$this->ipHash(), $namespace . ':%']);
             if ((int)$stmt->fetchColumn() >= 10) return true;
 
-            $stmt = $this->db->prepare("SELECT COUNT(*) FROM login_attempts WHERE identifier = ? AND created_at > ?");
-            $stmt->execute([$key, $since]);
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM login_attempts WHERE identifier = ? AND created_at > " . self::SINCE_WINDOW);
+            $stmt->execute([$key]);
             if ((int)$stmt->fetchColumn() >= 3) return true;
 
             $this->db->prepare("INSERT INTO login_attempts (ip_hash, identifier) VALUES (?, ?)")
@@ -281,7 +284,10 @@ class AuthController {
             $this->renderVerificationResult(true, 'Your email is already verified.');
             return;
         }
-        if (strtotime($row['expires_at']) < time()) {
+        // expires_at is written with gmdate(), so it is read back as UTC. Plain
+        // strtotime() would read it in PHP's zone and, on a server ahead of
+        // UTC, expire the link hours early.
+        if (strtotime($row['expires_at'] . ' UTC') < time()) {
             $this->renderVerificationResult(false, 'This verification link has expired. Please request a new one from your account page.');
             return;
         }
@@ -473,7 +479,9 @@ class AuthController {
         $stmt->execute([$hash]);
         $row = $stmt->fetch();
 
-        if (!$row || $row['consumed_at'] !== null || strtotime($row['expires_at']) < time()) {
+        // expires_at is UTC (gmdate) — see verifyEmail(). Without the zone, a
+        // one-hour reset link was already expired on a UTC+2 server.
+        if (!$row || $row['consumed_at'] !== null || strtotime($row['expires_at'] . ' UTC') < time()) {
             $error = 'This reset link is invalid or has expired. Please request a new one.';
             require __DIR__ . '/../views/auth/reset_password.php';
             return;

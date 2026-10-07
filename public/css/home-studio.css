@@ -104,11 +104,13 @@ body.theme-studio .hero-spec dt {
 body.theme-studio .hero-spec dd { margin: 4px 0 0; font-size: 1rem; font-weight: 500; color: var(--st-ink); }
 
 /* Photo column: the photo stands on the bottom edge at 92% of the panel's
-   height; the bulk card sits in the corner like a printed swing tag. */
+   height, and the fill starts where the photo does, so the neck's cut is the
+   panel's top edge; the bulk card sits in the corner like a printed swing tag. */
 body.theme-studio .hero-visual {
+    --photo-h: 92%;
     position: relative;
     min-height: 520px;
-    background: var(--st-panel);
+    background: linear-gradient(to bottom, transparent calc(100% - var(--photo-h)), var(--st-panel) 0);
     overflow: hidden;
 }
 body.theme-studio .hero-visual img {
@@ -116,7 +118,7 @@ body.theme-studio .hero-visual img {
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    height: 92%;
+    height: var(--photo-h);
     width: auto;
     max-width: none;
 }
@@ -188,9 +190,9 @@ body.theme-studio .products-section { background: #FFFFFF; }
     body.theme-studio .hero-buttons .hero-link { align-self: flex-start; }
     body.theme-studio .hero-spec { gap: 16px 20px; }
 
-    /* Full width, and the photo's own proportions (585 × 669) up to a cap,
+    /* Full width, and the photo's own proportions (969 × 1122) up to a cap,
        so on narrow screens it fills the panel edge to edge with no gap. */
-    body.theme-studio .hero-visual { min-height: 0; width: 100%; height: min(114vw, 560px); }
+    body.theme-studio .hero-visual { min-height: 0; width: 100%; height: min(116vw, 560px); }
     body.theme-studio .hero .bulk-card { left: 16px; right: 16px; bottom: 16px; width: auto; max-width: none; }
 }
 

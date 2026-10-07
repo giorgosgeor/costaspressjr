@@ -32,6 +32,37 @@ if ($isProd) {
         echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Something went wrong</title></head><body style="font-family:system-ui,sans-serif;max-width:560px;margin:80px auto;padding:0 20px;color:#1e293b;"><h1>Something went wrong.</h1><p>We\'re having trouble loading this page. Please try again in a moment.</p><p><a href="/">Back to homepage</a></p></body></html>';
         exit;
     });
+
+    // A half-configured production site fails in ways nobody sees until a
+    // customer does: emails silently logged instead of sent, reset links
+    // built from the request's Host header, or — worst — Stripe test keys,
+    // which let anyone "pay" with card 4242 for real goods. Refuse to serve
+    // instead; the log names what is missing, /health returns 500.
+    $problems = [];
+    if (!str_starts_with((string)Env::get('APP_URL', ''), 'https://')) {
+        $problems[] = 'APP_URL must be the https:// address of the site';
+    }
+    foreach (['STRIPE_SECRET_KEY', 'STRIPE_PUBLISHABLE_KEY', 'STRIPE_WEBHOOK_SECRET'] as $key) {
+        if ((string)Env::get($key, '') === '') {
+            $problems[] = "$key is empty";
+        }
+    }
+    $secretIsTest = str_contains((string)Env::get('STRIPE_SECRET_KEY', ''), '_test_');
+    $publicIsTest = str_contains((string)Env::get('STRIPE_PUBLISHABLE_KEY', ''), '_test_');
+    if ($secretIsTest !== $publicIsTest) {
+        $problems[] = 'STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY are from different modes (test/live)';
+    } elseif ($secretIsTest && Env::get('STRIPE_ALLOW_TEST_KEYS', '') !== '1') {
+        $problems[] = 'Stripe keys are TEST keys (set STRIPE_ALLOW_TEST_KEYS=1 only for a dry run)';
+    }
+    $mailTransport = Env::get('MAIL_TRANSPORT', 'log');
+    if (!in_array($mailTransport, ['smtp', 'mail'], true)) {
+        $problems[] = 'MAIL_TRANSPORT must be smtp (or mail), not "' . $mailTransport . '"';
+    } elseif ($mailTransport === 'smtp' && (string)Env::get('SMTP_HOST', '') === '') {
+        $problems[] = 'SMTP_HOST is empty';
+    }
+    if ($problems) {
+        throw new RuntimeException('Production config incomplete: ' . implode('; ', $problems));
+    }
 }
 
 session_set_cookie_params([
@@ -215,5 +246,15 @@ $router->post('/custom-design/delete', [$customDesignController, 'delete']);
 
 // API Routes for customer
 $router->get('/api/product-variants', [$customerController, 'getProductVariants']);
+
+// Unknown URLs: JSON for API callers, the branded page for people.
+$router->setNotFound(function () use ($customerController, $wantsJson) {
+    if ($wantsJson) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['error' => 'not_found']);
+        return;
+    }
+    $customerController->notFound();
+});
 
 $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);

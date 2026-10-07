@@ -3,6 +3,14 @@
 class Router
 {
     private array $routes = [];
+    /** @var callable|null */
+    private $notFound = null;
+
+    /** What to render when nothing matches; the 404 status is already set. */
+    public function setNotFound(callable $action): void
+    {
+        $this->notFound = $action;
+    }
 
     public function get(string $uri, callable $action): void
     {
@@ -41,6 +49,10 @@ class Router
         }
 
         http_response_code(404);
+        if ($this->notFound) {
+            call_user_func($this->notFound);
+            return;
+        }
         echo '404 Not Found';
     }
 }

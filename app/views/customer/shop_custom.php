@@ -1122,8 +1122,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                const result = await resp.json();
-                console.log('Previews saved:', result);
+                await resp.json();
             } catch (err) {
                 console.error('Failed to save previews:', err);
             }

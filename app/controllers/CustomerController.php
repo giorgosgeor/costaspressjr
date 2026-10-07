@@ -288,12 +288,19 @@ class CustomerController {
         require __DIR__ . '/../views/customer/order_list.php';
     }
 
+    /** The branded 404 page — unknown URLs (via Router) and missing records. */
+    public function notFound(): void {
+        http_response_code(404);
+        $db = $this->db;
+        require __DIR__ . '/../views/customer/not_found.php';
+    }
+
     public function orderDetail(): void {
         Auth::requireLogin();
         $userId = Auth::userId();
 
         $orderId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        if (!$orderId) { http_response_code(404); echo '404 Not Found'; return; }
+        if (!$orderId) { $this->notFound(); return; }
 
         $stmt = $this->db->prepare("
             SELECT o.*, op.payment_method, op.card_brand, op.card_last4, op.card_exp_month,
@@ -305,7 +312,7 @@ class CustomerController {
         $stmt->execute([$orderId, $userId]);
         $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$order) { http_response_code(404); echo '404 - Order not found'; return; }
+        if (!$order) { $this->notFound(); return; }
 
         $stmt = $this->db->prepare("
             SELECT oi.*, p.name as product_name, p.image_path as product_image
@@ -1953,10 +1960,18 @@ class CustomerController {
     }
 
     public function contactSubmit(): void {
-        $name    = trim($_POST['name']    ?? '');
-        $email   = trim($_POST['email']   ?? '');
-        $subject = trim($_POST['subject'] ?? '');
-        $message = trim($_POST['message'] ?? '');
+        $name    = trim((string)($_POST['name']    ?? ''));
+        $email   = trim((string)($_POST['email']   ?? ''));
+        $subject = trim((string)($_POST['subject'] ?? ''));
+        $message = trim((string)($_POST['message'] ?? ''));
+
+        // A filled honeypot is a bot. It gets the success message so it has
+        // no reason to try again, and nothing is sent.
+        if (trim((string)($_POST['website'] ?? '')) !== '') {
+            $_SESSION['flash_success'] = I18n::t('contact.success');
+            header('Location: /contact');
+            return;
+        }
 
         if (!$name || !$email || !$subject || !$message) {
             $_SESSION['flash_error'] = I18n::t('contact.error_required');
@@ -1970,16 +1985,54 @@ class CustomerController {
             return;
         }
 
-        $toAddress = Env::get('CONTACT_EMAIL', Env::get('MAIL_FROM_ADDRESS', 'no-reply@costaspressjr.com'));
+        if ($this->isContactRateLimited()) {
+            $_SESSION['flash_error'] = I18n::t('contact.error_rate');
+            header('Location: /contact');
+            return;
+        }
+
+        $name    = mb_substr($name, 0, 100);
+        $subject = mb_substr($subject, 0, 150);
+        $message = mb_substr($message, 0, 5000);
+
+        // CONTACT_EMAIL is the inbox someone reads; MAIL_FROM_ADDRESS is the
+        // no-reply sender and only a last resort. Reply-To is the customer, so
+        // answering the message answers them.
+        $toAddress = Env::get('CONTACT_EMAIL', '') ?: Env::get('MAIL_FROM_ADDRESS', 'no-reply@costaspressjr.com');
         $htmlBody  = '<p><strong>Name:</strong> ' . htmlspecialchars($name) . '</p>'
                    . '<p><strong>Email:</strong> ' . htmlspecialchars($email) . '</p>'
                    . '<p><strong>Subject:</strong> ' . htmlspecialchars($subject) . '</p>'
                    . '<p><strong>Message:</strong><br>' . nl2br(htmlspecialchars($message)) . '</p>';
 
-        Mailer::send($toAddress, '[Contact] ' . $subject, $htmlBody);
+        if (!Mailer::send($toAddress, '[Contact] ' . $subject, $htmlBody, '', $email)) {
+            $_SESSION['flash_error'] = I18n::t('contact.error_send');
+            header('Location: /contact');
+            return;
+        }
 
         $_SESSION['flash_success'] = I18n::t('contact.success');
         header('Location: /contact');
+    }
+
+    /**
+     * At most 5 contact messages per visitor per 15 minutes. Shares the
+     * login_attempts table (and its hashed-IP scheme) with AuthController's
+     * throttles under a "contact" identifier; old rows are pruned there.
+     */
+    private function isContactRateLimited(): bool {
+        $ipHash = hash('sha256', ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0') . '|costaspressjr');
+        try {
+            // created_at is MySQL's clock, so the window is measured on it too.
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip_hash = ? AND identifier = 'contact' AND created_at > NOW() - INTERVAL 15 MINUTE");
+            $stmt->execute([$ipHash]);
+            if ((int)$stmt->fetchColumn() >= 5) {
+                return true;
+            }
+            $this->db->prepare("INSERT INTO login_attempts (ip_hash, identifier) VALUES (?, 'contact')")->execute([$ipHash]);
+        } catch (PDOException $e) {
+            error_log('Contact rate-limit check failed: ' . $e->getMessage());
+        }
+        return false;
     }
 
     /**
