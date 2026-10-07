@@ -2,18 +2,15 @@
 
 <section class="info-page">
     <div class="container">
-        <nav class="breadcrumb">
-            <a href="/"><?= t('header.nav.home') ?></a> <span>&rsaquo;</span>
-            <span><?= htmlspecialchars($infoTitle ?? t('info.breadcrumb.page', false)) ?></span>
-        </nav>
+        <?php
+            $pageName = $infoTitle ?? t('info.breadcrumb.page', false);
+            $crumbs   = [[t('header.nav.home', false), '/'], [$pageName, null]];
+            $heading  = $pageName;
+            $lead     = $infoSubtitle ?? '';
+            $headNote = I18n::t('info.last_updated', ['date' => htmlspecialchars($infoUpdated ?? date('F Y'))]);
+            require __DIR__ . '/../../partials/page_head.php';
+        ?>
         <article class="info-article">
-            <header class="info-article-header">
-                <h1><?= htmlspecialchars($infoTitle ?? t('info.breadcrumb.page', false)) ?></h1>
-                <?php if (!empty($infoSubtitle)): ?>
-                <p class="info-article-subtitle"><?= htmlspecialchars($infoSubtitle) ?></p>
-                <?php endif; ?>
-                <p class="info-article-updated"><?= I18n::t('info.last_updated', ['date' => htmlspecialchars($infoUpdated ?? date('F Y'))]) ?></p>
-            </header>
             <div class="info-article-body">
                 <?= $infoBody ?? '' ?>
             </div>

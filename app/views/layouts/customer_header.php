@@ -12,6 +12,9 @@ $currentLocale   = I18n::locale();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?= Csrf::metaTag() ?>
+    <?php if (!empty($noindex)): // sign-in and account forms stay out of search ?>
+    <meta name="robots" content="noindex">
+    <?php endif; ?>
     <title><?= htmlspecialchars($pageFullTitle) ?></title>
     <meta name="description" content="<?= htmlspecialchars($pageDescription) ?>">
     <meta name="theme-color" content="#15130E">
@@ -30,9 +33,11 @@ $currentLocale   = I18n::locale();
     <meta name="twitter:image" content="/images/og-card.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sofia+Sans:wght@400..800&family=Sofia+Sans+Extra+Condensed:wght@600..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/style.css')) ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/customer.css')) ?>">
+    <?php // The Studio look, over the base styles and under the page ones. ?>
+    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/studio.css')) ?>">
     <?php if (!empty($extraCss)): foreach ($extraCss as $css): ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url($css)) ?>">
     <?php endforeach; endif; ?>
@@ -49,7 +54,9 @@ $currentLocale   = I18n::locale();
     <!-- Live quantity → price ladder (reads the same tiers the server charges) -->
     <script src="<?= htmlspecialchars(Asset::url('/js/price-tiers.js')) ?>" defer></script>
 </head>
-<body>
+<?php // theme-studio switches on studio.css for every customer page; a page
+      // can add its own class through $bodyClass. ?>
+<body class="<?= htmlspecialchars(trim('theme-studio ' . ($bodyClass ?? ''))) ?>">
     <a href="#main-content" class="skip-link"><?= t('header.skip_to_content') ?></a>
     <?php if (!empty($checkoutMode)): ?>
     <?php // Checkout gets a bare header: no shop navigation, account menu or

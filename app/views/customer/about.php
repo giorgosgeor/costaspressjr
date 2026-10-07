@@ -3,7 +3,12 @@
 
 <section class="section page-section">
     <div class="container">
-        <h1 class="page-title"><?= t('about.title') ?></h1>
+        <?php
+            $crumbs  = [[t('header.nav.home', false), '/'], [t('header.nav.about', false), null]];
+            $heading = t('about.title', false);
+            $lead    = t('about.subtitle', false);
+            require __DIR__ . '/../partials/page_head.php';
+        ?>
 
         <div class="about-content">
             <div class="about-text">

@@ -119,11 +119,10 @@
 
 <section class="section product-detail-section">
     <div class="container">
-        <nav class="breadcrumb">
-            <a href="/"><?= t('header.nav.home') ?></a> &gt;
-            <a href="/shop"><?= t('header.nav.shop') ?></a> &gt;
-            <span><?= htmlspecialchars($product['name'] ?? t('studio.title', false)) ?></span>
-        </nav>
+        <?php
+            $crumbs = [[t('header.nav.home', false), '/'], [t('header.nav.shop', false), '/shop'], [(string)($product['name'] ?? t('studio.title', false)), null]];
+            require __DIR__ . '/../partials/breadcrumb.php';
+        ?>
         <div class="custom-product-grid">
             <div class="custom-product-gallery" id="customProductGallery">
                 <div id="productThumbnails"></div>

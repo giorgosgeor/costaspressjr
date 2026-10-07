@@ -7,35 +7,13 @@
    Landing here from a light page looked like a different website. Now on the
    current tokens and spacing scale. */
 .orders-page {
-    min-height: 100vh;
-    background: var(--paper);
-    padding: var(--space-7) 0 var(--space-8);
+    padding-bottom: clamp(56px, 7vw, 112px);
 }
-.orders-container {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 0 var(--space-5);
-}
-.orders-heading {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--ink);
-    letter-spacing: var(--tracking-snug);
-    margin-bottom: var(--space-6);
-}
-.orders-empty {
-    text-align: center;
-    padding: var(--space-8) var(--space-5);
-    color: var(--ink-soft);
-}
-.orders-empty p {
-    margin-bottom: var(--space-5);
-    font-size: 1.05rem;
-}
+.orders-rows { max-width: 960px; }
 .order-row {
-    background: var(--paper-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    background: #FFFFFF;
+    border: 1px solid var(--st-line);
+    border-radius: var(--st-r);
     padding: var(--space-4) var(--space-5);
     display: flex;
     align-items: center;
@@ -46,16 +24,12 @@
     color: inherit;
     transition: border-color var(--dur-fast), background-color var(--dur-fast), transform var(--dur-fast);
 }
-.order-row:hover {
-    border-color: var(--border-strong);
-    background: var(--paper-soft);
-    transform: translateY(-1px);
-}
+.order-row:hover { border-color: var(--st-field); }
 .order-row:focus-visible { outline: 2px solid var(--spot); outline-offset: 2px; }
 .order-row-left { flex: 1; min-width: 0; }
 .order-id {
     font-size: 1rem;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--ink);
     margin-bottom: 2px;
 }
@@ -80,7 +54,7 @@
 }
 .order-total {
     font-size: 1rem;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--ink);
     white-space: nowrap;
 }
@@ -89,23 +63,27 @@
     flex-shrink: 0;
 }
 @media (max-width: 580px) {
-    .orders-container { padding: 0 var(--space-4); }
-    .orders-heading { font-size: 1.5rem; }
     .order-row { flex-direction: column; align-items: flex-start; }
     .order-row-right { width: 100%; justify-content: space-between; }
 }
 </style>
 
-<section class="orders-page">
-<div class="orders-container">
-    <h1 class="orders-heading"><?= t('orders.title') ?></h1>
+<section class="section orders-page">
+<div class="container">
+    <?php
+        $crumbs  = [[t('header.nav.home', false), '/'], [t('header.my_account', false), '/account'], [t('orders.title', false), null]];
+        $heading = t('orders.title', false);
+        $lead    = t('orders.subtitle', false);
+        require __DIR__ . '/../partials/page_head.php';
+    ?>
 
     <?php if (empty($orders)): ?>
-    <div class="orders-empty">
+    <div class="empty-state">
         <p><?= t('orders.empty') ?></p>
-        <a href="/shop" class="btn btn-primary"><?= t('orders.shop_now') ?></a>
+        <a href="/shop" class="btn btn-lg"><?= t('orders.shop_now') ?></a>
     </div>
     <?php else: ?>
+    <div class="orders-rows">
 
     <?php
     // Text tones are the 800-weight of each hue. The previous values (#facc15,
@@ -149,6 +127,7 @@
         </div>
     </a>
     <?php endforeach; ?>
+    </div>
 
     <?php endif; ?>
 </div>

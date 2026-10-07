@@ -1,87 +1,559 @@
 /* ============================================================
-   SHOP / ANIME — overrides in zine flavor.
-   Reuses .products-grid and .product-card definitions from
-   customer.css where compatible; this file adjusts the anime
-   shop's specific quirks (design-cost label, no-image
-   placeholder, empty state, header overrides).
+   ANIME COLLECTION — a manga splash page and collectible cards.
+   The one page on the site that goes dark: black ink, white
+   paper, the Studio red, speed lines and screentone. Loaded by
+   shop_anime.php only.
+
+   Type: Dela Gothic One, the heavy manga-poster face. It covers
+   Japanese (the decorative katakana) and Greek (the translated
+   title), so one face does both. Google serves only the glyphs a
+   page uses. Everything else stays in the site's Geologica.
+
+   Contrast on #0A0A0A: white 19.8:1, #C9C9C9 12.1:1, the red
+   #E0303A as large display type 4.5:1 (only ever large here).
    ============================================================ */
 
-.shop-header {
-    text-align: center;
-    margin-bottom: 40px;
+@import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap');
+
+body.theme-studio .anime-page {
+    --an-ink:   #0A0A0A;
+    --an-paper: #FFFFFF;
+    --an-soft:  #C9C9C9;
+    --an-red:   #E0303A;
+    --an-deep:  #B8202A;
+    --an-display: 'Dela Gothic One', 'Geologica', system-ui, sans-serif;
+
+    background: var(--an-ink);
+    color: var(--an-paper);
+    /* clip, not hidden: hidden makes this a scroll container, and the art
+       beside the cards could no longer stick to the window. */
+    overflow: clip;
 }
 
-.shop-header h1 {
-    font-family: var(--font-display);
-    font-size: clamp(2.4rem, 6vw, 3.6rem);
-    margin-bottom: 10px;
-    color: var(--ink);
-    letter-spacing: 0.02em;
-    
+/* ---- Splash ---------------------------------------------------------- */
+.an-splash {
+    position: relative;
+    isolation: isolate;
+    min-height: min(820px, calc(100svh - 86px));
+    display: flex;
+    align-items: center;
+    padding: 32px 0 88px;
+    overflow: hidden;
 }
 
-.shop-subtitle {
-    font-family: var(--font-type);
-    color: var(--ink-soft);
-    font-size: 1.05rem;
+/* Speed lines radiating from behind the character: two conic screens at
+   different spacings so the rays read as drawn, not generated. */
+.an-speedlines {
+    position: absolute;
+    z-index: -3;
+    left: 70%;
+    top: 52%;
+    width: 220vmax;
+    height: 220vmax;
+    transform: translate(-50%, -50%);
+    background:
+        repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.10) 0deg 0.7deg, transparent 0.7deg 4.3deg),
+        repeating-conic-gradient(from 2deg, rgba(255, 255, 255, 0.06) 0deg 1.6deg, transparent 1.6deg 9.1deg);
+    -webkit-mask: radial-gradient(circle, transparent 0 7%, #000 30%);
+            mask: radial-gradient(circle, transparent 0 7%, #000 30%);
+    animation: an-rays 240s linear infinite;
+}
+@keyframes an-rays { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+/* Screentone: a dot screen fading in from the left, the way manga shades. */
+.an-screentone {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.16) 1.3px, transparent 1.5px);
+    background-size: 10px 10px;
+    -webkit-mask: linear-gradient(100deg, #000 0%, rgba(0, 0, 0, 0.35) 38%, transparent 60%);
+            mask: linear-gradient(100deg, #000 0%, rgba(0, 0, 0, 0.35) 38%, transparent 60%);
 }
 
-/* Anime shop tile overrides (taller, fixed image height) */
-.product-card .product-image {
-    height: 200px;
-    aspect-ratio: auto;
+.an-vertical {
+    position: absolute;
+    z-index: -1;
+    top: 50%;
+    left: clamp(4px, 1.2vw, 20px);
+    transform: translateY(-50%);
+    writing-mode: vertical-rl;
+    font-family: var(--an-display);
+    font-size: min(24vh, 14vw);
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.16);
+    pointer-events: none;
+    user-select: none;
 }
 
-.no-image-placeholder {
-    color: var(--ink-muted);
-    font-family: var(--font-type);
+.an-splash-inner { position: relative; width: 100%; }
+
+.an-breadcrumb { margin-bottom: 28px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.55); }
+body.theme-studio .an-breadcrumb a { color: rgba(255, 255, 255, 0.72); text-decoration-color: rgba(255, 255, 255, 0.3); }
+body.theme-studio .an-breadcrumb a:hover { color: var(--an-paper); text-decoration-color: currentColor; }
+
+.an-splash-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: clamp(24px, 4vw, 72px);
+    align-items: center;
+}
+
+.an-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 26px; }
+
+.an-kicker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--an-soft);
+}
+.an-kicker-tag {
+    padding: 5px 10px 6px;
+    background: var(--an-red);
+    color: var(--an-paper);
+    font-family: var(--an-display);
     font-size: 0.9rem;
+    letter-spacing: 0.08em;
+    transform: skewX(-12deg);
 }
 
-.product-info { padding: 15px; }
-
-.design-cost {
-    font-family: var(--font-type);
-    font-size: 0.85rem;
-    color: var(--ink-soft);
-    margin-bottom: 12px;
+body.theme-studio .an-title {
+    margin: 0;
+    font-family: var(--an-display);
+    font-weight: 400;
+    /* Sized to its column: Dela Gothic is wide, and at 7vw "COLLECTION" ran
+       under the character. */
+    font-size: clamp(2.4rem, 4.6vw, 5.4rem);
+    line-height: 0.92;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: var(--an-paper);
+    /* The misregistered second plate of a cheap manga print. */
+    text-shadow: 0.06em 0.06em 0 var(--an-red);
+    text-wrap: balance;
 }
 
-.no-products {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 60px 20px;
+.an-lead { margin: 0; max-width: 36ch; font-size: clamp(1.05rem, 1.3vw, 1.3rem); line-height: 1.55; color: var(--an-soft); }
+
+/* A slanted slab of red, like a panel cut on the diagonal. */
+.an-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 30px;
+    background: var(--an-red);
+    color: var(--an-paper);
+    font-family: var(--an-display);
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+    transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.an-cta:hover { background: var(--an-paper); color: var(--an-ink); text-decoration: none; }
+.an-cta svg { transition: transform var(--dur) var(--ease); }
+.an-cta:hover svg { transform: translateY(3px); }
+
+/* The stage: red slab, two panels of artwork, the character, the SFX. */
+.an-stage {
+    position: relative;
+    aspect-ratio: 1 / 0.92;
+    width: 100%;
+    max-width: 760px;
+    justify-self: end;
 }
 
-/* Empty-state overrides for the anime shop */
-.empty-state {
-    background: var(--paper-2);
-    border: 2px dashed var(--border-strong);
-    padding: 40px;
-    max-width: 460px;
-    margin: 0 auto;
-    text-align: center;
+.an-slab {
+    position: absolute;
+    inset: 10% 2% 6% 14%;
+    background: var(--an-red);
+    clip-path: polygon(12% 0, 100% 0, 88% 100%, 0 100%);
+    animation: an-slam 0.7s cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
-.empty-icon {
-    font-size: 4rem;
+.an-panel {
+    position: absolute;
+    margin: 0;
+    overflow: hidden;
+    background: #111111;
+    border: 6px solid var(--an-paper);
+    box-shadow: 0 30px 50px -28px rgba(0, 0, 0, 0.95);
+}
+.an-panel img { width: 100%; height: 100%; object-fit: cover; display: block; filter: contrast(1.08); }
+.an-panel-1 { left: 0; top: 4%; width: 54%; height: 38%; transform: rotate(-5deg); animation: an-pop 0.7s 0.12s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+.an-panel-2 { right: 0; bottom: 2%; width: 50%; height: 34%; transform: rotate(4deg); animation: an-pop 0.7s 0.22s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+
+/* The character, cut out like a sticker: a white keyline from four stacked
+   hard shadows, then one soft shadow to lift it off the slab. */
+.an-hero-char {
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    bottom: 0;
+    height: 104%;
+    width: auto;
+    max-width: none;
+    transform: translateX(-46%);
+    filter:
+        drop-shadow(3px 0 0 var(--an-paper)) drop-shadow(-3px 0 0 var(--an-paper))
+        drop-shadow(0 3px 0 var(--an-paper)) drop-shadow(0 -3px 0 var(--an-paper))
+        drop-shadow(0 24px 30px rgba(0, 0, 0, 0.7));
+    animation: an-rise 0.9s 0.3s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.an-sfx {
+    position: absolute;
+    z-index: 3;
+    right: 1%;
+    top: 6%;
+    font-family: var(--an-display);
+    font-size: clamp(2.6rem, 5.4vw, 5.6rem);
+    line-height: 1;
+    color: var(--an-paper);
+    -webkit-text-stroke: 4px var(--an-ink);
+    paint-order: stroke fill;
+    text-shadow: 0.07em 0.07em 0 var(--an-red);
+    transform: rotate(-10deg);
+    animation: an-bang 0.5s 0.75s cubic-bezier(0.3, 1.6, 0.4, 1) both;
+}
+
+@keyframes an-slam { from { opacity: 0; transform: translateX(8%) skewX(-6deg); } to { opacity: 1; transform: none; } }
+@keyframes an-pop  { from { opacity: 0; transform: translateY(24px) rotate(0deg) scale(0.92); } }
+@keyframes an-rise { from { opacity: 0; transform: translateX(-46%) translateY(40px); } to { opacity: 1; transform: translateX(-46%); } }
+@keyframes an-bang { from { opacity: 0; transform: rotate(-10deg) scale(0.3); } to { opacity: 1; transform: rotate(-10deg) scale(1); } }
+
+/* ---- Collection ----------------------------------------------------- */
+.an-collection {
+    position: relative;
+    padding: 72px 0 104px;
+    border-top: 6px solid var(--an-red);
+    background:
+        radial-gradient(circle, rgba(255, 255, 255, 0.05) 1.2px, transparent 1.4px) 0 0 / 12px 12px,
+        var(--an-ink);
+}
+
+.an-collection-head { display: flex; align-items: baseline; gap: 18px; margin-bottom: 44px; }
+.an-collection-jp { font-family: var(--an-display); font-size: 1rem; color: var(--an-red); letter-spacing: 0.1em; }
+body.theme-studio .an-collection-title {
+    margin: 0;
+    font-family: var(--an-display);
+    font-weight: 400;
+    font-size: clamp(1.6rem, 2.8vw, 2.6rem);
+    letter-spacing: 0;
+    text-transform: uppercase;
+    color: var(--an-paper);
+}
+
+/* List on the left, art on the right while the collection is small. */
+.an-collection-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: clamp(32px, 4vw, 80px);
+    align-items: start;
+}
+
+.an-cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 48px 32px;
+}
+
+.an-art-stage {
+    position: sticky;
+    top: 120px;
+    aspect-ratio: 0.84;
+    width: 100%;
+    max-width: 640px;
+    margin-left: auto;
+}
+/* A red screentone moon behind the character. */
+.an-art-stage::before {
+    content: "";
+    position: absolute;
+    left: 10%;
+    top: 20%;
+    width: 72%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(224, 48, 58, 0.95) 1.7px, transparent 2px) 0 0 / 9px 9px;
+}
+.an-art-panel-1 { top: 0; right: 0; width: 74%; height: 38%; transform: rotate(4deg); }
+.an-art-panel-2 { left: 0; bottom: 6%; width: 60%; height: 34%; transform: rotate(-5deg); }
+.an-art-char {
+    position: absolute;
+    z-index: 2;
+    left: 22%;
+    bottom: 0;
+    height: 80%;
+    width: auto;
+    max-width: none;
+    filter:
+        drop-shadow(3px 0 0 var(--an-paper)) drop-shadow(-3px 0 0 var(--an-paper))
+        drop-shadow(0 3px 0 var(--an-paper)) drop-shadow(0 -3px 0 var(--an-paper))
+        drop-shadow(0 24px 30px rgba(0, 0, 0, 0.7));
+}
+/* ゴゴゴ — the manga sound of looming menace, set down the right edge. */
+.an-art-sfx {
+    position: absolute;
+    z-index: 3;
+    right: 0;
+    bottom: 12%;
+    writing-mode: vertical-rl;
+    font-family: var(--an-display);
+    font-size: clamp(2.6rem, 4.4vw, 4.6rem);
+    line-height: 1;
+    letter-spacing: -0.06em;
+    color: var(--an-red);
+    -webkit-text-stroke: 3px var(--an-ink);
+    paint-order: stroke fill;
+    text-shadow: 0.06em 0.06em 0 var(--an-paper);
+    transform: rotate(6deg);
+}
+
+.an-card-wrap { display: flex; flex-direction: column; gap: 16px; perspective: 1100px; }
+
+/* The card. --rx/--ry tilt it, --mx/--my place the foil and the glare. */
+.an-card {
+    --mx: 50%;
+    --my: 50%;
+    --rx: 0deg;
+    --ry: 0deg;
+    position: relative;
+    transform: rotateX(var(--rx)) rotateY(var(--ry));
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.an-card.is-live { transition: transform 0.08s linear; }
+
+.an-card-flip {
+    position: relative;
+    display: grid;
+    transform-style: preserve-3d;
+    transition: transform 0.7s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+.an-card.is-flipped .an-card-flip { transform: rotateY(180deg); }
+
+.an-card-face {
+    grid-area: 1 / 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 12px 14px;
+    background: #111111;
+    border-radius: 14px;
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+        inset 0 0 0 5px #111111,
+        inset 0 0 0 6px rgba(255, 255, 255, 0.35),
+        0 34px 60px -30px rgba(0, 0, 0, 1);
+    color: var(--an-paper);
+    text-decoration: none;
+    overflow: hidden;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+.an-card-face:hover { color: var(--an-paper); text-decoration: none; }
+.an-card-back { transform: rotateY(180deg); }
+
+/* Number and label on the left; the heart takes the right-hand corner. */
+.an-card-top { display: flex; justify-content: flex-start; gap: 10px; align-items: center; min-height: 26px; padding: 2px 2px 0; }
+.an-card-no {
+    padding: 3px 9px 4px;
+    background: var(--an-red);
+    font-family: var(--an-display);
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    transform: skewX(-12deg);
+}
+.an-card-jp { font-family: var(--an-display); font-size: 0.8rem; letter-spacing: 0.2em; color: rgba(255, 255, 255, 0.5); }
+
+.an-card-art {
+    position: relative;
     display: block;
-    margin-bottom: 15px;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    background:
+        radial-gradient(circle, rgba(10, 10, 10, 0.07) 1.1px, transparent 1.3px) 0 0 / 8px 8px,
+        linear-gradient(160deg, #FFFFFF, #E9E9E9);
+}
+.an-card-garment { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.an-card-print { position: absolute; transform: translate(-50%, -50%); height: auto; z-index: 1; pointer-events: none; }
+.an-card-missing { position: absolute; inset: 0; display: grid; place-items: center; color: #5F5E59; font-size: 0.8rem; }
+
+.an-card-plate { display: flex; flex-direction: column; gap: 4px; padding: 4px 4px 0; }
+.an-card-name {
+    font-family: var(--an-display);
+    font-size: 1.25rem;
+    line-height: 1.1;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.an-card-price { font-size: 0.9rem; color: var(--an-soft); }
+
+/* Holographic foil: a rainbow screen over the whole card, placed by the
+   pointer, and a white glare where the light hits. Screen blending leaves
+   the white art almost untouched and lights up the black frame. */
+.an-card-foil,
+.an-card-glare {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+}
+.an-card-foil {
+    background: linear-gradient(
+        115deg,
+        transparent 20%,
+        rgba(255, 0, 90, 0.55) 32%,
+        rgba(255, 210, 0, 0.5) 42%,
+        rgba(0, 255, 170, 0.5) 52%,
+        rgba(0, 170, 255, 0.55) 62%,
+        rgba(190, 0, 255, 0.5) 72%,
+        transparent 84%
+    );
+    background-size: 260% 260%;
+    background-position: var(--mx) var(--my);
+    mix-blend-mode: screen;
+}
+.an-card-glare {
+    background: radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, 0.45), transparent 42%);
+    mix-blend-mode: overlay;
+}
+.an-card.is-live .an-card-foil { opacity: 0.5; }
+.an-card.is-live .an-card-glare { opacity: 1; }
+
+/* Round heart, as everywhere else on the site. */
+.anime-page .fav-btn {
+    top: 14px;
+    right: 14px;
+    z-index: 4;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 0;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--an-ink);
+    transform: translateZ(30px);
+}
+.anime-page .fav-btn:hover { color: var(--an-deep); background: #FFFFFF; }
+.anime-page .fav-btn.is-favorited { color: var(--an-red); }
+.anime-page .fav-btn:focus-visible { outline: 2px solid var(--an-paper); outline-offset: 2px; }
+
+.an-card-actions { display: flex; gap: 10px; }
+.an-view {
+    flex: 1;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 18px;
+    background: var(--an-paper);
+    color: var(--an-ink);
+    font-family: var(--an-display);
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.an-view:hover { background: var(--an-red); color: var(--an-paper); text-decoration: none; }
+/* Icon-only square beside "View Design"; its label is for screen readers
+   and the tooltip. */
+.an-flip {
+    flex: 0 0 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    min-height: 48px;
+    padding: 0;
+    background: transparent;
+    color: var(--an-paper);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    font-family: var(--font);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.an-flip:hover { border-color: var(--an-paper); background: rgba(255, 255, 255, 0.06); }
+.an-flip[aria-pressed="true"] svg { transform: rotate(180deg); }
+.an-flip svg { transition: transform 0.4s ease; }
+.an-view:focus-visible,
+.an-flip:focus-visible,
+.an-cta:focus-visible,
+.an-card-face:focus-visible { outline: 2px solid var(--an-paper); outline-offset: 3px; }
+
+/* ---- Empty ------------------------------------------------------------ */
+.an-empty {
+    max-width: 520px;
+    padding: 48px 32px;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    text-align: left;
+}
+.an-empty-jp { display: block; font-family: var(--an-display); font-size: 3rem; line-height: 1; color: var(--an-red); margin-bottom: 16px; }
+body.theme-studio .an-empty h3 { margin: 0 0 10px; font-family: var(--an-display); font-weight: 400; font-size: 1.6rem; text-transform: uppercase; color: var(--an-paper); }
+.an-empty p { margin: 0; color: var(--an-soft); }
+
+/* ---- Tablets and phones -------------------------------------------- */
+@media (max-width: 900px) {
+    .an-splash { min-height: 0; padding: 20px 0 56px; }
+    .an-splash-grid { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+    .an-stage { justify-self: center; max-width: 520px; }
+    .an-vertical { font-size: 34vw; top: 34%; opacity: 0.8; }
+    .an-speedlines { left: 50%; top: 70%; }
+    .an-collection-grid { grid-template-columns: minmax(0, 1fr); }
+    .an-collection-art { display: none; }
+    .an-cards { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 40px 20px; }
+    .an-collection { padding: 56px 0 80px; }
 }
 
-.empty-state h3 {
-    font-family: var(--font-display);
-    font-size: 1.7rem;
-    margin-bottom: 10px;
-    color: var(--ink);
+@media (max-width: 480px) {
+    .an-cards { grid-template-columns: minmax(0, 1fr); }
+    .an-panel { border-width: 4px; }
+    .an-sfx { -webkit-text-stroke: 3px var(--an-ink); }
 }
 
-.empty-state p {
-    font-family: var(--font-type);
-    color: var(--ink-soft);
-    line-height: 1.55;
-}
+/* ---- Scroll entrance for the collection -------------------------------
+   The same moves as the splash, played when the art and each card scroll
+   into view. The script adds .js-reveal to the page (so without it nothing
+   is ever held back) and .is-in to each piece as it appears; until then its
+   animation waits, paused on its first frame. */
+.an-art-stage::before { animation: an-moon 0.8s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+.an-art-panel-1       { animation: an-pop 0.7s 0.1s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+.an-art-panel-2       { animation: an-pop 0.7s 0.2s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+.an-art-char          { animation: an-rise-up 0.9s 0.25s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+.an-art-sfx           { animation: an-bang-r 0.5s 0.7s cubic-bezier(0.3, 1.6, 0.4, 1) both; }
+.an-card-wrap         { animation: an-card-in 0.6s cubic-bezier(0.2, 0.9, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 90ms); }
 
-@media (max-width: 600px) {
-    .shop-header h1 { font-size: 2rem; }
+.anime-page.js-reveal .an-art-stage:not(.is-in)::before,
+.anime-page.js-reveal .an-art-stage:not(.is-in) > *,
+.anime-page.js-reveal .an-card-wrap:not(.is-in) { animation-play-state: paused; }
+
+@keyframes an-moon    { from { opacity: 0; transform: scale(0.4); } }
+@keyframes an-rise-up { from { opacity: 0; transform: translateY(48px); } }
+@keyframes an-bang-r  { from { opacity: 0; transform: rotate(6deg) scale(0.3); } to { opacity: 1; transform: rotate(6deg) scale(1); } }
+@keyframes an-card-in { from { opacity: 0; transform: translateY(36px); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .an-speedlines, .an-slab, .an-panel-1, .an-panel-2, .an-hero-char, .an-sfx,
+    .an-art-stage::before, .an-art-panel-1, .an-art-panel-2, .an-art-char, .an-art-sfx, .an-card-wrap { animation: none; }
+    .an-card, .an-card-flip, .an-card-foil, .an-card-glare, .an-cta svg, .an-flip svg { transition: none; }
 }

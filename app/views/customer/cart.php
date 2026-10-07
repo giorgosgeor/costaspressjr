@@ -48,7 +48,12 @@ function getCartProductColorFilter($hex) {
 
 <section class="section cart-section">
     <div class="container">
-        <h1><?= t('cart.title') ?></h1>
+        <?php
+            $crumbs  = [[t('header.nav.home', false), '/'], [t('cart.title', false), null]];
+            $heading = t('cart.title', false);
+            $lead    = t('cart.subtitle', false);
+            require __DIR__ . '/../partials/page_head.php';
+        ?>
 
         <?php if (!empty($cartItems)): ?>
         <div class="cart-container">

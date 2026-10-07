@@ -8,13 +8,16 @@
 
 <section class="section design-section">
     <div class="container">
-        <nav class="breadcrumb">
-            <a href="/"><?= t('header.nav.home') ?></a> &gt;
-            <a href="/shop"><?= t('header.nav.shop') ?></a> &gt;
-            <a href="/shop/premade"><?= t('view_design.breadcrumb.premade') ?></a> &gt;
-            <a href="/shop/premade/<?= htmlspecialchars($design['section_slug']) ?>"><?= htmlspecialchars($design['section_name']) ?></a> &gt;
-            <span><?= htmlspecialchars($design['name']) ?></span>
-        </nav>
+        <?php
+            $crumbs = [
+                [t('header.nav.home', false), '/'],
+                [t('header.nav.shop', false), '/shop'],
+                [t('view_design.breadcrumb.premade', false), '/shop/premade'],
+                [(string)$design['section_name'], '/shop/premade/' . $design['section_slug']],
+                [(string)$design['name'], null],
+            ];
+            require __DIR__ . '/../partials/breadcrumb.php';
+        ?>
 
         <div class="design-page">
             <!-- Product Mockup Preview Column -->

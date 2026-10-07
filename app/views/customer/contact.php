@@ -3,7 +3,12 @@
 
 <section class="section page-section">
     <div class="container">
-        <h1 class="page-title"><?= t('contact.title') ?></h1>
+        <?php
+            $crumbs  = [[t('header.nav.home', false), '/'], [t('header.nav.contact', false), null]];
+            $heading = t('contact.title', false);
+            $lead    = t('contact.lead', false);
+            require __DIR__ . '/../partials/page_head.php';
+        ?>
 
         <?php if (!empty($_SESSION['flash_success'])): ?>
             <div class="alert alert-success"><?= htmlspecialchars($_SESSION['flash_success']) ?></div>
@@ -17,7 +22,6 @@
         <div class="contact-grid">
             <div class="contact-info">
                 <h2><?= t('contact.get_in_touch') ?></h2>
-                <p><?= t('contact.lead') ?></p>
 
                 <div class="contact-details">
                     <div class="contact-item">

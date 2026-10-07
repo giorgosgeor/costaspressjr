@@ -420,36 +420,36 @@
             mode: 'payment',
             amount: totalCents(),
             currency: 'eur',
-            fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400;600;700&display=swap' }],
+            fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=Geologica:wght@400;500;600&display=swap' }],
             appearance: {
                 theme: 'flat',
                 variables: {
-                    colorPrimary: '#16130F',
-                    colorBackground: '#FBF9F3',
-                    colorText: '#16130F',
-                    colorTextSecondary: '#4A4337',
-                    colorTextPlaceholder: '#6B6254',
+                    colorPrimary: '#0D0D0D',
+                    colorBackground: '#FFFFFF',
+                    colorText: '#0D0D0D',
+                    colorTextSecondary: '#5F5E59',
+                    colorTextPlaceholder: '#6F6E68',
                     colorDanger: '#B3271B',
                     colorSuccess: '#1F7A46',
-                    fontFamily: '"Sofia Sans", system-ui, sans-serif',
+                    fontFamily: '"Geologica", system-ui, sans-serif',
                     fontSizeBase: '16px',
                     fontWeightMedium: '600',
-                    borderRadius: '2px',
+                    borderRadius: '0px',
                     spacingUnit: '4px',
                     gridRowSpacing: '16px',
                     gridColumnSpacing: '16px',
                     focusOutline: 'none',
-                    focusBoxShadow: '2px 2px 0 #16130F'
+                    focusBoxShadow: '0 0 0 1px #0D0D0D'
                 },
                 rules: {
-                    '.Label': { fontWeight: '700', color: '#16130F', marginBottom: '6px' },
-                    '.Input': { border: '1px solid #8C8271', boxShadow: 'none', padding: '12px 14px' },
-                    '.Input:hover': { border: '1px solid #4A4337' },
-                    '.Input:focus': { border: '1px solid #16130F', boxShadow: '2px 2px 0 #16130F' },
+                    '.Label': { fontWeight: '500', color: '#0D0D0D', marginBottom: '6px' },
+                    '.Input': { border: '1px solid #8A8983', boxShadow: 'none', padding: '12px 14px' },
+                    '.Input:hover': { border: '1px solid #5F5E59' },
+                    '.Input:focus': { border: '1px solid #0D0D0D', boxShadow: '0 0 0 1px #0D0D0D' },
                     '.Input--invalid': { border: '1px solid #B3271B', boxShadow: 'none' },
                     '.Error': { fontWeight: '600' },
-                    '.AccordionItem': { border: '1px solid #8C8271', boxShadow: 'none', backgroundColor: '#FBF9F3' },
-                    '.AccordionItem--selected': { border: '1px solid #16130F', boxShadow: '3px 3px 0 #16130F' }
+                    '.AccordionItem': { border: '1px solid #8A8983', boxShadow: 'none', backgroundColor: '#FFFFFF' },
+                    '.AccordionItem--selected': { border: '1px solid #0D0D0D', boxShadow: '0 0 0 1px #0D0D0D' }
                 }
             }
         });

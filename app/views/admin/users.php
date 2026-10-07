@@ -23,7 +23,7 @@
                 <td><?= htmlspecialchars($user['id']) ?></td>
                 <td><?= htmlspecialchars($user['username']) ?></td>
                 <td><?= htmlspecialchars($user['email']) ?></td>
-                <td><?= htmlspecialchars($user['phone']) ?></td>
+                <td><?= htmlspecialchars((string)($user['phone'] ?? '')) ?></td>
                 <td><?= htmlspecialchars($user['role']) ?></td>
                 <td><?= htmlspecialchars($user['created_at']) ?></td>
             </tr>

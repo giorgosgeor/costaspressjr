@@ -3,16 +3,12 @@
 
 <section class="section shop-section">
     <div class="container">
-        <nav class="breadcrumb">
-            <a href="/"><?= t('header.nav.home') ?></a> &gt;
-            <a href="/shop"><?= t('header.nav.shop') ?></a> &gt;
-            <span><?= t('shop.premade.breadcrumb') ?></span>
-        </nav>
-
-        <div class="shop-header">
-            <h1><?= t('shop.premade.title') ?></h1>
-            <p class="shop-subtitle"><?= t('shop.premade.subtitle') ?></p>
-        </div>
+        <?php
+            $crumbs  = [[t('header.nav.home', false), '/'], [t('header.nav.shop', false), '/shop'], [t('shop.premade.breadcrumb', false), null]];
+            $heading = t('shop.premade.title', false);
+            $lead    = t('shop.premade.subtitle', false);
+            require __DIR__ . '/../partials/page_head.php';
+        ?>
 
         <!-- Category Sections Grid -->
         <div class="categories-grid shop-categories-grid">

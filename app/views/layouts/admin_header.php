@@ -9,14 +9,16 @@
     <title><?= htmlspecialchars($title ?? 'Admin Panel') ?> — Costaspressjr</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sofia+Sans:wght@400..800&family=Sofia+Sans+Extra+Condensed:wght@600..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/style.css')) ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/admin.css')) ?>">
+    <?php // The same Studio look as the shop (see its ADMIN section). ?>
+    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/studio.css')) ?>">
     <?php if (!empty($extraCss)): foreach ($extraCss as $css): ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url($css)) ?>">
     <?php endforeach; endif; ?>
 </head>
-<body>
+<body class="theme-studio admin-body">
     <?php
         $currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         function adminNavActive(string $path, string $current): string {
@@ -29,7 +31,7 @@
     <nav class="admin-nav">
         <a href="/admin" class="admin-nav-brand">
             <img src="/images/logo.png" alt="Costaspressjr" style="height:38px; width:auto; object-fit:contain;">
-            <span style="font-size:0.75rem; opacity:0.5; margin-left:6px;">Admin</span>
+            <span class="admin-nav-tag">Admin</span>
         </a>
         <a href="/admin" class="<?= adminNavActive('/admin', $currentPath) ?>">Dashboard</a>
         <a href="/admin/users" class="<?= adminNavActive('/admin/users', $currentPath) ?>">Users</a>

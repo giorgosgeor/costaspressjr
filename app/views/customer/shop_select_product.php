@@ -3,15 +3,12 @@
 
 <section class="section select-product-section">
     <div class="container">
-        <nav class="breadcrumb">
-            <a href="/"><?= t('header.nav.home') ?></a> &gt;
-            <a href="/shop"><?= t('header.nav.shop') ?></a> &gt;
-            <span><?= t('shop.select.breadcrumb') ?></span>
-        </nav>
-        <div class="shop-header">
-            <h1><?= t('shop.select.title') ?></h1>
-
-        </div>
+        <?php
+            $crumbs  = [[t('header.nav.home', false), '/'], [t('header.nav.shop', false), '/shop'], [t('shop.select.breadcrumb', false), null]];
+            $heading = t('shop.select.title', false);
+            $lead    = t('shop.select.subtitle', false);
+            require __DIR__ . '/../partials/page_head.php';
+        ?>
         <?php if (empty($products)): ?>
             <div class="no-products-message">
                 <p><?= t('shop.select.no_products') ?></p>

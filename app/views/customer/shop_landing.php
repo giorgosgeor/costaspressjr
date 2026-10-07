@@ -3,14 +3,16 @@
 
 <section class="section shop-landing-section">
     <div class="container">
-        <div class="shop-header">
-            <h1><?= t('shop.landing.title') ?></h1>
-            <p class="shop-subtitle"><?= t('shop.landing.subtitle') ?></p>
-        </div>
+        <?php
+            $crumbs  = [[t('header.nav.home', false), '/'], [t('shop.landing.title', false), null]];
+            $heading = t('shop.landing.title', false);
+            $lead    = t('shop.landing.subtitle', false);
+            require __DIR__ . '/../partials/page_head.php';
+        ?>
 
         <div class="shop-options-grid">
             <a href="/shop/premade" class="shop-option-card">
-                <div class="shop-option-icon"></div>
+                <span class="shop-option-num" aria-hidden="true">01</span>
                 <h2><?= t('shop.landing.premade.title') ?></h2>
                 <p><?= t('shop.landing.premade.lead') ?></p>
                 <ul class="shop-option-features">
@@ -23,7 +25,7 @@
             </a>
 
             <a href="/shop/select_product" class="shop-option-card">
-                <div class="shop-option-icon"></div>
+                <span class="shop-option-num" aria-hidden="true">02</span>
                 <h2><?= t('shop.landing.custom.title') ?></h2>
                 <p><?= t('shop.landing.custom.lead') ?></p>
                 <ul class="shop-option-features">

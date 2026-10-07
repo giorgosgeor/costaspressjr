@@ -1,30 +1,81 @@
-<?php $title = t('shop.anime.title', false); ?>
-<?php require __DIR__ . '/../layouts/customer_header.php'; ?>
+<?php
+$title    = t('shop.anime.title', false);
+$extraCss = ['/css/shop_anime.css'];
+require __DIR__ . '/../layouts/customer_header.php';
 
-<section class="section shop-section anime-page">
-    <div class="container">
-        <nav class="breadcrumb">
-            <a href="/"><?= t('header.nav.home') ?></a> &gt;
-            <a href="/shop"><?= t('header.nav.shop') ?></a> &gt;
-            <a href="/shop/premade"><?= t('shop.premade.breadcrumb') ?></a> &gt;
-            <span><?= t('shop.anime.title') ?></span>
-        </nav>
+$designCount = count($designs ?? []);
+?>
 
-        <!-- Hero Banner -->
-        <div class="anime-hero-banner">
-            <img src="/images/anime/clean/anime4.webp" class="anime-bg-left"  alt="" aria-hidden="true">
-            <img src="/images/anime/clean/anime6.webp" class="anime-bg-right" alt="" aria-hidden="true">
-            <div class="anime-banner-overlay"></div>
-            <div class="anime-banner-text">
-                <h1><?= t('shop.anime.title') ?></h1>
-                <p><?= t('shop.anime.subtitle') ?></p>
+<div class="anime-page">
+
+    <!-- ============================================================
+         SPLASH — a manga splash page: speed lines, screentone, the
+         collection's own character over a red slab, and panels of
+         the artwork behind her. Everything here is decorative except
+         the copy on the left.
+         ============================================================ -->
+    <section class="an-splash" aria-labelledby="animeTitle">
+        <div class="an-speedlines" aria-hidden="true"></div>
+        <div class="an-screentone" aria-hidden="true"></div>
+        <span class="an-vertical" lang="ja" aria-hidden="true">アニメ</span>
+
+        <div class="container an-splash-inner">
+            <nav class="breadcrumb an-breadcrumb">
+                <a href="/"><?= t('header.nav.home') ?></a> /
+                <a href="/shop"><?= t('header.nav.shop') ?></a> /
+                <a href="/shop/premade"><?= t('shop.premade.breadcrumb') ?></a> /
+                <span><?= t('shop.anime.title') ?></span>
+            </nav>
+
+            <div class="an-splash-grid">
+                <div class="an-copy">
+                    <p class="an-kicker">
+                        <span class="an-kicker-tag" lang="ja" aria-hidden="true">コレクション</span>
+                        <span><?= t('shop.premade.breadcrumb') ?></span>
+                    </p>
+                    <h1 id="animeTitle" class="an-title"><?= t('shop.anime.title') ?></h1>
+                    <p class="an-lead"><?= t('shop.anime.subtitle') ?></p>
+                    <?php if ($designCount): ?>
+                    <a href="#collection" class="an-cta">
+                        <span><?= t('shop.anime.browse') ?></span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                    </a>
+                    <?php endif; ?>
+                </div>
+
+                <div class="an-stage" aria-hidden="true">
+                    <div class="an-slab"></div>
+                    <figure class="an-panel an-panel-1"><img src="/images/anime/clean/anime4.webp" alt=""></figure>
+                    <figure class="an-panel an-panel-2"><img src="/images/anime/clean/anime6.webp" alt=""></figure>
+                    <?php // The collection's own character, cut out like a sticker:
+                          // a trimmed copy of designs/design_1.png (its sheet had a
+                          // border line down the right edge), kept for this page so
+                          // it stays if the design itself is ever removed. ?>
+                    <img class="an-hero-char" src="/images/anime/hero-character.webp" alt="" width="829" height="1146" onerror="this.remove()">
+                    <span class="an-sfx" lang="ja">ドン!</span>
+                </div>
             </div>
         </div>
+    </section>
 
-        <!-- Products Grid -->
-        <div class="products-grid" id="products-grid">
-            <?php if (!empty($designs)): ?>
-                <?php foreach ($designs as $design):
+    <!-- ============================================================
+         COLLECTION — every design as a collectible card: a number,
+         the print on its garment, a name plate. Holographic foil and
+         a tilt follow the pointer; the button flips to the back print.
+         ============================================================ -->
+    <section class="an-collection" id="collection" aria-labelledby="animeCollectionTitle">
+        <div class="container an-collection-grid">
+        <div class="an-collection-main">
+            <div class="an-collection-head">
+                <span class="an-collection-jp" lang="ja" aria-hidden="true">カード</span>
+                <h2 id="animeCollectionTitle" class="an-collection-title">
+                    <?= $designCount === 1 ? t('shop.anime.count_one') : I18n::t('shop.anime.count', ['count' => $designCount]) ?>
+                </h2>
+            </div>
+
+            <?php if ($designCount): ?>
+            <ol class="an-cards">
+                <?php foreach ($designs as $i => $design):
                     // Design overlay position formula:
                     // Design area: left=50%, top=55%, width=50%, height=75% of square container
                     // x/y are offsets as % of half-area; size is % of area width
@@ -51,399 +102,178 @@
                         Pricing::categoryFor('', (string)($design['product_name'] ?? '')),
                         1
                     ) + $design['price'];
+                    $isFav  = in_array((int)$design['id'], $favoriteDesignIds ?? [], true);
+                    $name   = htmlspecialchars($design['name']);
+                    $href   = '/shop/design/' . (int)$design['id'];
+                    $number = sprintf('%03d', $i + 1);
                 ?>
-                <div class="flip-card">
-                    <?php $isFav = in_array((int)$design['id'], $favoriteDesignIds ?? [], true); ?>
-                    <button type="button" class="fav-btn<?= $isFav ? ' is-favorited' : '' ?>"
-                            data-kind="design" data-id="<?= (int)$design['id'] ?>"
-                            aria-pressed="<?= $isFav ? 'true' : 'false' ?>"
-                            data-label-on="<?= t('favorites.remove') ?>"
-                            data-label-off="<?= t('favorites.add') ?>"
-                            aria-label="<?= $isFav ? t('favorites.remove') : t('favorites.add') ?>"
-                            title="<?= $isFav ? t('favorites.remove') : t('favorites.add') ?>">
-                        <svg width="18" height="18" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1z"/></svg>
-                    </button>
-                    <a href="/shop/design/<?= $design['id'] ?>" class="flip-card-inner" title="<?= htmlspecialchars($design['name']) ?>">
-                        <!-- Front face -->
-                        <div class="flip-face flip-front">
-                            <?php if (!empty($design['product_image_path'])): ?>
-                                <img src="/<?= htmlspecialchars($design['product_image_path']) ?>"
-                                     alt="<?= htmlspecialchars($design['name']) ?>"
-                                     class="face-product-img" loading="lazy">
-                            <?php else: ?>
-                                <div class="face-no-product"><?= t('shop.anime.no_product_image') ?></div>
-                            <?php endif; ?>
-                            <?php if (!empty($design['image_path'])): ?>
-                                <img src="/<?= htmlspecialchars($design['image_path']) ?>"
-                                     alt=""
-                                     class="face-design-overlay"
-                                     style="left:<?= $frontLeft ?>%;top:<?= $frontTop ?>%;width:<?= $frontW ?>%;">
+                <li class="an-card-wrap">
+                    <article class="an-card" data-card>
+                        <div class="an-card-flip">
+                            <a href="<?= $href ?>" class="an-card-face an-card-front" aria-label="<?= $name ?>">
+                                <span class="an-card-top" aria-hidden="true">
+                                    <span class="an-card-no">No.<?= $number ?></span>
+                                    <span class="an-card-jp" lang="ja">アニメ</span>
+                                </span>
+                                <span class="an-card-art">
+                                    <?php if (!empty($design['product_image_path'])): ?>
+                                    <img src="/<?= htmlspecialchars($design['product_image_path']) ?>" alt="" class="an-card-garment" loading="lazy">
+                                    <?php else: ?>
+                                    <span class="an-card-missing"><?= t('shop.anime.no_product_image') ?></span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($design['image_path'])): ?>
+                                    <img src="/<?= htmlspecialchars($design['image_path']) ?>" alt="" class="an-card-print"
+                                         style="left:<?= $frontLeft ?>%;top:<?= $frontTop ?>%;width:<?= $frontW ?>%;">
+                                    <?php endif; ?>
+                                </span>
+                                <span class="an-card-plate">
+                                    <span class="an-card-name"><?= $name ?></span>
+                                    <span class="an-card-price"><?= I18n::t('shop.anime.from_price', ['price' => number_format($fromPrice, 2)]) ?></span>
+                                </span>
+                                <span class="an-card-foil" aria-hidden="true"></span>
+                                <span class="an-card-glare" aria-hidden="true"></span>
+                            </a>
+                            <?php if ($hasBack): ?>
+                            <a href="<?= $href ?>" class="an-card-face an-card-back" tabindex="-1" aria-hidden="true" aria-label="<?= $name ?>">
+                                <span class="an-card-top">
+                                    <span class="an-card-no">No.<?= $number ?></span>
+                                    <span class="an-card-jp" lang="ja">うら</span>
+                                </span>
+                                <span class="an-card-art">
+                                    <img src="/<?= htmlspecialchars($design['product_back_image_path']) ?>" alt="" class="an-card-garment" loading="lazy">
+                                    <img src="/<?= htmlspecialchars($design['back_image_path']) ?>" alt="" class="an-card-print"
+                                         style="left:<?= $backLeft ?>%;top:<?= $backTop ?>%;width:<?= $backW ?>%;">
+                                </span>
+                                <span class="an-card-plate">
+                                    <span class="an-card-name"><?= $name ?></span>
+                                    <span class="an-card-price"><?= I18n::t('shop.anime.from_price', ['price' => number_format($fromPrice, 2)]) ?></span>
+                                </span>
+                                <span class="an-card-foil"></span>
+                                <span class="an-card-glare"></span>
+                            </a>
                             <?php endif; ?>
                         </div>
-                        <!-- Back face (only if both back images exist) -->
+                        <button type="button" class="fav-btn<?= $isFav ? ' is-favorited' : '' ?>"
+                                data-kind="design" data-id="<?= (int)$design['id'] ?>"
+                                aria-pressed="<?= $isFav ? 'true' : 'false' ?>"
+                                data-label-on="<?= t('favorites.remove') ?>"
+                                data-label-off="<?= t('favorites.add') ?>"
+                                aria-label="<?= $isFav ? t('favorites.remove') : t('favorites.add') ?>"
+                                title="<?= $isFav ? t('favorites.remove') : t('favorites.add') ?>">
+                            <svg width="18" height="18" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1z"/></svg>
+                        </button>
+                    </article>
+                    <div class="an-card-actions">
+                        <a href="<?= $href ?>" class="an-view"><?= t('shop.anime.view_design') ?></a>
                         <?php if ($hasBack): ?>
-                        <div class="flip-face flip-back">
-                            <img src="/<?= htmlspecialchars($design['product_back_image_path']) ?>"
-                                 alt="<?= htmlspecialchars($design['name']) ?> back"
-                                 class="face-product-img" loading="lazy">
-                            <img src="/<?= htmlspecialchars($design['back_image_path']) ?>"
-                                 alt=""
-                                 class="face-design-overlay"
-                                 style="left:<?= $backLeft ?>%;top:<?= $backTop ?>%;width:<?= $backW ?>%;">
-                        </div>
-                        <?php else: ?>
-                        <!-- Mirror front on back if no back design -->
-                        <div class="flip-face flip-back flip-back-mirror">
-                            <?php if (!empty($design['product_image_path'])): ?>
-                                <img src="/<?= htmlspecialchars($design['product_image_path']) ?>"
-                                     alt="" class="face-product-img" loading="lazy">
-                            <?php endif; ?>
-                            <?php if (!empty($design['image_path'])): ?>
-                                <img src="/<?= htmlspecialchars($design['image_path']) ?>"
-                                     alt=""
-                                     class="face-design-overlay"
-                                     style="left:<?= $frontLeft ?>%;top:<?= $frontTop ?>%;width:<?= $frontW ?>%;">
-                            <?php endif; ?>
-                            <div class="front-label"><?= t('shop.anime.front_view') ?></div>
-                        </div>
+                        <button type="button" class="an-flip" aria-pressed="false"
+                                title="<?= t('shop.anime.flip_back') ?>"
+                                data-label-back="<?= t('shop.anime.flip_back') ?>"
+                                data-label-front="<?= t('shop.anime.flip_front') ?>">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"/></svg>
+                            <span class="visually-hidden"><?= t('shop.anime.flip_back') ?></span>
+                        </button>
                         <?php endif; ?>
-                    </a>
-                    <div class="card-info">
-                        <h3 class="card-name"><?= htmlspecialchars($design['name']) ?></h3>
-                        <p class="card-price"><?= I18n::t('shop.anime.from_price', ['price' => number_format($fromPrice, 2)]) ?></p>
-                        <a href="/shop/design/<?= $design['id'] ?>" class="btn btn-sm card-btn"><?= t('shop.anime.view_design') ?></a>
                     </div>
-                </div>
+                </li>
                 <?php endforeach; ?>
+            </ol>
             <?php else: ?>
-                <div class="no-products">
-                    <div class="empty-state">
-                        <h3><?= t('shop.anime.coming_title') ?></h3>
-                        <p><?= nl2br(t('shop.anime.coming_text')) ?></p>
-                    </div>
-                </div>
+            <div class="an-empty">
+                <span class="an-empty-jp" lang="ja" aria-hidden="true">近日</span>
+                <h3><?= t('shop.anime.coming_title') ?></h3>
+                <p><?= nl2br(t('shop.anime.coming_text')) ?></p>
+            </div>
             <?php endif; ?>
         </div>
-    </div>
-</section>
 
-<style>
-/* ============================================================
-   ANIME COLLECTION — printed on blue.
+        <?php // Art beside the list while the collection is small: more of the
+              // shop's artwork popping off the page like the splash, pinned in
+              // view as the cards scroll. Decorative only; hidden on phones,
+              // where the splash already carries the art. ?>
+        <div class="an-collection-art" aria-hidden="true">
+            <div class="an-art-stage">
+                <figure class="an-panel an-art-panel-1"><img src="/images/anime/section-cover.jpg" alt="" loading="lazy"></figure>
+                <figure class="an-panel an-art-panel-2"><img src="/images/anime/clean/anime5.webp" alt="" loading="lazy"></figure>
+                <img class="an-art-char" src="/images/anime/sticker-flowers.webp" alt="" width="534" height="707" loading="lazy" onerror="this.remove()">
+                <span class="an-art-sfx" lang="ja">ゴゴゴ</span>
+            </div>
+        </div>
+        </div>
+    </section>
+</div>
 
-   The blue ground is the shop owner's requirement, so the whole
-   page is treated as a second press run: one ink (--ink-blue)
-   with paper and ochre laid over it, instead of the four-stop
-   navy/purple gradients, 20px radii and glowing box-shadows this
-   block used to carry — none of which appear anywhere else on
-   the site.
+<script>
+// Cards: a tilt and a moving foil highlight that follow the pointer, and a
+// button that flips the card to its back print. The tilt is skipped for
+// touch screens and for a reduced-motion preference; the flip always works.
+(function () {
+    var cards = document.querySelectorAll('[data-card]');
+    var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var hover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-   Contrast rule for this surface, measured: paper 12.8:1 and
-   ochre 6.6:1 are fine, but VERMILLION is 2.7:1. The site's spot
-   ink must never be used for text or hairlines here; ochre is
-   the accent on blue.
-   ============================================================ */
-.anime-page {
-    background: var(--ink-blue);
-    min-height: 100vh;
-    padding-top: var(--space-6);
-    padding-bottom: var(--space-8);
-    position: relative;
-    isolation: isolate;
-}
+    // Scroll entrance: the art and each card play their entrance when they
+    // come into view (see shop_anime.css). Cards in a row go one after another.
+    var page = document.querySelector('.anime-page');
+    if (page && !calm && 'IntersectionObserver' in window) {
+        page.classList.add('js-reveal');
+        var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add('is-in');
+                io.unobserve(entry.target);
+            });
+        }, { threshold: 0.2 });
+        page.querySelectorAll('.an-art-stage, .an-card-wrap').forEach(function (el) {
+            if (el.classList.contains('an-card-wrap')) {
+                var siblings = Array.prototype.indexOf.call(el.parentNode.children, el);
+                el.style.setProperty('--i', siblings % 4);
+            }
+            io.observe(el);
+        });
+    }
 
-/* Halftone screen in paper, so the blue reads as printed rather
-   than as a flat CSS background colour. */
-.anime-page::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image: radial-gradient(circle at center, var(--paper) 1.1px, transparent 1.2px);
-    background-size: var(--halftone-size);
-    opacity: 0.10;
-}
+    cards.forEach(function (card) {
+        if (!calm && hover) {
+            card.addEventListener('pointermove', function (e) {
+                var r = card.getBoundingClientRect();
+                var x = (e.clientX - r.left) / r.width;
+                var y = (e.clientY - r.top) / r.height;
+                card.style.setProperty('--mx', (x * 100).toFixed(1) + '%');
+                card.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+                card.style.setProperty('--rx', ((0.5 - y) * 14).toFixed(2) + 'deg');
+                card.style.setProperty('--ry', ((x - 0.5) * 18).toFixed(2) + 'deg');
+                card.classList.add('is-live');
+            });
+            card.addEventListener('pointerleave', function () {
+                card.classList.remove('is-live');
+                card.style.setProperty('--rx', '0deg');
+                card.style.setProperty('--ry', '0deg');
+            });
+        }
+    });
 
-.anime-page .breadcrumb,
-.anime-page .breadcrumb a,
-.anime-page .breadcrumb span { color: rgba(244, 240, 230, 0.62); }
-.anime-page .breadcrumb a:hover { color: var(--ochre); }
-
-/* ===== BANNER ===== */
-.anime-hero-banner {
-    position: relative;
-    border-radius: var(--radius);
-    overflow: hidden;
-    min-height: 240px;
-    display: flex;
-    align-items: flex-end;
-    margin-bottom: var(--space-7);
-    border: 2px solid var(--paper);
-    box-shadow: none;
-}
-
-.anime-bg-left,
-.anime-bg-right {
-    position: absolute;
-    top: 0;
-    width: 50%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-}
-
-.anime-bg-left  { left: 0; }
-.anime-bg-right { right: 0; }
-
-/* A flat duotone wash rather than a three-stop diagonal gradient: the
-   artwork stays readable underneath, and the banner belongs to the same
-   blue as the page instead of introducing two more colours. */
-/* Weighted to the bottom, where the type sits: the artwork stays legible
-   across the top of the banner while the headline gets a solid enough
-   ground to hold 12:1 contrast over a very busy collage. */
-.anime-banner-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        to top,
-        rgba(20, 41, 74, 0.96) 0%,
-        rgba(20, 41, 74, 0.88) 42%,
-        rgba(20, 41, 74, 0.55) 100%
-    );
-}
-
-.anime-banner-text {
-    position: relative;
-    z-index: 2;
-    text-align: left;
-    padding: var(--space-6);
-    width: 100%;
-}
-
-.anime-banner-text h1 {
-    color: var(--paper);
-    font-size: clamp(2rem, 7vw, 4rem);
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-tight);
-    line-height: 0.9;
-    text-shadow: none;
-    margin-bottom: var(--space-2);
-}
-
-.anime-banner-text p {
-    color: rgba(244, 240, 230, 0.78);
-    font-size: clamp(0.92rem, 2.2vw, 1.05rem);
-    max-width: 52ch;
-}
-
-/* ===== GRID ===== */
-.products-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: var(--space-5);
-}
-
-/* ===== FLIP CARD =====
-   The flip is kept — it shows front and back artwork without a click and
-   is genuinely useful here. What changed is the card it flips: a white
-   printed sheet with an ink rule and square corners, which also keeps the
-   garment mockups on the white they were shot on. */
-.flip-card {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-}
-
-.flip-card-inner {
-    display: block;
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1;
-    perspective: 900px;
-    text-decoration: none;
-    border-radius: var(--radius);
-    overflow: hidden;
-    border: 1.5px solid var(--ink);
-    box-shadow: none;
-    transition: transform var(--dur) var(--ease);
-    cursor: pointer;
-}
-
-.anime-page .flip-card-inner,
-.anime-page .flip-card-inner:hover { box-shadow: none; }
-
-.flip-card-inner:hover { transform: translate(-2px, -2px); }
-
-.flip-face {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--stock);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    transition: transform 0.55s var(--ease);
-    border-radius: 0;
-    overflow: hidden;
-}
-
-.flip-front { transform: rotateY(0deg); }
-.flip-back  { transform: rotateY(180deg); }
-.flip-card-inner:hover .flip-front { transform: rotateY(-180deg); }
-.flip-card-inner:hover .flip-back  { transform: rotateY(0deg); }
-
-/* The flip is decorative motion: honour a reduced-motion preference by
-   showing the front face only, rather than spinning the card. */
-@media (prefers-reduced-motion: reduce) {
-    .flip-face { transition: none; }
-    .flip-card-inner:hover { transform: none; }
-    .flip-card-inner:hover .flip-front { transform: rotateY(0deg); }
-    .flip-card-inner:hover .flip-back  { transform: rotateY(180deg); }
-}
-
-.face-product-img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.face-design-overlay {
-    position: absolute;
-    transform: translate(-50%, -50%);
-    height: auto;
-    pointer-events: none;
-    filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.22));
-    z-index: 2;
-}
-
-.face-no-product {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--ink-muted);
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caps);
-}
-
-.front-label {
-    position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--ink);
-    color: var(--paper);
-    font-family: var(--font-mono);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caps);
-    padding: 3px 9px;
-    border-radius: 0;
-    z-index: 3;
-    white-space: nowrap;
-}
-
-/* ===== CARD INFO ===== */
-.card-info {
-    padding: var(--space-3) 0 0;
-    text-align: left;
-}
-
-.anime-page .card-info { background: transparent; }
-
-.card-name {
-    font-family: var(--font-display);
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: var(--ink);
-    margin-bottom: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.anime-page .card-name { color: var(--paper); }
-
-/* Ochre, not vermillion — see the contrast note at the top of this block. */
-.card-price {
-    font-family: var(--font-mono);
-    color: var(--ink-soft);
-    font-weight: 500;
-    font-size: 0.8rem;
-    margin-bottom: var(--space-3);
-}
-
-.anime-page .card-price { color: var(--ochre); }
-
-/* The button already carries .btn .btn-sm, so it inherits the site's flat
-   ink block. This used to override it back into a rounded pill with a
-   coloured glow, which is why the collection looked like a different site. */
-.card-btn { display: inline-flex; }
-
-.anime-page .card-btn {
-    background: var(--paper);
-    color: var(--ink);
-    border-color: var(--paper);
-}
-.anime-page .card-btn:hover {
-    background: var(--ochre);
-    color: var(--ink);
-    border-color: var(--ochre);
-}
-.anime-page .card-btn:focus-visible { outline-color: var(--paper); }
-
-/* ===== EMPTY STATE ===== */
-.no-products {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: var(--space-8) var(--space-4);
-}
-
-.empty-state {
-    background: transparent;
-    border: 2px dashed rgba(244, 240, 230, 0.35);
-    border-radius: var(--radius);
-    padding: var(--space-7);
-    max-width: 460px;
-    margin: 0 auto;
-}
-
-.anime-page .empty-state h3 {
-    color: var(--paper);
-    text-transform: uppercase;
-    margin-bottom: var(--space-2);
-}
-.anime-page .empty-state p { color: rgba(244, 240, 230, 0.72); }
-
-/* The favourite control is a stamped square on this page, not the soft
-   white circle it inherits — a lone rounded pill on a page built from
-   ruled squares is exactly the kind of leftover that makes a redesign
-   look half-applied. */
-.anime-page .fav-btn {
-    background: var(--paper);
-    border: 1.5px solid var(--ink);
-    border-radius: var(--radius);
-    color: var(--ink);
-}
-.anime-page .fav-btn.is-favorited {
-    background: var(--ochre);
-    color: var(--ink);
-}
-
-@media (max-width: 600px) {
-    .anime-hero-banner { min-height: 180px; }
-    .anime-banner-text { padding: var(--space-4); }
-    .products-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
-    .card-name { font-size: 1rem; }
-}
-</style>
-
+    document.querySelectorAll('.an-flip').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var card = btn.closest('.an-card-wrap').querySelector('[data-card]');
+            var flipped = !card.classList.contains('is-flipped');
+            card.classList.toggle('is-flipped', flipped);
+            btn.setAttribute('aria-pressed', flipped ? 'true' : 'false');
+            var label = flipped ? btn.dataset.labelFront : btn.dataset.labelBack;
+            btn.querySelector('span').textContent = label;
+            btn.title = label;
+            // Keep keyboard focus and the link on the side that is showing.
+            var front = card.querySelector('.an-card-front');
+            var back = card.querySelector('.an-card-back');
+            if (front && back) {
+                front.setAttribute('tabindex', flipped ? '-1' : '0');
+                front.setAttribute('aria-hidden', flipped ? 'true' : 'false');
+                back.setAttribute('tabindex', flipped ? '0' : '-1');
+                back.setAttribute('aria-hidden', flipped ? 'false' : 'true');
+            }
+        });
+    });
+})();
+</script>
 <script src="<?= htmlspecialchars(Asset::url('/js/favorites.js')) ?>" defer></script>
 <?php require __DIR__ . '/../layouts/customer_footer.php'; ?>

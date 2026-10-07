@@ -1,14 +1,10 @@
 <?php $title = 'Reset Password'; ?>
-<?php require __DIR__ . '/../layouts/header.php'; ?>
+<?php $bodyClass = 'auth-page'; $noindex = true; ?>
+<?php require __DIR__ . '/../layouts/customer_header.php'; ?>
 
-<div class="auth-brand">
-    <a href="/">
-        <img src="/images/logo.png" alt="Costaspressjr" style="height:120px; width:auto; object-fit:contain;">
-    </a>
-</div>
-
+<section class="auth-section">
 <div class="form-container">
-    <h2>Reset Password</h2>
+    <h1>Reset Password</h1>
 
     <?php if (isset($error)): ?>
         <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
@@ -37,4 +33,6 @@
     </div>
 </div>
 
-<?php require __DIR__ . '/../layouts/footer.php'; ?>
+</section>
+
+<?php require __DIR__ . '/../layouts/customer_footer.php'; ?>

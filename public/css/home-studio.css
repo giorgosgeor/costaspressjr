@@ -1,0 +1,199 @@
+/* ============================================================
+   HOME — the Studio hero
+   The pitch and the shop's facts on the left, one large photo
+   running to the right edge of the window. The site-wide look
+   (tokens, type, buttons, header, cards, footer) is in studio.css;
+   this file is only what the home page adds.
+   ============================================================ */
+
+body.theme-studio .hero {
+    padding: 0;
+    background: #FFFFFF;
+    border-bottom: 0;
+    overflow: visible;
+}
+body.theme-studio .hero::before { display: none; }
+
+body.theme-studio .hero-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0;
+    align-items: stretch;
+    min-height: min(780px, calc(100svh - 86px));
+}
+
+/* The text column lines up with the page's content edge on any screen
+   width; the photo column runs on to the edge of the window. Percentages
+   here are of the column, which is half the window. */
+body.theme-studio .hero-content {
+    max-width: none;
+    margin: 0;
+    padding: clamp(48px, 7vh, 96px) clamp(32px, 4vw, 72px) clamp(44px, 6vh, 80px)
+             max(var(--st-gutter), calc(100% - var(--st-max) / 2 + var(--st-gutter)));
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 28px;
+    text-align: left;
+}
+
+body.theme-studio .hero .hero-badge {
+    margin: 0;
+    padding: 0;
+    background: none;
+    font-family: var(--font);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--st-label);
+}
+
+body.theme-studio .hero h1 {
+    margin: 0;
+    max-width: none;
+    font-size: clamp(3rem, 6vw, 7rem);
+    line-height: 0.95;
+    letter-spacing: -0.045em;
+    font-weight: 300;
+    color: var(--st-ink);
+}
+body.theme-studio .hero h1 .hero-line-1 { font-weight: 300; }
+body.theme-studio .hero h1 .ink-2 { font-weight: 700; color: var(--st-red); }
+
+body.theme-studio .hero .hero-lead {
+    margin: 0;
+    max-width: 34ch;
+    font-size: clamp(1.05rem, 1.3vw, 1.3rem);
+    line-height: 1.55;
+    color: var(--st-muted);
+}
+
+body.theme-studio .hero-buttons { gap: 28px; align-items: center; }
+body.theme-studio .hero-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    align-self: center;
+    padding-bottom: 3px;
+    border-bottom: 1px solid var(--st-ink);
+    color: var(--st-ink);
+    font-weight: 500;
+    text-decoration: none;
+}
+body.theme-studio .hero-link:hover { color: var(--st-red-txt); border-color: var(--st-red-txt); text-decoration: none; }
+body.theme-studio .hero-link svg { transition: transform var(--dur) var(--ease); }
+body.theme-studio .hero-link:hover svg { transform: translateX(3px); }
+
+body.theme-studio .hero-spec {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 40px;
+    max-width: 560px;
+    margin: 12px 0 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--st-line);
+}
+body.theme-studio .hero-spec dt {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--st-label);
+}
+body.theme-studio .hero-spec dd { margin: 4px 0 0; font-size: 1rem; font-weight: 500; color: var(--st-ink); }
+
+/* Photo column: the photo stands on the bottom edge at 92% of the panel's
+   height; the bulk card sits in the corner like a printed swing tag. */
+body.theme-studio .hero-visual {
+    position: relative;
+    min-height: 520px;
+    background: var(--st-panel);
+    overflow: hidden;
+}
+body.theme-studio .hero-visual img {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 92%;
+    width: auto;
+    max-width: none;
+}
+
+body.theme-studio .hero .bulk-card {
+    position: absolute;
+    right: clamp(20px, 2.5vw, 40px);
+    bottom: clamp(20px, 2.5vw, 40px);
+    z-index: 1;
+    width: 290px;
+    max-width: calc(100% - 40px);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 20px 22px;
+    background: #FFFFFF;
+    border: 0;
+    min-width: 0;
+}
+body.theme-studio .bulk-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--st-red-txt);
+}
+body.theme-studio .bulk-tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--st-red); }
+body.theme-studio .hero .bulk-title {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    text-transform: none;
+}
+body.theme-studio .hero .bulk-save {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-family: var(--font);
+    font-size: 0.9rem;
+    font-weight: 400;
+    line-height: 1.45;
+    text-transform: none;
+    color: var(--st-muted);
+}
+body.theme-studio .bulk-link {
+    margin-top: 4px;
+    align-self: flex-start;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--st-ink);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+body.theme-studio .bulk-link:hover { color: var(--st-red-txt); }
+
+body.theme-studio .products-section { background: #FFFFFF; }
+
+/* ---- Phones and small tablets -------------------------------------- */
+@media (max-width: 900px) {
+    body.theme-studio .hero-split { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+    body.theme-studio .hero-content { padding: 40px 16px 36px; gap: 22px; }
+    body.theme-studio .hero h1 { font-size: clamp(2.6rem, 11vw, 3.8rem); }
+    body.theme-studio .hero-buttons .hero-link { align-self: flex-start; }
+    body.theme-studio .hero-spec { gap: 16px 20px; }
+
+    /* Full width, and the photo's own proportions (585 × 669) up to a cap,
+       so on narrow screens it fills the panel edge to edge with no gap. */
+    body.theme-studio .hero-visual { min-height: 0; width: 100%; height: min(114vw, 560px); }
+    body.theme-studio .hero .bulk-card { left: 16px; right: 16px; bottom: 16px; width: auto; max-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.theme-studio .hero-link svg { transition: none; }
+}

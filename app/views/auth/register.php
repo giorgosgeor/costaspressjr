@@ -1,14 +1,10 @@
 <?php $title = t('auth.register.title', false); ?>
-<?php require __DIR__ . '/../layouts/header.php'; ?>
+<?php $bodyClass = 'auth-page'; $noindex = true; ?>
+<?php require __DIR__ . '/../layouts/customer_header.php'; ?>
 
-<div class="auth-brand">
-    <a href="/">
-        <img src="/images/logo.png" alt="<?= t('site.brand') ?>" style="height:72px; width:auto; object-fit:contain;">
-    </a>
-</div>
-
+<section class="auth-section">
 <div class="form-container">
-    <h2><?= t('auth.register.welcome') ?></h2>
+    <h1><?= t('auth.register.welcome') ?></h1>
     <p class="form-subtitle"><?= t('auth.register.subtitle') ?></p>
 
     <?php if (isset($error)): ?>
@@ -42,4 +38,6 @@
     </div>
 </div>
 
-<?php require __DIR__ . '/../layouts/footer.php'; ?>
+</section>
+
+<?php require __DIR__ . '/../layouts/customer_footer.php'; ?>

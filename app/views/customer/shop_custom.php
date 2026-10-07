@@ -1673,16 +1673,12 @@ function closeDesignSavedModal() {
 
 <section class="section custom-design-section">
     <div class="container">
-        <nav class="breadcrumb">
-            <a href="/">Home</a> &gt;
-            <a href="/shop">Shop</a> &gt;
-            <span><?= t('studio.title') ?></span>
-        </nav>
-
-        <div class="shop-header">
-            <h1><?= t('studio.title') ?></h1>
-            <p class="shop-subtitle"><?= t('studio.subtitle') ?></p>
-        </div>
+        <?php
+            $crumbs  = [[t('header.nav.home', false), '/'], [t('header.nav.shop', false), '/shop'], [t('studio.title', false), null]];
+            $heading = t('studio.title', false);
+            $lead    = t('studio.subtitle', false);
+            require __DIR__ . '/../partials/page_head.php';
+        ?>
 
         <?php if (empty($products)): ?>
             <div class="no-products-message">
@@ -3229,9 +3225,9 @@ updateImageRotation = function() {
        for orientation and for screen readers, at a size that leaves the
        mockup near the top of the first screen; the strapline goes. */
     .custom-design-section { padding-top: var(--space-4, 16px); }
-    .custom-design-section .shop-header { margin-bottom: var(--space-3, 12px); }
-    .custom-design-section .shop-header h1 { font-size: 1.5rem; }
-    .custom-design-section .shop-header .shop-subtitle { display: none; }
+    .custom-design-section .page-head { margin-bottom: var(--space-3, 12px); padding-bottom: var(--space-3, 12px); }
+    .custom-design-section .page-head-title { font-size: 1.5rem; }
+    .custom-design-section .page-head-lead { display: none; }
     .custom-design-section .breadcrumb { margin-bottom: var(--space-2, 8px); }
 
     /* Preview first. It used to carry order:2 against the controls' order:1,

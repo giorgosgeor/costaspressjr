@@ -7,53 +7,9 @@
    shape as the cart, so an order reads like the receipt of the cart it
    came from. */
 .od-page {
-    min-height: 70vh;
-    background: var(--paper);
-    padding: var(--space-7) 0 var(--space-8);
+    padding-bottom: clamp(56px, 7vw, 112px);
 }
-.od-container {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 var(--space-5);
-}
-.od-back {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    color: var(--ink-soft);
-    text-decoration: none;
-    font-size: 0.92rem;
-    font-weight: 600;
-    margin-bottom: var(--space-5);
-}
-.od-back:hover { color: var(--spot); }
 
-.od-header {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: var(--space-3) var(--space-5);
-    padding-bottom: var(--space-5);
-    margin-bottom: var(--space-6);
-    border-bottom: 2px solid var(--ink);
-}
-.od-eyebrow {
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caps);
-    color: var(--ink-muted);
-    margin: 0 0 var(--space-1);
-}
-.od-title {
-    font-family: var(--font-display);
-    font-size: clamp(2.4rem, 6vw, 3.6rem);
-    line-height: 0.95;
-    letter-spacing: 0.02em;
-    color: var(--ink);
-    margin: 0;
-}
 .od-header-side {
     display: flex;
     flex-direction: column;
@@ -74,21 +30,19 @@
     color: var(--ink-muted);
 }
 .od-tracking a {
-    font-family: var(--font-mono);
-    letter-spacing: var(--tracking-mono);
-    font-weight: 600;
-    color: var(--ink);
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    color: var(--st-ink);
     text-decoration: underline;
-    text-decoration-color: var(--spot);
+    text-decoration-color: var(--st-field);
     text-underline-offset: 3px;
 }
-.od-tracking a:hover { color: var(--spot); }
+.od-tracking a:hover { color: var(--st-red-txt); }
 
 /* Progress */
 .od-progress {
-    background: var(--paper-2);
-    border: 1px solid var(--border);
-    box-shadow: var(--stamp);
+    background: var(--st-tile);
+    border-radius: var(--st-r);
     padding: var(--space-5) var(--space-5) var(--space-4);
     margin-bottom: var(--space-6);
 }
@@ -167,10 +121,8 @@
     align-items: start;
 }
 .od-section-title {
-    font-family: var(--font-display);
-    font-size: 1.7rem;
-    letter-spacing: 0.02em;
-    color: var(--ink);
+    font-size: clamp(1.3rem, 1.7vw, 1.6rem);
+    color: var(--st-ink);
     margin: 0 0 var(--space-4);
 }
 .od-items {
@@ -179,20 +131,20 @@
     gap: var(--space-4);
 }
 .od-item {
-    background: var(--paper-2);
-    border: 1px solid var(--border);
-    box-shadow: var(--stamp);
-    padding: var(--space-4);
+    background: #FFFFFF;
+    border: 1px solid var(--st-line);
+    border-radius: var(--st-r);
+    padding: 12px 20px 12px 12px;
     display: grid;
-    grid-template-columns: 88px 1fr auto;
+    grid-template-columns: 104px 1fr auto;
     gap: var(--space-4);
     align-items: center;
 }
 .od-item-img {
-    width: 88px;
-    height: 88px;
-    background: var(--paper);
-    border: 1px solid var(--border);
+    width: 104px;
+    height: 104px;
+    background: var(--st-tile);
+    border-radius: var(--st-r-img);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -201,10 +153,10 @@
 .od-item-img img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .od-item-img-empty { color: var(--ink-muted); }
 .od-item-name {
-    font-family: var(--font-display);
-    font-size: 1.35rem;
-    letter-spacing: 0.03em;
-    color: var(--ink);
+    font-size: 1.1rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--st-ink);
     margin: 0 0 var(--space-2);
 }
 .od-item-meta {
@@ -224,13 +176,12 @@
     flex-shrink: 0;
 }
 .od-tag {
-    padding: 2px var(--space-2);
-    border: 1px solid var(--spot-2);
-    color: var(--spot-2);
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caps);
+    padding: 2px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--st-tile);
+    color: var(--st-ink);
+    font-size: 0.78rem;
+    font-weight: 500;
 }
 .od-item-price {
     text-align: right;
@@ -242,23 +193,22 @@
 }
 .od-item-calc { font-size: 0.85rem; color: var(--ink-muted); }
 .od-item-total {
-    font-family: var(--font-display);
-    font-size: 1.5rem;
-    letter-spacing: 0.02em;
-    color: var(--ink);
+    font-size: 1.25rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--st-ink);
 }
 
 .od-receipt {
-    background: var(--paper-2);
-    border: 1px solid var(--border);
-    box-shadow: var(--stamp);
-    padding: var(--space-5);
+    background: var(--st-tile);
+    border-radius: var(--st-r);
+    padding: 28px;
     position: sticky;
     top: 100px;
 }
 .od-receipt .od-section-title {
     padding-bottom: var(--space-3);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid rgba(13, 13, 13, 0.1);
 }
 .od-row {
     display: flex;
@@ -267,24 +217,24 @@
     gap: var(--space-4);
     padding: var(--space-2) 0;
     font-size: 0.95rem;
-    color: var(--ink-soft);
-    border-bottom: 1px dashed var(--border);
+    color: var(--st-muted);
+    border-bottom: 1px solid rgba(13, 13, 13, 0.08);
 }
-.od-row span:last-child { color: var(--ink); font-weight: 600; text-align: right; }
+.od-row span:last-child { color: var(--st-ink); font-weight: 500; text-align: right; }
 .od-row small { display: block; font-size: 0.8rem; color: var(--ink-muted); font-weight: 400; }
 .od-row.total {
     border-bottom: none;
-    border-top: 2px solid var(--ink);
+    border-top: 1px solid var(--st-ink);
     margin-top: var(--space-3);
     padding-top: var(--space-3);
-    color: var(--ink);
-    font-weight: 700;
+    color: var(--st-ink);
+    font-weight: 500;
 }
 .od-row.total span:last-child {
-    font-family: var(--font-display);
-    font-size: 2rem;
-    letter-spacing: 0.02em;
-    color: var(--spot);
+    font-size: 1.9rem;
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    color: var(--st-ink);
 }
 .od-help {
     margin: var(--space-4) 0 0;
@@ -298,8 +248,6 @@
     .od-receipt { position: static; }
 }
 @media (max-width: 600px) {
-    .od-page { padding: var(--space-5) 0 var(--space-7); }
-    .od-container { padding: 0 var(--space-4); }
     .od-header-side { align-items: flex-start; }
     .od-progress { padding: var(--space-4) var(--space-2) var(--space-3); }
     .od-step-label { font-size: 0.7rem; }
@@ -310,7 +258,7 @@
         flex-direction: row;
         justify-content: space-between;
         align-items: baseline;
-        border-top: 1px dashed var(--border);
+        border-top: 1px solid var(--st-line);
         padding-top: var(--space-2);
     }
 }
@@ -338,17 +286,10 @@ $statusLabel = isset($statusKeys[$status]) ? t($statusKeys[$status]) : htmlspeci
 $placedOn    = date('d/m/Y', strtotime($order['created_at']));
 ?>
 
-<section class="od-page">
-<div class="od-container">
+<section class="section od-page">
+<div class="container">
 
-    <!-- The label already carries its own arrow. -->
-    <a href="/orders" class="od-back"><?= t('order.back') ?></a>
-
-    <header class="od-header">
-        <div>
-            <p class="od-eyebrow"><?= I18n::t('order.placed_on', ['date' => $placedOn]) ?></p>
-            <h1 class="od-title"><?= htmlspecialchars(I18n::t('order.title', ['id' => (int)$order['id']])) ?></h1>
-        </div>
+    <?php ob_start(); ?>
         <div class="od-header-side">
             <span class="od-status" style="color:<?= $sc['color'] ?>;border-color:<?= $sc['border'] ?>;background:<?= $sc['bg'] ?>;"><?= $statusLabel ?></span>
             <?php if (!empty($order['tracking_token'])): ?>
@@ -358,7 +299,14 @@ $placedOn    = date('d/m/Y', strtotime($order['created_at']));
             </span>
             <?php endif; ?>
         </div>
-    </header>
+    <?php
+        $headNote = ob_get_clean();
+        $orderName = I18n::t('order.title', ['id' => (int)$order['id']]);
+        $crumbs  = [[t('header.nav.home', false), '/'], [t('orders.title', false), '/orders'], [$orderName, null]];
+        $heading = $orderName;
+        $lead    = I18n::t('order.placed_on', ['date' => $placedOn]);
+        require __DIR__ . '/../partials/page_head.php';
+    ?>
 
     <div class="od-progress" aria-label="<?= t('order.timeline.title') ?>">
         <?php if ($status === 'cancelled'): ?>

@@ -1,5 +1,10 @@
-<?php $title = t('site.brand', false); ?>
-<?php require __DIR__ . '/../layouts/customer_header.php'; ?>
+<?php
+$title = t('site.brand', false);
+// The site-wide Studio look is in studio.css (loaded by the layout);
+// home-studio.css adds this page's hero.
+$extraCss = ['/css/home-studio.css'];
+require __DIR__ . '/../layouts/customer_header.php';
+?>
 
 <?php
 // One home page for everyone.
@@ -9,8 +14,7 @@
 // got the hero, the categories and the real calls to action. That is exactly
 // backwards — designing does not require an account (see the handshake
 // below, which works for guests), so the page was gating the one thing that
-// sells the shop. The CTA wording still adapts; the page no longer does.
-$isSignedIn = Auth::check();
+// sells the shop.
 
 // How many products the grid shows before the shopper expands it. Two full
 // rows on a desktop four-column grid, four rows on a phone's two-column one.
@@ -70,56 +74,55 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-<?php // The strip a press shop letters across the top of a job sheet.
-      // Duplicated once and the copy marked aria-hidden, so the marquee can
-      // loop seamlessly without a screen reader reading every item twice. ?>
-<div class="ticker" role="region" aria-label="<?= t('site.tagline') ?>">
-    <div class="ticker-track">
-        <?php for ($pass = 0; $pass < 2; $pass++): ?>
-        <ul class="ticker-list"<?= $pass ? ' aria-hidden="true"' : '' ?>>
-            <?php for ($i = 1; $i <= 4; $i++): ?>
-            <li><?= t('home.ticker.' . $i) ?></li>
-            <?php endfor; ?>
-        </ul>
-        <?php endfor; ?>
-    </div>
-</div>
-
 <!-- ============================================================
-     HERO — single column, carried by the type.
+     HERO — the pitch and the shop's facts on the left, one large photo
+     running to the right edge of the screen.
      ============================================================ -->
 <section class="hero">
-    <div class="container hero-split">
+    <div class="hero-split">
         <div class="hero-content">
             <p class="hero-badge"><?= t('home.hero.slug') ?></p>
             <h1>
-                <?= t('home.hero.line1') ?><br>
+                <span class="hero-line-1"><?= t('home.hero.line1') ?></span><br>
                 <span class="ink-2"><?= t('home.hero.line2') ?></span>
             </h1>
-            <p><?= t('home.hero.lead') ?></p>
+            <p class="hero-lead"><?= t('home.hero.lead') ?></p>
             <div class="hero-buttons">
                 <a href="/shop/select_product" class="btn btn-lg"><?= t('home.hero.cta_design') ?></a>
-                <a href="/shop/premade" class="btn btn-lg btn-secondary"><?= t('home.hero.cta_browse') ?></a>
+                <a href="/shop/premade" class="hero-link"><?= t('home.hero.cta_browse') ?>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                </a>
             </div>
-            <?php if (!$isSignedIn): ?>
-            <p class="hero-note spec"><?= t('home.hero.no_account') ?></p>
-            <?php endif; ?>
+            <?php // The four facts the ticker strip used to scroll, set as a
+                  // garment-label spec list: what a shopper checks before
+                  // designing, readable at a glance and not moving. ?>
+            <dl class="hero-spec">
+                <div><dt><?= t('home.spec.runs_label') ?></dt><dd><?= t('home.spec.runs') ?></dd></div>
+                <div><dt><?= t('home.spec.print_label') ?></dt><dd><?= t('home.spec.print') ?></dd></div>
+                <div><dt><?= t('home.spec.collection_label') ?></dt><dd><?= t('home.spec.collection') ?></dd></div>
+                <div><dt><?= t('home.spec.account_label') ?></dt><dd><?= t('home.spec.account') ?></dd></div>
+            </dl>
         </div>
 
-        <?php // The bulk-pricing pitch. Deliberately no per-unit figures: a
-              // tee is ~EUR 13 and a hoodie ~EUR 37, so any single ladder
-              // shown here would misread as the price list for everything.
-              // The percentage is computed from the margin bands in
-              // CustomerController::home() and rounded down, so the "up to"
-              // claim stays true if the tier table is ever edited. ?>
-        <aside class="bulk-card">
-            <span class="section-tag"><?= t('home.bulk.tag') ?></span>
-            <h2 class="bulk-title"><?= t('home.bulk.title') ?></h2>
-            <?php if (!empty($bulkSavingPct)): ?>
-            <p class="bulk-save"><?= I18n::t('home.bulk.save', ['percent' => (int)$bulkSavingPct]) ?></p>
-            <?php endif; ?>
-            <a href="/shop/select_product" class="btn btn-block"><?= t('home.bulk.cta') ?></a>
-        </aside>
+        <?php // The bulk-pricing pitch sits on the photo. Deliberately no
+              // per-unit figures: a tee is ~EUR 13 and a hoodie ~EUR 37, so
+              // any single ladder shown here would misread as the price list
+              // for everything. The percentage is computed from the margin
+              // bands in CustomerController::home() and rounded down, so the
+              // "up to" claim stays true if the tier table is ever edited.
+              // The photo is a trimmed WebP of
+              // WEBSITE_KEY_INFO/design-transparent (13).png. ?>
+        <div class="hero-visual">
+            <img src="/images/hero/hero-tee.webp" alt="" width="585" height="669" onerror="this.remove()">
+            <aside class="bulk-card">
+                <span class="bulk-tag"><?= t('home.bulk.tag') ?></span>
+                <h2 class="bulk-title"><?= t('home.bulk.title') ?></h2>
+                <?php if (!empty($bulkSavingPct)): ?>
+                <p class="bulk-save"><?= I18n::t('home.bulk.save', ['percent' => (int)$bulkSavingPct]) ?></p>
+                <?php endif; ?>
+                <a href="/shop/select_product" class="bulk-link"><?= t('home.bulk.cta') ?></a>
+            </aside>
+        </div>
     </div>
 </section>
 
