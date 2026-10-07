@@ -10,10 +10,16 @@
  *   - product_variants.unit_price
  *
  * The script is idempotent — re-running with the same data leaves the
- * DB in the same target state. INSERT IGNORE is used for sizes / colour
- * associations / variants; price columns are then UPDATEd to the
- * computed values regardless of pre-existing rows. Stock values are
- * preserved when variants already exist.
+ * DB in the same target state. Missing sizes / colour associations /
+ * variants are inserted; price columns are then UPDATEd to the computed
+ * values regardless of pre-existing rows. Stock values are preserved when
+ * variants already exist.
+ *
+ * It also takes away what the spec doesn't list, the same way the admin
+ * product editor does: variants and colour links are deleted (order and
+ * cart lines keep their own size/colour, their variant_id just goes NULL),
+ * and sizes are marked unavailable rather than deleted, because a saved
+ * design may still point at one.
  */
 
 declare(strict_types=1);
@@ -65,6 +71,20 @@ foreach ($pdo->query("SELECT id, color_name FROM available_colors") as $row) {
     $colorIdByName[strtolower(trim($row['color_name']))] = (int)$row['id'];
 }
 
+// The script now removes what the spec doesn't list, so a colour name it
+// can't resolve would quietly take that colour off the product. Stop first.
+$unknown = [];
+foreach ($prices as $ref => $p) {
+    foreach (array_merge($p['colors'] ?? [], ...array_values($p['size_colors'] ?? [])) as $c) {
+        if (!isset($colorIdByName[strtolower(trim($c))])) $unknown[$c][] = $ref;
+    }
+}
+if ($unknown) {
+    fwrite(STDERR, "These colours aren't in available_colors (run php database/migrate.php, or add them on /admin/colors):\n");
+    foreach ($unknown as $c => $refs) fwrite(STDERR, "  - $c (" . implode(', ', array_unique($refs)) . ")\n");
+    exit(1);
+}
+
 $summary = [
     'products_inserted' => 0,
     'products_updated'  => 0,
@@ -73,6 +93,10 @@ $summary = [
     'variants_created'  => 0,
     'variants_priced'   => 0,
     'charts_set'        => 0,
+    'sizes_retired'     => 0,
+    'colors_unlinked'   => 0,
+    'variants_removed'  => 0,
+    'products_hidden'   => 0,
     'unmapped'          => [],
     'missing_colors'    => [],
 ];
@@ -173,6 +197,17 @@ try {
             if ($verbose) echo "  + INSERT  $ref → product #$productId ({$name}) base={$basePrice}\n";
         }
 
+        // 1a. Visibility, only when the spec says so (otherwise the admin's
+        //     on/off switch is left alone).
+        if (array_key_exists('active', $p)) {
+            $st = $pdo->prepare("UPDATE products SET active=? WHERE id=? AND active<>?");
+            $st->execute([$p['active'] ? 1 : 0, $productId, $p['active'] ? 1 : 0]);
+            if (!$p['active'] && $st->rowCount() > 0) {
+                $summary['products_hidden']++;
+                if ($verbose) echo "  - HIDE    $ref → product #$productId ({$name})\n";
+            }
+        }
+
         // 1b. Size-chart image path
         if (!empty($p['size_chart'])) {
             $st = $pdo->prepare("UPDATE products SET size_chart_image=? WHERE id=?");
@@ -206,9 +241,19 @@ try {
             if (isBigSize($sizeName) && isset($p['big'])) {
                 $modifier = round(((float)$p['big']) - (float)$basePrice, 2);
             }
-            $st = $pdo->prepare("UPDATE product_sizes SET size_order=?, price_modifier=? WHERE id=?");
+            $st = $pdo->prepare("UPDATE product_sizes SET size_order=?, price_modifier=?, is_available=1 WHERE id=?");
             $st->execute([sizeOrder($sizeName), $modifier, $sizeId]);
         }
+
+        // 2b. Sizes the spec no longer lists are retired, not deleted.
+        $retire = "UPDATE product_sizes SET is_available=0 WHERE product_id=? AND is_available=1";
+        if ($sizeIdByName) {
+            $retire .= " AND id NOT IN (" . implode(',', array_map('intval', $sizeIdByName)) . ")";
+        }
+        $st = $pdo->prepare($retire);
+        $st->execute([$productId]);
+        $summary['sizes_retired'] += $st->rowCount();
+        if ($verbose && $st->rowCount()) echo "    - retired {$st->rowCount()} size(s) not in the spec\n";
 
         // ── 3. Seed colour associations ───────────────────────────────
         $colorList = $colors ?: array_keys($colorIdByName);
@@ -231,10 +276,40 @@ try {
             }
         }
 
-        // ── 4. Seed variants for every (size, colour) combo ───────────
+        // 3b. Colour links the spec doesn't list go.
+        $unlink = "DELETE FROM product_colors WHERE product_id=?";
+        if ($usedColorIds) {
+            $unlink .= " AND color_id NOT IN (" . implode(',', array_map('intval', $usedColorIds)) . ")";
+        }
+        $st = $pdo->prepare($unlink);
+        $st->execute([$productId]);
+        $summary['colors_unlinked'] += $st->rowCount();
+
+        // size_colors narrows single sizes to some of the colours, e.g. 4XL
+        // only in White and Black. A name there that isn't in 'colors' is a
+        // typo in the spec, not a colour to add.
+        $sizeColors = [];
+        foreach ($p['size_colors'] ?? [] as $sizeName => $names) {
+            if (!isset($sizeIdByName[$sizeName])) {
+                $summary['unmapped'][] = "$ref: size_colors names size $sizeName, which isn't in 'sizes'";
+                continue;
+            }
+            foreach ($names as $n) {
+                if (!isset($usedColorIds[$n])) {
+                    $summary['unmapped'][] = "$ref: size_colors[$sizeName] names $n, which isn't in 'colors'";
+                }
+            }
+            $sizeColors[$sizeName] = array_flip($names);
+        }
+
+        // ── 4. Seed variants for every offered (size, colour) combo ───
+        $keepVariantIds = [];
         foreach ($sizeIdByName as $sizeName => $sizeId) {
             $sizeIsBig = isBigSize($sizeName);
             foreach ($usedColorIds as $colorName => $colorId) {
+                if (isset($sizeColors[$sizeName]) && !isset($sizeColors[$sizeName][$colorName])) {
+                    continue;
+                }
                 $colorIsWhite = isWhiteColor($colorName);
                 $unitPrice = variantPrice($p, $sizeIsBig, $colorIsWhite);
 
@@ -252,11 +327,22 @@ try {
                 $st = $pdo->prepare("UPDATE product_variants SET unit_price=?, is_available=1 WHERE id=?");
                 $st->execute([$unitPrice, $variantId]);
                 $summary['variants_priced']++;
+                $keepVariantIds[] = $variantId;
                 if ($verbose && $unitPrice !== null) {
                     echo sprintf("    · variant #%d  %-8s / %-12s → %.2f\n", $variantId, $sizeName, $colorName, $unitPrice);
                 }
             }
         }
+
+        // 4b. Every other variant of this product goes.
+        $drop = "DELETE FROM product_variants WHERE product_id=?";
+        if ($keepVariantIds) {
+            $drop .= " AND id NOT IN (" . implode(',', array_map('intval', $keepVariantIds)) . ")";
+        }
+        $st = $pdo->prepare($drop);
+        $st->execute([$productId]);
+        $summary['variants_removed'] += $st->rowCount();
+        if ($verbose && $st->rowCount()) echo "    - removed {$st->rowCount()} variant(s) not in the spec\n";
     }
 
     if ($dryRun) {
@@ -280,6 +366,10 @@ echo "  colors linked (new rows): " . $summary['colors_linked']     . "\n";
 echo "  variants created:         " . $summary['variants_created']  . "\n";
 echo "  variants (re)priced:      " . $summary['variants_priced']   . "\n";
 echo "  size charts assigned:     " . $summary['charts_set']        . "\n";
+echo "  sizes retired:            " . $summary['sizes_retired']     . "\n";
+echo "  colour links removed:     " . $summary['colors_unlinked']   . "\n";
+echo "  variants removed:         " . $summary['variants_removed']  . "\n";
+echo "  products hidden:          " . $summary['products_hidden']   . "\n";
 
 if ($summary['unmapped']) {
     echo "  notes / unmapped:\n";

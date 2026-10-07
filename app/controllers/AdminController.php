@@ -195,6 +195,33 @@ class AdminController {
         }
 
 
+        // The variants are rebuilt from the form below, but their supplier
+        // price and stock live only on these rows — the form doesn't carry
+        // them. Remember them first; without this every save dropped
+        // unit_price to NULL and coloured garments fell back to the
+        // (cheaper) white price.
+        $kept = [];
+        $stmt = $this->db->prepare("
+            SELECT v.size_id, v.color_id, v.unit_price, v.stock_quantity, ac.color_name
+              FROM product_variants v LEFT JOIN available_colors ac ON ac.id = v.color_id
+             WHERE v.product_id = ?
+        ");
+        $stmt->execute([$productId]);
+        foreach ($stmt->fetchAll() as $v) {
+            $kept[$v['size_id'] . '|' . $v['color_id']] = $v;
+        }
+        // A colour newly ticked for a size takes the price of a colour that
+        // size already had on the same side of the supplier's white/colour
+        // split; with neither, it falls back to base price + size modifier.
+        $isWhite = fn(?string $name) => in_array(strtolower(trim((string)$name)), ['white', 'ivory', 'off white', 'off-white'], true);
+        $siblingPrice = [];
+        foreach ($kept as $v) {
+            if ($v['unit_price'] !== null) {
+                $siblingPrice[$v['size_id'] . '|' . ($isWhite($v['color_name']) ? 'w' : 'c')] = $v['unit_price'];
+            }
+        }
+        $colorNames = $this->db->query("SELECT id, color_name FROM available_colors")->fetchAll(PDO::FETCH_KEY_PAIR);
+
         // Only delete variants and color links, not sizes
         try {
             $this->db->prepare("DELETE FROM product_variants WHERE product_id = ?")->execute([$productId]);
@@ -209,10 +236,11 @@ class AdminController {
                 // Prepare update and insert for sizes
                 $updateSizeStmt = $this->db->prepare("UPDATE product_sizes SET size_order = ?, price_modifier = ?, is_available = 1 WHERE id = ? AND product_id = ?");
                 $insertSizeStmt = $this->db->prepare("INSERT INTO product_sizes (product_id, size_name, size_order, price_modifier, is_available) VALUES (?, ?, ?, ?, 1)");
-                $variantStmt = $this->db->prepare("INSERT INTO product_variants (product_id, size_id, color_id, is_available) VALUES (?, ?, ?, 1)");
+                $variantStmt = $this->db->prepare("INSERT INTO product_variants (product_id, size_id, color_id, stock_quantity, unit_price, is_available) VALUES (?, ?, ?, ?, ?, 1)");
                 $colorStmt = $this->db->prepare("INSERT IGNORE INTO product_colors (product_id, color_id, is_available) VALUES (?, ?, 1)");
 
                 $order = 1;
+                $keptSizeIds = [];
                 foreach ($_POST['sizes'] as $size) {
                     if (empty($size['name'])) continue;
 
@@ -257,6 +285,7 @@ class AdminController {
                         }
                     }
                     $order++;
+                    $keptSizeIds[] = (int)$sizeId;
 
                     // Insert variants (size + color combinations).
                     // $size['colors'] is a hidden CSV like "3,7,12". Coerce each to int and
@@ -269,8 +298,12 @@ class AdminController {
                         }
                         $colorIds = array_unique($colorIds);
                         foreach ($colorIds as $colorId) {
+                            $prev  = $kept[$sizeId . '|' . $colorId] ?? null;
+                            $price = $prev['unit_price']
+                                ?? $siblingPrice[$sizeId . '|' . ($isWhite($colorNames[$colorId] ?? '') ? 'w' : 'c')]
+                                ?? null;
                             try {
-                                $variantStmt->execute([$productId, (int)$sizeId, $colorId]);
+                                $variantStmt->execute([$productId, (int)$sizeId, $colorId, (int)($prev['stock_quantity'] ?? 0), $price]);
                                 $colorStmt->execute([$productId, $colorId]);
                             } catch (PDOException $e) {
                                 error_log("updateProduct variant insert failed (product=$productId size=$sizeId color=$colorId): " . $e->getMessage());
@@ -278,6 +311,15 @@ class AdminController {
                         }
                     }
                 }
+
+                // Sizes removed in the form (the ✕) can't always be deleted —
+                // a saved design may point at them — so mark them unavailable.
+                // Otherwise they came back in this editor with no colours.
+                $flag = $this->db->prepare(
+                    "UPDATE product_sizes SET is_available = 0 WHERE product_id = ?"
+                    . ($keptSizeIds ? " AND id NOT IN (" . implode(',', array_map('intval', $keptSizeIds)) . ")" : '')
+                );
+                $flag->execute([$productId]);
             } catch (PDOException $e) {
                 error_log("updateProduct SQL error (prepare/insert): " . $e->getMessage());
             }
@@ -862,8 +904,9 @@ class AdminController {
                 $product['has_right_sleeve_image'] = file_exists($rightSleevePath);
             }
             
-            // Get sizes
-            $stmt = $this->db->prepare("SELECT * FROM product_sizes WHERE product_id = ? ORDER BY size_order");
+            // Get sizes. Unavailable ones are sizes removed from the product
+            // that a saved design still points at, so the row can't go.
+            $stmt = $this->db->prepare("SELECT * FROM product_sizes WHERE product_id = ? AND is_available = 1 ORDER BY size_order");
             $stmt->execute([$productId]);
             $sizes = $stmt->fetchAll();
             

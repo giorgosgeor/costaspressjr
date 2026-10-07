@@ -1667,18 +1667,21 @@ class CustomerController {
         $stmt = $this->db->prepare("
             SELECT ac.id, ac.color_name AS name, ac.color_hex AS hex
             FROM available_colors ac
-            JOIN product_variants pv ON pv.color_id = ac.id
+            JOIN product_variants pv ON pv.color_id = ac.id AND pv.is_available = 1
             WHERE pv.product_id = ?
             GROUP BY ac.id
             ORDER BY ac.id
         ");
         $stmt->execute([$id]);
         $colors = $stmt->fetchAll();
-        // Get all available sizes for this product
+        // Get all available sizes for this product — a size counts only while
+        // it is offered and comes in at least one colour.
         $stmt = $this->db->prepare("
             SELECT ps.id, ps.size_name
             FROM product_sizes ps
             WHERE ps.product_id = ?
+              AND ps.is_available = 1
+              AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.size_id = ps.id AND pv.is_available = 1)
             ORDER BY ps.size_order
         ");
         $stmt->execute([$id]);
@@ -1688,6 +1691,7 @@ class CustomerController {
             SELECT pv.color_id, pv.size_id
             FROM product_variants pv
             WHERE pv.product_id = ?
+              AND pv.is_available = 1
         ");
         $stmt->execute([$id]);
         $matrixRows = $stmt->fetchAll();
@@ -1753,7 +1757,7 @@ class CustomerController {
         // position for links the admin hasn't positioned yet.
         $stmt = $this->db->prepare("
             SELECT p.*,
-                   (SELECT COUNT(*) FROM product_sizes WHERE product_id = p.id) as size_count,
+                   (SELECT COUNT(*) FROM product_sizes WHERE product_id = p.id AND is_available = 1) as size_count,
                    COALESCE(dp.design_pos_x,         d.design_pos_x,         0)  AS design_pos_x,
                    COALESCE(dp.design_pos_y,         d.design_pos_y,         0)  AS design_pos_y,
                    COALESCE(dp.design_pos_size,      d.design_pos_size,      55) AS design_pos_size,
@@ -1780,9 +1784,9 @@ class CustomerController {
                        GROUP_CONCAT(ac.color_hex ORDER BY ac.id) as color_hexes,
                        GROUP_CONCAT(ac.id ORDER BY ac.id) as color_ids
                 FROM product_sizes ps
-                LEFT JOIN product_variants pv ON ps.id = pv.size_id
+                JOIN product_variants pv ON ps.id = pv.size_id AND pv.is_available = 1
                 LEFT JOIN available_colors ac ON pv.color_id = ac.id
-                WHERE ps.product_id = ?
+                WHERE ps.product_id = ? AND ps.is_available = 1
                 GROUP BY ps.id
                 ORDER BY ps.size_order
             ");
@@ -1866,7 +1870,7 @@ class CustomerController {
         // rendered in the studio, so they're hidden until artwork is uploaded.
         $stmt = $this->db->query("
             SELECT p.*,
-                   (SELECT COUNT(*) FROM product_sizes WHERE product_id = p.id) as size_count
+                   (SELECT COUNT(*) FROM product_sizes WHERE product_id = p.id AND is_available = 1) as size_count
             FROM products p
             WHERE p.active = 1
               AND p.image_path IS NOT NULL
@@ -1883,9 +1887,9 @@ class CustomerController {
                        GROUP_CONCAT(ac.color_hex ORDER BY ac.id) as color_hexes,
                        GROUP_CONCAT(ac.id ORDER BY ac.id) as color_ids
                 FROM product_sizes ps
-                LEFT JOIN product_variants pv ON ps.id = pv.size_id
+                JOIN product_variants pv ON ps.id = pv.size_id AND pv.is_available = 1
                 LEFT JOIN available_colors ac ON pv.color_id = ac.id
-                WHERE ps.product_id = ?
+                WHERE ps.product_id = ? AND ps.is_available = 1
                 GROUP BY ps.id
                 ORDER BY ps.size_order
             ");
@@ -1931,6 +1935,7 @@ class CustomerController {
             LEFT JOIN product_sizes   ps ON ps.id = pv.size_id
             WHERE pv.product_id = ?
               AND pv.is_available = 1
+              AND ps.is_available = 1
               AND ac.color_hex IS NOT NULL
               AND ps.size_name IS NOT NULL
             ORDER BY ps.size_order, ac.id
@@ -2205,7 +2210,7 @@ class CustomerController {
         // Hide products without a mockup image — they can't be previewed in
         // the customizer flow that this picker leads into.
         $stmt = $this->db->query("
-            SELECT p.*, (SELECT COUNT(*) FROM product_sizes WHERE product_id = p.id) as size_count
+            SELECT p.*, (SELECT COUNT(*) FROM product_sizes WHERE product_id = p.id AND is_available = 1) as size_count
               FROM products p
              WHERE p.active = 1
                AND p.image_path IS NOT NULL
@@ -2214,7 +2219,7 @@ class CustomerController {
         $products = $stmt->fetchAll();
         // Get sizes and colors for each product
         foreach ($products as &$product) {
-            $stmt = $this->db->prepare("SELECT ps.*, GROUP_CONCAT(ac.color_name ORDER BY ac.id) as color_names, GROUP_CONCAT(ac.color_hex ORDER BY ac.id) as color_hexes, GROUP_CONCAT(ac.id ORDER BY ac.id) as color_ids FROM product_sizes ps LEFT JOIN product_variants pv ON ps.id = pv.size_id LEFT JOIN available_colors ac ON pv.color_id = ac.id WHERE ps.product_id = ? GROUP BY ps.id ORDER BY ps.size_order");
+            $stmt = $this->db->prepare("SELECT ps.*, GROUP_CONCAT(ac.color_name ORDER BY ac.id) as color_names, GROUP_CONCAT(ac.color_hex ORDER BY ac.id) as color_hexes, GROUP_CONCAT(ac.id ORDER BY ac.id) as color_ids FROM product_sizes ps JOIN product_variants pv ON ps.id = pv.size_id AND pv.is_available = 1 LEFT JOIN available_colors ac ON pv.color_id = ac.id WHERE ps.product_id = ? AND ps.is_available = 1 GROUP BY ps.id ORDER BY ps.size_order");
             $stmt->execute([$product['id']]);
             $product['sizes'] = $stmt->fetchAll();
         }
@@ -2241,11 +2246,13 @@ class CustomerController {
             return;
         }
 
-        // Get all sizes for this product
+        // Get the sizes this product is offered in (and that come in a colour)
         $stmt = $this->db->prepare("
             SELECT ps.id, ps.size_name as name, ps.size_order
             FROM product_sizes ps
             WHERE ps.product_id = ?
+              AND ps.is_available = 1
+              AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.size_id = ps.id AND pv.is_available = 1)
             ORDER BY ps.size_order
         ");
         $stmt->execute([$productId]);
@@ -2255,7 +2262,7 @@ class CustomerController {
         $stmt = $this->db->prepare("
             SELECT DISTINCT ac.id, ac.color_name as name, ac.color_hex as hex
             FROM available_colors ac
-            INNER JOIN product_variants pv ON ac.id = pv.color_id
+            INNER JOIN product_variants pv ON ac.id = pv.color_id AND pv.is_available = 1
             WHERE pv.product_id = ?
             ORDER BY ac.color_name
         ");
