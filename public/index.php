@@ -39,6 +39,12 @@ if ($isProd) {
     // which let anyone "pay" with card 4242 for real goods. Refuse to serve
     // instead; the log names what is missing, /health returns 500.
     $problems = [];
+    // The shop targets PHP 8.5 (security fixes until the end of 2029).
+    // Shared hosts pick the PHP version per site and often default to an
+    // older one, so a forgotten switch shows up here, not as odd bugs.
+    if (PHP_VERSION_ID < 80500) {
+        $problems[] = 'PHP 8.5 or newer is required (this server runs ' . PHP_VERSION . ')';
+    }
     if (!str_starts_with((string)Env::get('APP_URL', ''), 'https://')) {
         $problems[] = 'APP_URL must be the https:// address of the site';
     }

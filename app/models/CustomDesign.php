@@ -428,8 +428,8 @@ class CustomDesign {
         if (function_exists('finfo_open')) {
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
             if ($finfo) {
+                // No finfo_close(): a no-op since PHP 8.1 and deprecated in 8.5.
                 $finfoMime = strtolower((string)finfo_buffer($finfo, $decodedData));
-                finfo_close($finfo);
                 if ($finfoMime !== '' && $finfoMime !== $mime) {
                     return null;
                 }
