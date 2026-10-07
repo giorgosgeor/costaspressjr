@@ -140,14 +140,3 @@ class I18n
         $_COOKIE[self::COOKIE_NAME] = $locale;
     }
 }
-
-/**
- * Shorthand used in views: <?= t('home.hero.title') ?>
- * Returns the translation HTML-escaped — pass `false` for the second argument
- * when the translation contains intentional HTML.
- */
-function t(string $key, bool $escape = true, array $params = []): string
-{
-    $s = I18n::t($key, $params);
-    return $escape ? htmlspecialchars($s, ENT_QUOTES, 'UTF-8') : $s;
-}

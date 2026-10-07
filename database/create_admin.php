@@ -10,8 +10,7 @@
  * hidden on Linux/macOS; on Windows it is echoed, so clear the screen after.
  */
 
-require __DIR__ . '/../app/core/Env.php';
-Env::load(__DIR__ . '/../.env');
+require __DIR__ . '/../app/bootstrap.php';
 
 if (PHP_SAPI !== 'cli') {
     exit(1);

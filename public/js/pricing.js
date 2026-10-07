@@ -1,5 +1,5 @@
 /**
- * Client-side mirror of app/core/Pricing.php.
+ * Client-side mirror of app/services/Pricing.php.
  *
  * Used ONLY for live price previews in the customizer/cart. The server
  * (Pricing.php + CustomerController) remains authoritative for what is

@@ -29,8 +29,7 @@
  * mysqldump is taken from $MYSQLDUMP, XAMPP's default path, or the PATH.
  */
 
-require __DIR__ . '/../app/core/Env.php';
-Env::load(__DIR__ . '/../.env');
+require __DIR__ . '/../app/bootstrap.php';
 
 const CATALOG_TABLES = [
     'available_colors', 'products', 'product_sizes', 'product_colors', 'product_variants',

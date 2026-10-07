@@ -41,7 +41,6 @@ class CustomDesignController {
             echo json_encode(['requireLogin' => true, 'redirect' => '/login']);
             return;
         }
-        require_once __DIR__ . '/../models/CustomDesign.php';
         $customDesignModel = new \CustomDesign($this->db);
         $designId = $customDesignModel->save($data, $userId);
         if ($designId) {
@@ -73,7 +72,6 @@ class CustomDesignController {
             return;
         }
         $userId = Auth::userId();
-        require_once __DIR__ . '/../models/CustomDesign.php';
         $customDesignModel = new \CustomDesign($this->db);
         
         // Verify user owns this design
@@ -133,7 +131,6 @@ class CustomDesignController {
             return;
         }
 
-        require_once __DIR__ . '/../models/CustomDesign.php';
         $customDesignModel = new \CustomDesign($this->db);
 
         // Folder name is the design's random path_token, falling back to the
@@ -217,7 +214,6 @@ class CustomDesignController {
             return;
         }
         $userId = Auth::userId();
-        require_once __DIR__ . '/../models/CustomDesign.php';
         $customDesignModel = new \CustomDesign($this->db);
         
         // Verify user owns this design

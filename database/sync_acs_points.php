@@ -9,11 +9,7 @@
  * plenty; the admin page has a button for the same thing.
  */
 
-require __DIR__ . '/../app/core/Env.php';
-Env::load(__DIR__ . '/../.env');
-require __DIR__ . '/../app/core/I18n.php';
-require __DIR__ . '/../app/core/AcsClient.php';
-require __DIR__ . '/../app/core/Pickup.php';
+require __DIR__ . '/../app/bootstrap.php';
 
 $db = require __DIR__ . '/../app/config/database.php';
 

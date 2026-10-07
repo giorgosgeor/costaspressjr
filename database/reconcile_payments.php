@@ -28,15 +28,7 @@
  *   0,30 * * * *  php /path/to/database/reconcile_payments.php >> /path/to/storage/reconcile.log 2>&1
  */
 
-require __DIR__ . '/../app/core/Env.php';
-Env::load(__DIR__ . '/../.env');
-require __DIR__ . '/../app/core/Log.php';
-require __DIR__ . '/../app/core/I18n.php';
-require __DIR__ . '/../app/core/Mailer.php';
-require __DIR__ . '/../app/core/Stripe.php';
-require __DIR__ . '/../app/core/Pickup.php';
-require __DIR__ . '/../app/core/OrderPlacement.php';
-require __DIR__ . '/../app/core/PaymentAlert.php';
+require __DIR__ . '/../app/bootstrap.php';
 
 // Messages from place() end up in the output and the alert email.
 I18n::setLocale('en', false);

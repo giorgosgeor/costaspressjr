@@ -577,7 +577,6 @@ private function saveCartBase64Upload(array $upload): ?string {
                 }
             }
         }
-        require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartId = $cartModel->getOrCreateCartId($userId);
         // Lookup variant_id
@@ -743,7 +742,6 @@ private function saveCartBase64Upload(array $upload): ?string {
             $_SESSION['cart_count'] = (int)($countStmt->fetch()['total'] ?? 0);
             // Handle uploads (base64 or file info in $data['uploads'])
             if (!empty($data['uploads']) && is_array($data['uploads'])) {
-                require_once __DIR__ . '/../models/Cart.php';
                 $cartModel = new \Cart($this->db);
                 foreach ($data['uploads'] as $upload) {
                     // Save base64 image to file if needed
@@ -803,7 +801,6 @@ private function saveCartBase64Upload(array $upload): ?string {
         $cartItemId = (int)$data['cart_item_id'];
 
         // Verify this cart item belongs to the user's cart
-        require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartId = $cartModel->getOrCreateCartId($userId);
         
@@ -896,7 +893,6 @@ private function saveCartBase64Upload(array $upload): ?string {
         
         $cartItemId = (int)$data['cart_item_id'];
 
-        require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartId = $cartModel->getOrCreateCartId($userId);
         
@@ -977,7 +973,6 @@ private function saveCartBase64Upload(array $upload): ?string {
             return;
         }
         
-        require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartId = $cartModel->getOrCreateCartId($userId);
         
@@ -1124,7 +1119,6 @@ private function saveCartBase64Upload(array $upload): ?string {
             return;
         }
 
-        require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartId    = $cartModel->getOrCreateCartId($userId);
 
@@ -1384,7 +1378,6 @@ private function saveCartBase64Upload(array $upload): ?string {
      * @return array{0: array, 1: float}
      */
     private function cartContents(int $userId): array {
-        require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartId = $cartModel->getOrCreateCartId($userId);
         $stmt = $this->db->prepare("

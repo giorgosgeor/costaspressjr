@@ -51,36 +51,6 @@ class CustomDesign {
         }
     }
 
-    // Save a design draft array from session and return new design ID
-    public static function saveDraft(array $draft): ?int {
-        // You may want to adjust these values based on your session structure
-        $db = require(__DIR__ . '/../../config/database.php');
-        $userId = $_SESSION['user_id'] ?? null;
-        if (!$userId) return null;
-        $name = 'Custom Design ' . date('Y-m-d H:i');
-        $productId = $draft[0]['product_id'] ?? null;
-        $sizeId = $draft[0]['size_id'] ?? null;
-        $colorId = $draft[0]['color_id'] ?? null;
-        $elements = $draft;
-        $colorHex = $draft[0]['color_hex'] ?? null;
-        $stmt = $db->prepare("INSERT INTO custom_designs (name, user_id, product_id, size_id, color_id, elements_json, color_hex, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
-        $ok = $stmt->execute([
-            $name,
-            $userId,
-            $productId,
-            $sizeId,
-            $colorId,
-            json_encode($elements),
-            $colorHex
-        ]);
-        if ($ok) {
-            return (int)$db->lastInsertId();
-        } else {
-            error_log('CustomDesign saveDraft error: ' . print_r($stmt->errorInfo(), true));
-        }
-        return null;
-    }
-    
     /**
      * Save a custom design with proper image storage
      * Images are extracted from base64, saved as files, and referenced in the database

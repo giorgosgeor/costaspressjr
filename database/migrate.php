@@ -18,8 +18,7 @@
  * Applied filenames are tracked in the schema_migrations table.
  */
 
-require __DIR__ . '/../app/core/Env.php';
-Env::load(__DIR__ . '/../.env');
+require __DIR__ . '/../app/bootstrap.php';
 
 $pdo = require __DIR__ . '/../app/config/database.php';
 if (!$pdo instanceof PDO) {

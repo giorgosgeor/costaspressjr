@@ -51,7 +51,6 @@ class AuthController {
 
         Auth::login($user['id'], $user['role']);
         // Ensure user has a cart, then pull in anything they added as a guest
-        require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartModel->getOrCreateCartId($user['id']);
         $this->mergeGuestCart((int)$user['id']);
@@ -134,7 +133,6 @@ class AuthController {
             $guestCart = (int)$stmt->fetchColumn();
             if (!$guestCart) return;
 
-            require_once __DIR__ . '/../models/Cart.php';
             $cartModel = new \Cart($this->db);
             $userCart = $cartModel->getOrCreateCartId($userId);
 
@@ -215,7 +213,6 @@ class AuthController {
         $userId = (int)$this->db->lastInsertId();
         Auth::login($userId, 'customer');
 
-        require_once __DIR__ . '/../models/Cart.php';
         $cartModel = new \Cart($this->db);
         $cartModel->getOrCreateCartId($userId);
         $this->mergeGuestCart($userId);

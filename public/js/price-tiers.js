@@ -9,7 +9,7 @@
  * would save.
  *
  * All arithmetic goes through window.Pricing (public/js/pricing.js), which
- * mirrors app/core/Pricing.php — so what is shown here is what checkout
+ * mirrors app/services/Pricing.php — so what is shown here is what checkout
  * charges. Nothing is computed independently.
  *
  * Usage:

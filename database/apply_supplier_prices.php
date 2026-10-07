@@ -24,8 +24,7 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../app/core/Env.php';
-Env::load(__DIR__ . '/../.env');
+require __DIR__ . '/../app/bootstrap.php';
 
 $dryRun  = !in_array('--apply', $argv, true);
 $verbose = in_array('--verbose', $argv, true) || in_array('-v', $argv, true);
