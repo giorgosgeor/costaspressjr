@@ -28,14 +28,16 @@ class CurrentUser {
      * in a cookie the browser checks; signed-in customers keep it on their
      * account, read once per session and then served from the session.
      */
-    public static function cookieAccepted(?PDO $db, ?array $user = null): int {
+    public static function cookieAccepted(?PDO $db, mixed $user = null): int {
         if (!Auth::check()) {
             return 0;
         }
         if (isset($_SESSION['cookie_accepted'])) {
             return (int)$_SESSION['cookie_accepted'];
         }
-        if (isset($user['cookie_accepted'])) {
+        // $user is whatever the page has under that name: a users row, or
+        // false/null where a lookup found nobody.
+        if (is_array($user) && isset($user['cookie_accepted'])) {
             return $_SESSION['cookie_accepted'] = (int)$user['cookie_accepted'];
         }
         if (!$db) {
