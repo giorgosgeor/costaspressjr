@@ -1,6 +1,6 @@
 <?php $title = 'Reset Password'; ?>
 <?php $bodyClass = 'auth-page'; $noindex = true; ?>
-<?php require __DIR__ . '/../layouts/customer_header.php'; ?>
+<?php require View::path('layouts/customer_header'); ?>
 
 <section class="auth-section">
 <div class="form-container">
@@ -35,4 +35,4 @@
 
 </section>
 
-<?php require __DIR__ . '/../layouts/customer_footer.php'; ?>
+<?php require View::path('layouts/customer_footer'); ?>

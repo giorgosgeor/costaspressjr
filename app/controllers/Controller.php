@@ -20,7 +20,7 @@ abstract class Controller {
     /** The branded 404 page — unknown URLs (via Router) and missing records. */
     public function notFound(): void {
         http_response_code(404);
-        $this->render('customer/not_found');
+        $this->render('pages/not_found');
     }
 
     /**

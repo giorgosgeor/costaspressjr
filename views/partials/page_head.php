@@ -10,7 +10,7 @@
  */
 ?>
 <header class="page-head">
-    <?php if (!empty($crumbs)) require __DIR__ . '/breadcrumb.php'; ?>
+    <?php if (!empty($crumbs)) require View::path('partials/breadcrumb'); ?>
     <div class="page-head-row">
         <div class="page-head-text">
             <h1 class="page-head-title"><?= htmlspecialchars($heading ?? '') ?></h1>

@@ -1,5 +1,5 @@
 <?php $title = 'Manage Users'; ?>
-<?php require __DIR__ . '/../layouts/admin_header.php'; ?>
+<?php require View::path('layouts/admin_header'); ?>
 
 <div class="admin-header">
     <h1>Manage Users</h1>
@@ -32,4 +32,4 @@
     </table>
 </div>
 
-<?php require __DIR__ . '/../layouts/admin_footer.php'; ?>
+<?php require View::path('layouts/admin_footer'); ?>

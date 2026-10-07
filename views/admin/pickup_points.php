@@ -1,5 +1,5 @@
 <?php $title = 'Pickup Points'; ?>
-<?php require __DIR__ . '/../layouts/admin_header.php'; ?>
+<?php require View::path('layouts/admin_header'); ?>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <style>
@@ -186,4 +186,4 @@
 })();
 </script>
 
-<?php require __DIR__ . '/../layouts/admin_footer.php'; ?>
+<?php require View::path('layouts/admin_footer'); ?>

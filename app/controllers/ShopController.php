@@ -7,12 +7,12 @@
 class ShopController extends Controller {
     public function index(): void {
         // Shop landing page - choose between premade and custom
-        $this->render('customer/shop_landing', get_defined_vars());
+        $this->render('shop/index', get_defined_vars());
     }
 
     public function premade(): void {
         // Show category sections (Anime, Coming Soon, etc.)
-        $this->render('customer/shop', get_defined_vars());
+        $this->render('shop/premade', get_defined_vars());
     }
 
     public function anime(): void {
@@ -60,7 +60,7 @@ class ShopController extends Controller {
 
         $favoriteDesignIds = (new Favorites($this->db))->idsForCurrentUser('design');
 
-        $this->render('customer/shop_anime', get_defined_vars());
+        $this->render('shop/anime', get_defined_vars());
     }
 
     public function premadeDesign(): void {
@@ -145,7 +145,7 @@ class ShopController extends Controller {
         }
         unset($product);
 
-        $this->render('customer/view_design', get_defined_vars());
+        $this->render('shop/premade_design', get_defined_vars());
     }
 
 public function designer(): void {
@@ -234,7 +234,7 @@ public function designer(): void {
         }
         unset($product);
 
-        $this->render('customer/shop_custom', get_defined_vars());
+        $this->render('shop/designer', get_defined_vars());
     }
 
     public function selectProduct(): void {
@@ -257,7 +257,7 @@ public function designer(): void {
         unset($product);
         $favoriteProductIds = (new Favorites($this->db))->idsForCurrentUser('product');
 
-        $this->render('customer/shop_select_product', get_defined_vars());
+        $this->render('shop/select_product', get_defined_vars());
     }
 
     // Set selected product ID in session
@@ -351,7 +351,7 @@ public function designer(): void {
             1
         );
 
-        $this->render('customer/custom_product', get_defined_vars());
+        $this->render('shop/custom_product', get_defined_vars());
     }
 
     public function product(?int $id = null): void {
@@ -406,7 +406,7 @@ public function designer(): void {
         }
         unset($v);
 
-        $this->render('customer/product', get_defined_vars());
+        $this->render('shop/product', get_defined_vars());
     }
 
     /**

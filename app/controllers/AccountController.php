@@ -103,7 +103,7 @@ class AccountController extends Controller {
 
         $favorites = (new Favorites($this->db))->forUser($userId);
 
-        $this->render('customer/account', get_defined_vars());
+        $this->render('account/index', get_defined_vars());
     }
 
     public function orders(): void {
@@ -122,7 +122,7 @@ class AccountController extends Controller {
         $stmt->execute([$userId]);
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $this->render('customer/order_list', get_defined_vars());
+        $this->render('account/orders', get_defined_vars());
     }
 
     public function order(): void {
@@ -172,7 +172,7 @@ class AccountController extends Controller {
         }
         unset($item);
 
-        $this->render('customer/order_detail', get_defined_vars());
+        $this->render('account/order', get_defined_vars());
     }
 
     /**

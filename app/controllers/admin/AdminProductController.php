@@ -18,7 +18,7 @@ class AdminProductController extends AdminController {
             ORDER BY p.id ASC
         ")->fetchAll();
 
-        $this->render('admin/products', get_defined_vars());
+        $this->render('admin/products/index', get_defined_vars());
     }
 
     public function create(): void {
@@ -26,7 +26,7 @@ class AdminProductController extends AdminController {
 
         $colors = $this->db->query("SELECT id, color_name as name, color_hex as hex_code FROM available_colors WHERE is_active = 1 ORDER BY color_name")->fetchAll();
 
-        $this->render('admin/products_add', get_defined_vars());
+        $this->render('admin/products/create', get_defined_vars());
     }
 
     public function store(): void {
@@ -111,7 +111,7 @@ class AdminProductController extends AdminController {
         $stmt->execute([$productId]);
         $variants = $stmt->fetchAll();
 
-        $this->render('admin/products_edit', get_defined_vars());
+        $this->render('admin/products/edit', get_defined_vars());
     }
 
     public function update(): void {
@@ -413,7 +413,7 @@ class AdminProductController extends AdminController {
             FROM products WHERE active = 1 ORDER BY name
         ");
         $products = $stmt->fetchAll();
-        $this->render('admin/design_area_editor', get_defined_vars());
+        $this->render('admin/products/design_area', get_defined_vars());
     }
 
     public function saveDesignArea(): void {

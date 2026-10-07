@@ -25,7 +25,7 @@ class AdminPremadeDesignController extends AdminController {
             ORDER BY s.name, d.name
         ")->fetchAll();
 
-        $this->render('admin/premade_designs', get_defined_vars());
+        $this->render('admin/premade/index', get_defined_vars());
     }
 
     public function store(): void {
@@ -164,7 +164,7 @@ class AdminPremadeDesignController extends AdminController {
         $products = $stmt->fetchAll();
 
         $title = 'Position Editor — ' . htmlspecialchars($design['name']);
-        $this->render('admin/premade_position', get_defined_vars());
+        $this->render('admin/premade/position', get_defined_vars());
     }
 
     public function savePosition(): void {

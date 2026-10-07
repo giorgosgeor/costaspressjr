@@ -1,5 +1,5 @@
 <?php $title = 'Manage Colors'; ?>
-<?php require __DIR__ . '/../layouts/admin_header.php'; ?>
+<?php require View::path('layouts/admin_header'); ?>
 
 <div class="admin-header">
     <h1>Manage Colors</h1>
@@ -57,4 +57,4 @@
     </div>
 </div>
 
-<?php require __DIR__ . '/../layouts/admin_footer.php'; ?>
+<?php require View::path('layouts/admin_footer'); ?>
