@@ -2872,15 +2872,11 @@
 /* ============================================================
    PRODUCT CONTROLS — colour swatches and size chips
 
-   These live here, in a stylesheet that is actually loaded, and
-   not in custom_product.css. That file — along with
-   shop_select_product.css and shop_anime.css — is referenced by
-   nothing: every one of those pages carries its rules in an
-   inline <style> block instead, so the three files on disk are
-   dead. Styles put there silently do nothing, which is exactly
-   what happened to these: the swatches fell back to the
+   These live here, in a stylesheet every product page loads.
+   They once sat in custom_product.css, which no page loaded, so
+   they silently did nothing: the swatches fell back to the
    browser's default button chrome and rendered as empty grey
-   ovals.
+   ovals. (That file and the other unloaded copies are gone.)
    ============================================================ */
 
 #colorSwatches {

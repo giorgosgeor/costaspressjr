@@ -1131,7 +1131,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Front-view snapshot as a data URL, for the save-then-login bounce: the
     // payload is stashed in sessionStorage and replayed after login. This was
-    // previously only defined in public/js/shop_custom.js, which is never
+    // previously only defined in public/js/shop_custom.js, which was never
     // loaded — so the `typeof` guard at the call site always failed and the
     // preview was silently lost.
     window.captureCurrentFrontPreview = async function captureCurrentFrontPreview() {
