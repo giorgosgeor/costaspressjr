@@ -42,8 +42,8 @@
         <div class="form-section">
             <h3>Front Image</h3>
             <?php 
-            $frontImagePath = __DIR__ . '/../../../../public/images/products/' . $product['id'] . '.png';
-            $frontImagePathJpg = __DIR__ . '/../../../../public/images/products/' . $product['id'] . '.jpg';
+            $frontImagePath = public_path('images/products/' . $product['id'] . '.png');
+            $frontImagePathJpg = public_path('images/products/' . $product['id'] . '.jpg');
             $hasFrontImage = file_exists($frontImagePath) || file_exists($frontImagePathJpg);
             ?>
             
@@ -74,8 +74,8 @@
         <div class="form-section">
             <h3>Back Image</h3>
             <?php 
-            $backImagePath = __DIR__ . '/../../../../public/images/products/' . $product['id'] . '_back.png';
-            $backImagePathJpg = __DIR__ . '/../../../../public/images/products/' . $product['id'] . '_back.jpg';
+            $backImagePath = public_path('images/products/' . $product['id'] . '_back.png');
+            $backImagePathJpg = public_path('images/products/' . $product['id'] . '_back.jpg');
             $hasBackImage = file_exists($backImagePath) || file_exists($backImagePathJpg);
             ?>
             
@@ -107,8 +107,8 @@
             <h3>Left Sleeve Image (Optional)</h3>
             <p class="section-hint">For shirts and long-sleeve products only</p>
             <?php 
-            $leftSleeveImagePath = __DIR__ . '/../../../../public/images/products/' . $product['id'] . '_left_sleeve.png';
-            $leftSleeveImagePathJpg = __DIR__ . '/../../../../public/images/products/' . $product['id'] . '_left_sleeve.jpg';
+            $leftSleeveImagePath = public_path('images/products/' . $product['id'] . '_left_sleeve.png');
+            $leftSleeveImagePathJpg = public_path('images/products/' . $product['id'] . '_left_sleeve.jpg');
             $hasLeftSleeveImage = file_exists($leftSleeveImagePath) || file_exists($leftSleeveImagePathJpg);
             ?>
             
@@ -140,8 +140,8 @@
             <h3>Right Sleeve Image (Optional)</h3>
             <p class="section-hint">For shirts and long-sleeve products only</p>
             <?php 
-            $rightSleeveImagePath = __DIR__ . '/../../../../public/images/products/' . $product['id'] . '_right_sleeve.png';
-            $rightSleeveImagePathJpg = __DIR__ . '/../../../../public/images/products/' . $product['id'] . '_right_sleeve.jpg';
+            $rightSleeveImagePath = public_path('images/products/' . $product['id'] . '_right_sleeve.png');
+            $rightSleeveImagePathJpg = public_path('images/products/' . $product['id'] . '_right_sleeve.jpg');
             $hasRightSleeveImage = file_exists($rightSleeveImagePath) || file_exists($rightSleeveImagePathJpg);
             ?>
             

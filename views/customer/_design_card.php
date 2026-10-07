@@ -39,8 +39,7 @@ $phpEditorDAH = 300;
 if (!empty($design['product_image'])) {
     $imgPath = ltrim($design['product_image'], '/');
     if (strpos($imgPath, 'public/') === 0) $imgPath = substr($imgPath, 7);
-    // app/views/customer -> three levels up reaches the project root.
-    $fullImgPath = __DIR__ . '/../../../public/' . $imgPath;
+    $fullImgPath = public_path($imgPath);
     $dim = @getimagesize($fullImgPath);
     if ($dim && $dim[0] > 0 && $dim[1] > 0) {
         $phpEditorDAH = round(300 * ($dim[1] / $dim[0]), 2);

@@ -1,12 +1,6 @@
 <?php
 
-class CustomerController {
-    private PDO $db;
-
-    public function __construct(PDO $db) {
-        $this->db = $db;
-    }
-
+class CustomerController extends Controller {
     /**
      * Date $days business days from today, formatted for display.
      * Used for delivery estimates so the page never shows a frozen literal date.
@@ -170,7 +164,7 @@ class CustomerController {
 
         $favorites = $this->favoritesFor($userId);
 
-        require __DIR__ . '/../views/customer/account.php';
+        $this->render('customer/account', get_defined_vars());
     }
 
     /**
@@ -285,14 +279,13 @@ class CustomerController {
         $stmt->execute([$userId]);
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        require __DIR__ . '/../views/customer/order_list.php';
+        $this->render('customer/order_list', get_defined_vars());
     }
 
     /** The branded 404 page — unknown URLs (via Router) and missing records. */
     public function notFound(): void {
         http_response_code(404);
-        $db = $this->db;
-        require __DIR__ . '/../views/customer/not_found.php';
+        $this->render('customer/not_found');
     }
 
     public function orderDetail(): void {
@@ -342,7 +335,7 @@ class CustomerController {
         }
         unset($item);
 
-        require __DIR__ . '/../views/customer/order_detail.php';
+        $this->render('customer/order_detail', get_defined_vars());
     }
 
 private function saveCartBase64Upload(array $upload): ?string {
@@ -1212,7 +1205,7 @@ private function saveCartBase64Upload(array $upload): ?string {
             error_log('checkout complete: retrieve failed: ' . $e->getMessage());
             $state   = 'failed';
             $message = I18n::t('checkout.errors.verify');
-            require __DIR__ . '/../views/customer/checkout_complete.php';
+            $this->render('customer/checkout_complete', get_defined_vars());
             return;
         }
 
@@ -1244,7 +1237,7 @@ private function saveCartBase64Upload(array $upload): ?string {
             $state = 'not_paid';
         }
 
-        require __DIR__ . '/../views/customer/checkout_complete.php';
+        $this->render('customer/checkout_complete', get_defined_vars());
     }
 
     /**
@@ -1344,7 +1337,7 @@ private function saveCartBase64Upload(array $upload): ?string {
         // /cart constantly. No session user of either kind = empty cart.
         $userId = $this->effectiveUserId(false);
         [$cartItems, $cartTotal] = $userId ? $this->cartContents($userId) : [[], 0];
-        require __DIR__ . '/../views/customer/cart.php';
+        $this->render('customer/cart', get_defined_vars());
     }
 
     /**
@@ -1368,7 +1361,7 @@ private function saveCartBase64Upload(array $upload): ?string {
             $stmt->execute([Auth::userId()]);
             $accountPhone = ((string)$stmt->fetchColumn()) ?: null;
         }
-        require __DIR__ . '/../views/customer/checkout.php';
+        $this->render('customer/checkout', get_defined_vars());
     }
 
     /**
@@ -1546,17 +1539,17 @@ private function saveCartBase64Upload(array $upload): ?string {
         }
         $bulkSavingPct = (int)(floor($bulkSaving * 20) * 5);
 
-        require __DIR__ . '/../views/customer/home.php';
+        $this->render('customer/home', get_defined_vars());
     }
 
     public function shop(): void {
         // Shop landing page - choose between premade and custom
-        require __DIR__ . '/../views/customer/shop_landing.php';
+        $this->render('customer/shop_landing', get_defined_vars());
     }
 
     public function shopPremade(): void {
         // Show category sections (Anime, Coming Soon, etc.)
-        require __DIR__ . '/../views/customer/shop.php';
+        $this->render('customer/shop', get_defined_vars());
     }
 
     public function shopAnime(): void {
@@ -1604,7 +1597,7 @@ private function saveCartBase64Upload(array $upload): ?string {
 
         $favoriteDesignIds = $this->favoriteIds('design');
 
-        require __DIR__ . '/../views/customer/shop_anime.php';
+        $this->render('customer/shop_anime', get_defined_vars());
     }
     // Removed duplicate declaration
     public function customProduct(): void {
@@ -1684,7 +1677,7 @@ private function saveCartBase64Upload(array $upload): ?string {
             1
         );
 
-        require __DIR__ . '/../views/customer/custom_product.php';
+        $this->render('customer/custom_product', get_defined_vars());
     }
 
     public function viewDesign(): void {
@@ -1769,7 +1762,7 @@ private function saveCartBase64Upload(array $upload): ?string {
         }
         unset($product);
 
-        require __DIR__ . '/../views/customer/view_design.php';
+        $this->render('customer/view_design', get_defined_vars());
     }
 
 public function shopCustom(): void {
@@ -1858,7 +1851,7 @@ public function shopCustom(): void {
         }
         unset($product);
 
-        require __DIR__ . '/../views/customer/shop_custom.php';
+        $this->render('customer/shop_custom', get_defined_vars());
     }
 
     public function product(?int $id = null): void {
@@ -1913,15 +1906,15 @@ public function shopCustom(): void {
         }
         unset($v);
 
-        require __DIR__ . '/../views/customer/product.php';
+        $this->render('customer/product', get_defined_vars());
     }
 
     public function about(): void {
-        require __DIR__ . '/../views/customer/about.php';
+        $this->render('customer/about', get_defined_vars());
     }
 
     public function contact(): void {
-        require __DIR__ . '/../views/customer/contact.php';
+        $this->render('customer/contact', get_defined_vars());
     }
 
     public function contactSubmit(): void {
@@ -2001,7 +1994,7 @@ public function shopCustom(): void {
     }
 
     /**
-     * Render a static informational page from app/views/customer/info/{slug}.php.
+     * Render a static informational page from views/customer/info/{slug}.php.
      * Slug is strictly allowlisted; no user input ever touches the filesystem path.
      */
     public function infoPage(string $slug): void {
@@ -2022,7 +2015,7 @@ public function shopCustom(): void {
             return;
         }
 
-        require __DIR__ . '/../views/customer/info/' . $allowed[$slug];
+        $this->render('customer/info/' . basename($allowed[$slug], '.php'), get_defined_vars());
     }
 
     /**
@@ -2064,7 +2057,7 @@ public function shopCustom(): void {
             $trackResult = ['query' => $trackQuery, 'order' => $order];
         }
 
-        require __DIR__ . '/../views/customer/info/track_order.php';
+        $this->render('customer/info/track_order', get_defined_vars());
     }
 
     /**
@@ -2186,7 +2179,7 @@ public function shopCustom(): void {
         unset($product);
         $favoriteProductIds = $this->favoriteIds('product');
 
-        require __DIR__ . '/../views/customer/shop_select_product.php';
+        $this->render('customer/shop_select_product', get_defined_vars());
     }
 
     /**

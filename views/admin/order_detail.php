@@ -302,8 +302,7 @@ $viewLabels = [
                 <?php foreach ($itemUploads as $up):
                     $raw = (string)($up['stored_file_path'] ?? '');
                     $web = '/' . ltrim(preg_replace('#^public/#', '', $raw), '/');
-                    // app/views/admin -> three levels up reaches the project root.
-                    $abs = __DIR__ . '/../../../public/' . ltrim(preg_replace('#^public/#', '', $raw), '/');
+                    $abs = public_path(preg_replace('#^public/#', '', $raw));
                     $exists = is_file($abs);
                     $bytes  = $exists ? filesize($abs) : 0;
                     $dim    = $exists ? @getimagesize($abs) : false;

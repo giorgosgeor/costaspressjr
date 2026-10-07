@@ -200,19 +200,7 @@ $currentLocale   = I18n::locale();
         </div>
     </header>
     <?php
-    $showVerifyBanner = false;
-    if (Auth::check() && isset($db) && $db instanceof PDO) {
-        try {
-            $stmt = $db->prepare("SELECT email_verified_at FROM users WHERE id = ?");
-            $stmt->execute([Auth::userId()]);
-            $row = $stmt->fetch();
-            if ($row && $row['email_verified_at'] === null) {
-                $showVerifyBanner = true;
-            }
-        } catch (\PDOException $e) {
-            // email_verified_at may not exist yet if the migration hasn't run. Fail quietly.
-        }
-    }
+    $showVerifyBanner = CurrentUser::needsEmailVerification($db ?? null);
     ?>
     <?php if ($showVerifyBanner): ?>
     <div class="verify-banner" role="status">

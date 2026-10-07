@@ -1,12 +1,6 @@
 <?php
 
-class AdminController {
-    private PDO $db;
-
-    public function __construct(PDO $db) {
-        $this->db = $db;
-    }
-
+class AdminController extends Controller {
     private function requireAdmin(): void {
         Auth::requireAdmin();
     }
@@ -19,7 +13,7 @@ class AdminController {
         $productCount = $this->db->query("SELECT COUNT(*) FROM products")->fetchColumn();
         $orderCount = $this->db->query("SELECT COUNT(*) FROM orders")->fetchColumn();
 
-        require __DIR__ . '/../views/admin/dashboard.php';
+        $this->render('admin/dashboard', get_defined_vars());
     }
 
     public function users(): void {
@@ -30,7 +24,7 @@ class AdminController {
         // admin actually needs them.
         $users = $this->db->query("SELECT id, username, email, phone, role, created_at FROM users WHERE role <> 'guest' ORDER BY id DESC")->fetchAll();
 
-        require __DIR__ . '/../views/admin/users.php';
+        $this->render('admin/users', get_defined_vars());
     }
 
     // ==================== PRODUCTS ====================
@@ -46,7 +40,7 @@ class AdminController {
             ORDER BY p.id ASC
         ")->fetchAll();
 
-        require __DIR__ . '/../views/admin/products.php';
+        $this->render('admin/products', get_defined_vars());
     }
 
     public function showAddProduct(): void {
@@ -54,7 +48,7 @@ class AdminController {
 
         $colors = $this->db->query("SELECT id, color_name as name, color_hex as hex_code FROM available_colors WHERE is_active = 1 ORDER BY color_name")->fetchAll();
 
-        require __DIR__ . '/../views/admin/products_add.php';
+        $this->render('admin/products_add', get_defined_vars());
     }
 
     public function addProduct(): void {
@@ -139,7 +133,7 @@ class AdminController {
         $stmt->execute([$productId]);
         $variants = $stmt->fetchAll();
 
-        require __DIR__ . '/../views/admin/products_edit.php';
+        $this->render('admin/products_edit', get_defined_vars());
     }
 
     public function updateProduct(): void {
@@ -361,7 +355,7 @@ class AdminController {
 
         $colors = $this->db->query("SELECT * FROM available_colors ORDER BY color_name")->fetchAll();
 
-        require __DIR__ . '/../views/admin/colors.php';
+        $this->render('admin/colors', get_defined_vars());
     }
 
     public function addColor(): void {
@@ -405,7 +399,7 @@ class AdminController {
         $flash = $_SESSION['admin_flash'] ?? null;
         unset($_SESSION['admin_flash']);
 
-        require __DIR__ . '/../views/admin/pickup_points.php';
+        $this->render('admin/pickup_points', get_defined_vars());
     }
 
     public function addPickupPoint(): void {
@@ -485,7 +479,7 @@ class AdminController {
             ORDER BY o.id DESC
         ")->fetchAll();
 
-        require __DIR__ . '/../views/admin/orders.php';
+        $this->render('admin/orders', get_defined_vars());
     }
 
     public function orderDetail(): void {
@@ -633,7 +627,7 @@ class AdminController {
         }
         unset($item);
 
-        require __DIR__ . '/../views/admin/order_detail.php';
+        $this->render('admin/order_detail', get_defined_vars());
     }
 
     public function updateOrderStatus(): void {
@@ -657,12 +651,12 @@ class AdminController {
 
     public function backgroundRemover(): void {
         $this->requireAdmin();
-        require __DIR__ . '/../views/admin/background_remover.php';
+        $this->render('admin/background_remover', get_defined_vars());
     }
 
     public function imageCropper(): void {
         $this->requireAdmin();
-        require __DIR__ . '/../views/admin/image_cropper.php';
+        $this->render('admin/image_cropper', get_defined_vars());
     }
 
     public function designAreaEditor(): void {
@@ -676,7 +670,7 @@ class AdminController {
             FROM products WHERE active = 1 ORDER BY name
         ");
         $products = $stmt->fetchAll();
-        require __DIR__ . '/../views/admin/design_area_editor.php';
+        $this->render('admin/design_area_editor', get_defined_vars());
     }
 
     public function saveDesignArea(): void {
@@ -953,7 +947,7 @@ class AdminController {
             ORDER BY s.name, d.name
         ")->fetchAll();
 
-        require __DIR__ . '/../views/admin/premade_designs.php';
+        $this->render('admin/premade_designs', get_defined_vars());
     }
 
     public function addPremadeDesign(): void {
@@ -1106,7 +1100,7 @@ class AdminController {
         $products = $stmt->fetchAll();
 
         $title = 'Position Editor — ' . htmlspecialchars($design['name']);
-        require __DIR__ . '/../views/admin/premade_position.php';
+        $this->render('admin/premade_position', get_defined_vars());
     }
 
     public function savePosition(): void {

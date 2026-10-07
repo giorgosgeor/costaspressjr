@@ -11,24 +11,7 @@
 //
 // The session carries the answer now, and is filled from the users table on
 // the first page that needs it, so this costs at most one query per session.
-$cookieAccepted = 0;
-if (Auth::check()) {
-    if (isset($_SESSION['cookie_accepted'])) {
-        $cookieAccepted = (int)$_SESSION['cookie_accepted'];
-    } elseif (isset($user['cookie_accepted'])) {
-        $cookieAccepted = (int)$user['cookie_accepted'];
-        $_SESSION['cookie_accepted'] = $cookieAccepted;
-    } elseif (isset($db) && $db instanceof PDO) {
-        try {
-            $stmt = $db->prepare("SELECT cookie_accepted FROM users WHERE id = ?");
-            $stmt->execute([Auth::userId()]);
-            $cookieAccepted = (int)$stmt->fetchColumn();
-            $_SESSION['cookie_accepted'] = $cookieAccepted;
-        } catch (\PDOException $e) {
-            // Leave it at 0 and show the notice rather than failing the page.
-        }
-    }
-}
+$cookieAccepted = CurrentUser::cookieAccepted($db ?? null, $user ?? null);
 ?>
 
     <?php if (!empty($checkoutMode)): ?>

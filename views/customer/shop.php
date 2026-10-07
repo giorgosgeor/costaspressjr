@@ -19,7 +19,7 @@
                     // tile below shows through. onerror hides a missing file so a
                     // broken-image glyph never reaches the shop front.
                     $animeCover = 'images/anime/section-cover.jpg';
-                    $animeCoverExists = is_file(__DIR__ . '/../../../public/' . $animeCover);
+                    $animeCoverExists = is_file(public_path($animeCover));
                 ?>
                 <div class="category-image anime-bg<?= $animeCoverExists ? ' has-cover' : '' ?>">
                     <?php if ($animeCoverExists): ?>

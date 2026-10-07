@@ -41,7 +41,7 @@
                     $hasImage = false;
                     $imagePath = '';
                     if (!empty($product['image_path'])) {
-                        $fullPath = __DIR__ . '/../../../public/' . $product['image_path'];
+                        $fullPath = public_path($product['image_path']);
                         if (file_exists($fullPath)) {
                             $imagePath = '/' . $product['image_path'];
                             $hasImage = true;

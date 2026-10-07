@@ -1,12 +1,6 @@
 <?php
 
-class HomeController {
-    private PDO $db;
-
-    public function __construct(PDO $db) {
-        $this->db = $db;
-    }
-
+class HomeController extends Controller {
     /**
      * Main entry point - admins go to /admin, everyone else sees the home page
      */

@@ -20,3 +20,9 @@ function e(mixed $value): string
 {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
+
+/** Absolute path of a file under public/: public_path('images/logo.png') */
+function public_path(string $path = ''): string
+{
+    return dirname(__DIR__) . '/public/' . ltrim($path, '/');
+}

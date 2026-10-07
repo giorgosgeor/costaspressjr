@@ -1,22 +1,16 @@
 <?php
 // app/controllers/AuthController.php
 
-class AuthController {
-    private PDO $db;
-
+class AuthController extends Controller {
     private const MAX_ATTEMPTS_PER_IP   = 10;
     private const MAX_ATTEMPTS_PER_USER = 5;
     private const WINDOW_SECONDS        = 900;
 
     private const VERIFICATION_TTL_HOURS = 24;
 
-    public function __construct(PDO $db) {
-        $this->db = $db;
-    }
-
     public function showLogin(): void {
         $redirect = $this->safeRedirect($_GET['redirect'] ?? '');
-        require __DIR__ . '/../views/auth/login.php';
+        $this->render('auth/login', get_defined_vars());
     }
 
     public function login(): void {
@@ -26,13 +20,13 @@ class AuthController {
 
         if ($identifier === '' || $password === '') {
             $error = 'Invalid credentials';
-            require __DIR__ . '/../views/auth/login.php';
+            $this->render('auth/login', get_defined_vars());
             return;
         }
 
         if ($this->isRateLimited($identifier)) {
             $error = 'Too many attempts. Please try again in a few minutes.';
-            require __DIR__ . '/../views/auth/login.php';
+            $this->render('auth/login', get_defined_vars());
             return;
         }
 
@@ -43,7 +37,7 @@ class AuthController {
         if (!$user || !password_verify($password, $user['password_hash'])) {
             $this->recordFailedAttempt($identifier);
             $error = 'Invalid credentials';
-            require __DIR__ . '/../views/auth/login.php';
+            $this->render('auth/login', get_defined_vars());
             return;
         }
 
@@ -185,7 +179,7 @@ class AuthController {
     }
 
     public function showRegister(): void {
-        require __DIR__ . '/../views/auth/register.php';
+        $this->render('auth/register', get_defined_vars());
     }
 
     public function register(): void {
@@ -196,7 +190,7 @@ class AuthController {
 
         $error = $this->validateRegistration($username, $email, $password);
         if ($error !== null) {
-            require __DIR__ . '/../views/auth/register.php';
+            $this->render('auth/register', get_defined_vars());
             return;
         }
 
@@ -206,7 +200,7 @@ class AuthController {
             $stmt->execute([$username, $email, $phone, $hash]);
         } catch (PDOException $e) {
             $error = 'Email, username, or phone already registered';
-            require __DIR__ . '/../views/auth/register.php';
+            $this->render('auth/register', get_defined_vars());
             return;
         }
 
@@ -326,7 +320,7 @@ class AuthController {
     private function renderVerificationResult(bool $success, string $message): void {
         $title   = $success ? 'Email verified' : 'Verification failed';
         $status  = $success ? 'success' : 'error';
-        require __DIR__ . '/../views/auth/verify_result.php';
+        $this->render('auth/verify_result', get_defined_vars());
     }
 
     private function validateRegistration(string $username, string $email, string $password): ?string {
@@ -376,7 +370,7 @@ class AuthController {
     }
 
     public function showForgotPassword(): void {
-        require __DIR__ . '/../views/auth/forgot_password.php';
+        $this->render('auth/forgot_password', get_defined_vars());
     }
 
     public function forgotPassword(): void {
@@ -384,7 +378,7 @@ class AuthController {
 
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $error = 'Please enter a valid email address.';
-            require __DIR__ . '/../views/auth/forgot_password.php';
+            $this->render('auth/forgot_password', get_defined_vars());
             return;
         }
 
@@ -399,7 +393,7 @@ class AuthController {
         // mail cannon (bombing a victim's inbox / burning SMTP quota). The
         // response stays identical either way, so nothing is leaked.
         if ($this->isMailRateLimited('forgot', $email)) {
-            require __DIR__ . '/../views/auth/forgot_password.php';
+            $this->render('auth/forgot_password', get_defined_vars());
             return;
         }
 
@@ -436,7 +430,7 @@ class AuthController {
             }
         }
 
-        require __DIR__ . '/../views/auth/forgot_password.php';
+        $this->render('auth/forgot_password', get_defined_vars());
     }
 
     public function showResetPassword(): void {
@@ -444,7 +438,7 @@ class AuthController {
         if ($token === '' || strlen($token) !== 64 || !ctype_xdigit($token)) {
             $error = 'Invalid or missing reset token.';
         }
-        require __DIR__ . '/../views/auth/reset_password.php';
+        $this->render('auth/reset_password', get_defined_vars());
     }
 
     public function resetPassword(): void {
@@ -454,20 +448,20 @@ class AuthController {
 
         if ($token === '' || strlen($token) !== 64 || !ctype_xdigit($token)) {
             $error = 'Invalid reset token.';
-            require __DIR__ . '/../views/auth/reset_password.php';
+            $this->render('auth/reset_password', get_defined_vars());
             return;
         }
 
         if ($password !== $confirm) {
             $error = 'Passwords do not match.';
-            require __DIR__ . '/../views/auth/reset_password.php';
+            $this->render('auth/reset_password', get_defined_vars());
             return;
         }
 
         $pwError = $this->validatePasswordStrength($password);
         if ($pwError !== null) {
             $error = $pwError;
-            require __DIR__ . '/../views/auth/reset_password.php';
+            $this->render('auth/reset_password', get_defined_vars());
             return;
         }
 
@@ -480,7 +474,7 @@ class AuthController {
         // one-hour reset link was already expired on a UTC+2 server.
         if (!$row || $row['consumed_at'] !== null || strtotime($row['expires_at'] . ' UTC') < time()) {
             $error = 'This reset link is invalid or has expired. Please request a new one.';
-            require __DIR__ . '/../views/auth/reset_password.php';
+            $this->render('auth/reset_password', get_defined_vars());
             return;
         }
 
@@ -494,12 +488,12 @@ class AuthController {
             $this->db->rollBack();
             error_log('Password reset commit failed: ' . $e->getMessage());
             $error = 'Something went wrong. Please try again.';
-            require __DIR__ . '/../views/auth/reset_password.php';
+            $this->render('auth/reset_password', get_defined_vars());
             return;
         }
 
         $success = 'Your password has been reset. You can now log in.';
-        require __DIR__ . '/../views/auth/login.php';
+        $this->render('auth/login', get_defined_vars());
     }
 
     public function logout(): void {

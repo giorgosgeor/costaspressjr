@@ -11,6 +11,9 @@
  *   app/models/             database access for carts and saved designs
  *   app/controllers/        one controller per area of the shop
  *   app/controllers/admin/  the admin panel's controllers
+ *
+ * Templates are not classes: they live in views/ and are rendered with
+ * View::render() (controllers call $this->render()).
  */
 
 require __DIR__ . '/core/Env.php';

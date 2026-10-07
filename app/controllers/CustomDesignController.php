@@ -1,10 +1,5 @@
 <?php
-class CustomDesignController {
-    private PDO $db;
-    public function __construct(PDO $db) {
-        $this->db = $db;
-    }
-
+class CustomDesignController extends Controller {
     // POST /custom-design/save
     public function save(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
