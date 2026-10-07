@@ -1,3 +1,6 @@
+// Data from the page (views/admin/products/create.php).
+const availableColors = JSON.parse(document.getElementById('product-create-data').textContent).availableColors;
+
 let sizeIndex = 0;
 let currentSizeRow = null;
 

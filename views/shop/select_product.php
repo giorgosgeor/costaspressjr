@@ -1,5 +1,5 @@
 <?php $title = t('shop.select.title', false); ?>
-<?php $extraCss[] = '/css/pages/select-product.css'; require View::path('layouts/customer_header'); ?>
+<?php $pageCss[] = '/css/pages/select-product.css'; require View::path('layouts/customer_header'); ?>
 
 <section class="section select-product-section">
     <div class="container">
@@ -176,146 +176,9 @@
         <?php endif; ?>
     </div>
 </section>
-<script>
-const products = <?= json_encode($products) ?>;
-let selectedProduct = products[0] || null;
-let selectedColor = null;
-let selectedSize = null;
-
-function renderProduct(product) {
-    document.getElementById('productName').textContent = product.name;
-    // Set main image to first color by default
-    if (product.colors && product.colors.length > 0) {
-        selectedColor = product.colors[0];
-        document.getElementById('mainProductImage').src = selectedColor ? '/' + selectedColor.image_path : '';
-    } else {
-        selectedColor = null;
-        document.getElementById('mainProductImage').src = '';
-    }
-    // Render color swatches
-    let swatchHtml = '';
-    if (product.colors) {
-        product.colors.forEach(color => {
-            swatchHtml += `<span class="color-swatch" data-color-id="${color.id}" style="display:inline-block;width:28px;height:28px;border-radius:50%;background:${color.hex};margin:0 4px;cursor:pointer;border:2px solid #ccc;"></span>`;
-        });
-    }
-    document.getElementById('colorSwatches').innerHTML = swatchHtml;
-    // Render size options. A product with a single size ("One Size" caps) offers
-    // no actual choice, so select it silently instead of showing a dropdown.
-    const sizes = product.sizes || [];
-    if (sizes.length < 2) {
-        selectedSize = sizes[0] || null;
-        document.getElementById('sizeOptions').innerHTML = '';
-        return;
-    }
-    selectedSize = null;
-    let sizeHtml = '<label>' + (window.I18N ? window.I18N.t('shop.select.size_label') : 'Size:') + '</label><select id="sizeSelect"><option value="">' + (window.I18N ? window.I18N.t('shop.select.select_size') : 'Select size') + '</option>';
-    sizes.forEach(size => {
-        sizeHtml += `<option value="${size.id}">${size.size_name}</option>`;
-    });
-    sizeHtml += '</select>';
-    document.getElementById('sizeOptions').innerHTML = sizeHtml;
-}
-
-// Initial render
-if (selectedProduct) renderProduct(selectedProduct);
-
-document.getElementById('colorSwatches').addEventListener('click', function(e) {
-    if (e.target.classList.contains('color-swatch')) {
-        const colorId = e.target.getAttribute('data-color-id');
-        selectedColor = selectedProduct.colors.find(c => c.id == colorId);
-        document.getElementById('mainProductImage').src = selectedColor ? '/' + selectedColor.image_path : '';
-    }
-});
-
-document.getElementById('sizeOptions').addEventListener('change', function(e) {
-    if (e.target.id === 'sizeSelect') {
-        selectedSize = selectedProduct.sizes.find(s => s.id == e.target.value);
-    }
-});
-
-// Product card selection logic
-const productCards = document.querySelectorAll('.product-list-card');
-document.querySelector('.product-list-grid').addEventListener('click', function(e) {
-  // The favourite heart lives inside the card but must not select the product.
-  // favorites.js already stops this in the capture phase; this keeps the card's
-  // own handler honest if that script ever fails to load.
-  if (e.target.closest('.fav-btn')) return;
-  const card = e.target.closest('.product-list-card');
-  if (card) {
-    const prodId = card.getAttribute('data-product-id');
-    console.log('Card clicked:', card, 'Product ID:', prodId);
-    if (prodId) {
-      // Send product ID to backend via POST, then redirect
-      fetch('/shop/set_selected_product', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: prodId })
-      }).then(res => {
-        if (res.ok) {
-          window.location.href = '/shop/custom_product';
-        } else {
-          UI.error(window.I18N ? window.I18N.t('shop.select.failed_select') : 'Failed to select product');
-        }
-      });
-    } else {
-      console.warn('No product ID found on card:', card);
-    }
-  } else {
-    console.log('Click not on a product card:', e.target);
-  }
-});
-</script>
-<script src="<?= htmlspecialchars(Asset::url('/js/favorites.js')) ?>" defer></script>
+<?= View::json('select-product-data', ['products' => $products]) ?>
+<?= View::script('/js/pages/select-product.js') ?>
+<script src="<?= htmlspecialchars(Asset::url('/js/lib/favorites.js')) ?>" defer></script>
 <?php require View::path('layouts/customer_footer'); ?>
 
-<script>
-// ── Product picker: filter by garment family + sort ──────────────────────
-// Entirely client-side: 19 products is far too few to justify a round trip,
-// and instant feedback is the point. Cards carry data-family / data-price /
-// data-name so no lookup table has to be kept in sync.
-(function () {
-    var grid = document.getElementById('productListGrid');
-    if (!grid) return;
-    var chips   = Array.prototype.slice.call(document.querySelectorAll('.picker-chip'));
-    var sortSel = document.getElementById('pickerSort');
-    var countEl = document.getElementById('pickerCount');
-    var cards   = Array.prototype.slice.call(grid.querySelectorAll('.product-list-card'));
-    var order   = cards.slice();            // original ("featured") order
-    var family  = 'all';
-
-    function apply() {
-        var list = order.slice();
-        var mode = sortSel ? sortSel.value : 'featured';
-        if (mode === 'price-asc')  list.sort(function (a, b) { return pf(a) - pf(b); });
-        if (mode === 'price-desc') list.sort(function (a, b) { return pf(b) - pf(a); });
-        if (mode === 'name')       list.sort(function (a, b) {
-            return (a.dataset.name || '').localeCompare(b.dataset.name || '');
-        });
-
-        var shown = 0;
-        list.forEach(function (card) {
-            var match = (family === 'all') || card.dataset.family === family;
-            card.style.display = match ? '' : 'none';
-            if (match) shown++;
-            grid.appendChild(card);          // re-order in place
-        });
-        if (countEl) {
-            var tpl = (window.I18N && window.I18N.t('shop.select.showing')) || '{n} products';
-            countEl.textContent = tpl.replace('{n}', shown);
-        }
-    }
-    function pf(c) { return parseFloat(c.dataset.price) || 0; }
-
-    chips.forEach(function (chip) {
-        chip.addEventListener('click', function () {
-            chips.forEach(function (c) { c.classList.remove('is-active'); });
-            chip.classList.add('is-active');
-            family = chip.dataset.family;
-            apply();
-        });
-    });
-    if (sortSel) sortSel.addEventListener('change', apply);
-    apply();
-})();
-</script>
+<?= View::script('/js/pages/select-product-sort.js') ?>

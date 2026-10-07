@@ -1,3 +1,11 @@
+// Data from the page (views/admin/premade/position.php).
+const premadePositionData = JSON.parse(document.getElementById('premade-position-data').textContent);
+const frontImage       = premadePositionData.frontImage;
+const backImageInitial = premadePositionData.backImage;
+// Placement belongs to the design/product PAIR, so this is seeded from the
+// selected product's link row, and reloaded whenever the product changes.
+let positions = premadePositionData.positions;
+
 // State — PHP injects: frontImage, backImageInitial, positions (top of page script block)
 let currentSide = 'front';
 let newBackImageSrc = '';

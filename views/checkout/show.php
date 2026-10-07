@@ -228,7 +228,7 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                     <p class="co-section-lead"><?= t('checkout.payment.lead') ?></p>
 
                     <?php // Stripe draws its own loading skeleton, styled by the
-                          // appearance settings in checkout.js. ?>
+                          // appearance settings in pages/checkout.js. ?>
                     <div class="co-pe">
                         <div id="paymentElement"></div>
                     </div>
@@ -291,6 +291,6 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?></script>
 
 <script src="https://js.stripe.com/v3/"></script>
-<script src="<?= htmlspecialchars(Asset::url('/js/checkout.js')) ?>" defer></script>
+<script src="<?= htmlspecialchars(Asset::url('/js/pages/checkout.js')) ?>" defer></script>
 
 <?php require View::path('layouts/customer_footer'); ?>

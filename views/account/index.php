@@ -381,6 +381,6 @@
     </div>
 </div>
 
-<script src="<?= htmlspecialchars(Asset::url('/js/account.js')) ?>" defer></script>
+<script src="<?= htmlspecialchars(Asset::url('/js/pages/account.js')) ?>" defer></script>
 </section>
 <?php require View::path('layouts/customer_footer'); ?>

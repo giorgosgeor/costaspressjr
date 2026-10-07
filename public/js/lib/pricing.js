@@ -56,7 +56,7 @@
 
     // Spec has no total cap, so there is none here. A quantity at the top of a
     // band can therefore cost more in total than the first quantity of the next
-    // band; price-tiers.js surfaces a "order N+ and pay X each" prompt so the
+    // band; lib/price-tiers.js surfaces a "order N+ and pay X each" prompt so the
     // customer can see that, without changing what is charged.
     /**
      * @param {number} extraPrintCost flat euro total of the print add-ons

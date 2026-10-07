@@ -181,5 +181,5 @@
     </div>
 </div>
 
-<script src="<?= htmlspecialchars(Asset::url('/js/premade_designs.js')) ?>" defer></script>
+<script src="<?= htmlspecialchars(Asset::url('/js/admin/premade-designs.js')) ?>" defer></script>
 <?php require View::path('layouts/admin_footer'); ?>

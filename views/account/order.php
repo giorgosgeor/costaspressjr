@@ -1,5 +1,5 @@
 <?php $title = I18n::t('order.title', ['id' => (int)$order['id']]); ?>
-<?php $extraCss[] = '/css/pages/order.css'; require View::path('layouts/customer_header'); ?>
+<?php $pageCss[] = '/css/pages/order.css'; require View::path('layouts/customer_header'); ?>
 
 
 <?php

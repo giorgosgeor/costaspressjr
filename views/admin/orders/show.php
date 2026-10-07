@@ -405,5 +405,5 @@ $viewLabels = [
     </div>
 </div>
 
-<script src="<?= htmlspecialchars(Asset::url('/js/admin_order_detail.js')) ?>" defer></script>
+<script src="<?= htmlspecialchars(Asset::url('/js/admin/order.js')) ?>" defer></script>
 <?php require View::path('layouts/admin_footer'); ?>

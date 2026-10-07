@@ -1,5 +1,5 @@
 <?php $title = t('orders.title', false); ?>
-<?php $extraCss[] = '/css/pages/orders.css'; require View::path('layouts/customer_header'); ?>
+<?php $pageCss[] = '/css/pages/orders.css'; require View::path('layouts/customer_header'); ?>
 
 
 <section class="section orders-page">

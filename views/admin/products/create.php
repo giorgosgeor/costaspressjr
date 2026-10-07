@@ -94,8 +94,6 @@
     </div>
 </div>
 
-<script>
-const availableColors = <?= json_encode($colors) ?>;
-</script>
-<script src="<?= htmlspecialchars(Asset::url('/js/products_add.js')) ?>" defer></script>
+<?= View::json('product-create-data', ['availableColors' => $colors]) ?>
+<script src="<?= htmlspecialchars(Asset::url('/js/admin/product-create.js')) ?>" defer></script>
 <?php include View::path('layouts/admin_footer'); ?>

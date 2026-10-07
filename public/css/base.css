@@ -1604,7 +1604,7 @@ td.actions { white-space: nowrap; }
 }
 
 /* ============================================================
-   TOASTS — non-blocking feedback (public/js/ui.js)
+   TOASTS — non-blocking feedback (public/js/site/ui.js)
    ============================================================ */
 .toast-region {
     position: fixed;

@@ -5,7 +5,7 @@
  * produced from with a CSS filter chain. `filterFor(hex)` returns the chain for
  * a swatch: a solved override when we have one, otherwise the generic formula.
  *
- * WHY A SINGLE FUNCTION: this logic used to be copy-pasted across account.js,
+ * WHY A SINGLE FUNCTION: this logic used to be copy-pasted across pages/account.js,
  * custom_product.js, shop_custom.js, view_design.js and three PHP views, and the
  * copies had drifted into three different formulas (hue-rotate h-38 vs h-50,
  * reddish saturate s*6+2 vs s*3+1, plus a `max(1, s/50)` variant). The same

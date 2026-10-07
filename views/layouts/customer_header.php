@@ -45,14 +45,20 @@ $currentLocale   = I18n::locale();
           // one readable layer, and loading it after the per-page stylesheets
           // lets it win on specificity ties without a single !important. ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/mobile.css')) ?>">
+    <?php // Stylesheets that began life as a template's inline <style> block load
+          // here, where the block used to sit, so they keep winning over
+          // mobile.css exactly as before. New page styles belong in $extraCss. ?>
+    <?php if (!empty($pageCss)): foreach ($pageCss as $css): ?>
+    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url($css)) ?>">
+    <?php endforeach; endif; ?>
     <!-- Client-side pricing mirror (previews only; server is authoritative) -->
-    <script src="<?= htmlspecialchars(Asset::url('/js/pricing.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(Asset::url('/js/lib/pricing.js')) ?>" defer></script>
     <!-- Exact mockup tint chains for colours the generic filter formula renders badly -->
-    <script src="<?= htmlspecialchars(Asset::url('/js/color-tint.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(Asset::url('/js/lib/color-tint.js')) ?>" defer></script>
     <!-- Placement switcher: dots + swipe (studio and premade design pages) -->
-    <script src="<?= htmlspecialchars(Asset::url('/js/view-switcher.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(Asset::url('/js/lib/view-switcher.js')) ?>" defer></script>
     <!-- Live quantity → price ladder (reads the same tiers the server charges) -->
-    <script src="<?= htmlspecialchars(Asset::url('/js/price-tiers.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(Asset::url('/js/lib/price-tiers.js')) ?>" defer></script>
 </head>
 <?php // theme-studio switches on studio.css for every customer page; a page
       // can add its own class through $bodyClass. ?>
@@ -168,7 +174,7 @@ $currentLocale   = I18n::locale();
                 <div class="account-menu" data-account-menu>
                     <?php // A link, not a button: hovering opens the menu, clicking
                           // goes straight to the account page. Keyboard users get
-                          // the menu with ArrowDown (see app.js) since they can't
+                          // the menu with ArrowDown (see site/app.js) since they can't
                           // hover, and Enter follows the link as normal. ?>
                     <a href="/account" class="icon-link account-menu-trigger"
                        aria-expanded="false" aria-haspopup="true" aria-controls="accountMenuList">

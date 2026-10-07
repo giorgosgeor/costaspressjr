@@ -87,22 +87,8 @@ $cookieAccepted = CurrentUser::cookieAccepted($db ?? null, $user ?? null);
     </footer>
     <?php endif; // checkout mode ?>
 
-    <script>
-    /* Translation strings exposed to client-side JS. */
-    window.I18N = <?= json_encode([
-        'locale' => I18n::locale(),
-        'messages' => I18n::all(),
-    ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
-    window.I18N.t = function(key, params) {
-        var s = (this.messages && this.messages[key]) || key;
-        if (params) {
-            for (var k in params) {
-                s = s.split('{' + k + '}').join(params[k]);
-            }
-        }
-        return s;
-    };
-    </script>
+    <?= View::json('i18n-data', ['locale' => I18n::locale(), 'messages' => I18n::all()]) ?>
+    <?= View::script('/js/site/i18n.js') ?>
 <?php // ---- Shop assistant ---------------------------------------------
       // Answers come from ShopAssistant.php, which reads the shop's own FAQ,
       // info pages, products table and pricing engine - so it can quote a
@@ -147,21 +133,10 @@ $cookieAccepted = CurrentUser::cookieAccepted($db ?? null, $user ?? null);
 </div>
 <?php endif; ?>
 
-    <script src="<?= htmlspecialchars(Asset::url('/js/ui.js')) ?>" defer></script>
-    <script src="<?= htmlspecialchars(Asset::url('/js/app.js')) ?>" defer></script>
-    <script src="<?= htmlspecialchars(Asset::url('/js/assistant.js')) ?>" defer></script>
-    <script>
-    /* Deferred scripts run AFTER the document is parsed, but this inline
-       script runs DURING parsing — so calling initCookiePopup() directly
-       here always threw "initCookiePopup is not defined" and the cookie
-       notice never appeared on any page. DOMContentLoaded fires after
-       deferred scripts have executed, which is the point where app.js has
-       actually defined it. */
-    document.addEventListener('DOMContentLoaded', function () {
-        if (typeof initCookiePopup === 'function') {
-            initCookiePopup(<?= json_encode(Auth::check()) ?>, <?= (int)$cookieAccepted ?>);
-        }
-    });
-    </script>
+    <script src="<?= htmlspecialchars(Asset::url('/js/site/ui.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(Asset::url('/js/site/app.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(Asset::url('/js/site/assistant.js')) ?>" defer></script>
+    <?= View::json('cookie-consent-data', ['signedIn' => Auth::check(), 'accepted' => (int)$cookieAccepted]) ?>
+    <?= View::script('/js/site/cookie-consent.js') ?>
 </body>
 </html>

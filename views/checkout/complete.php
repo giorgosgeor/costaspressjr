@@ -126,20 +126,7 @@ $webPath = static function (?string $p): string {
         <a href="/shop" class="btn btn-lg btn-secondary"><?= t('checkout.success.continue') ?></a>
     </div>
 
-    <script>
-    (function () {
-        var btn = document.getElementById('ccCopy');
-        var code = document.getElementById('ccTracking');
-        if (!btn || !code || !navigator.clipboard) { if (btn) btn.hidden = true; return; }
-        var label = btn.textContent;
-        btn.addEventListener('click', function () {
-            navigator.clipboard.writeText(code.textContent.trim()).then(function () {
-                btn.textContent = btn.dataset.done;
-                setTimeout(function () { btn.textContent = label; }, 2000);
-            });
-        });
-    })();
-    </script>
+    <?= View::script('/js/pages/checkout-complete.js') ?>
 
 <?php else: ?>
     <div class="cc-message">

@@ -1,3 +1,6 @@
+// Data from the page (views/admin/products/design_area.php).
+const products = JSON.parse(document.getElementById('design-area-data').textContent).products;
+
 // State — products data is injected inline by PHP before this file loads
 let currentProductId = null;
 let currentView = 'front';

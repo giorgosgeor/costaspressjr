@@ -8,7 +8,7 @@
  * ladder with the active row marked, and a nudge showing what the next tier
  * would save.
  *
- * All arithmetic goes through window.Pricing (public/js/pricing.js), which
+ * All arithmetic goes through window.Pricing (public/js/lib/pricing.js), which
  * mirrors app/services/Pricing.php — so what is shown here is what checkout
  * charges. Nothing is computed independently.
  *

@@ -239,7 +239,7 @@ function applyProductColorFilter(imgElement, hex) {
     hex = hex.trim();
     if (!hex.startsWith('#')) hex = '#' + hex;
 
-    // Delegated to the one implementation in color-tint.js — this copy had
+    // Delegated to the one implementation in lib/color-tint.js — this copy had
     // drifted and never saw the solved overrides for deep reds.
     imgElement.style.filter = window.CostasTint.filterFor(hex);
 }

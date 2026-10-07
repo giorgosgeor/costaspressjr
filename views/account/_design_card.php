@@ -14,7 +14,7 @@ if (empty($colorHex)) {
     $colorHex = '#000000';
 }
 
-// One implementation, shared with the browser (public/js/color-tint.js) so a
+// One implementation, shared with the browser (public/js/lib/color-tint.js) so a
 // saved-design card shows the same shade as the studio that produced it. This
 // file used to carry its own copy of the maths, which had drifted from the
 // others and never applied the solved overrides for deep reds.

@@ -273,7 +273,7 @@
     .nav-mobile-tail .lang-switcher .sep { display: none; }
 
     /* Keeps the page still behind an open drawer. Paired with the class
-       app.js puts on <body>; without it the page scrolls under the menu and
+       site/app.js puts on <body>; without it the page scrolls under the menu and
        the reader loses their place. */
     body.nav-open { overflow: hidden; }
 }

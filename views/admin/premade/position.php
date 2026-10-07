@@ -150,18 +150,15 @@
 </div>
 </form>
 
-<script>
-// PHP-generated data — must be inline
-const frontImage       = '<?= addslashes($design['image_path'] ?? '') ?>';
-const backImageInitial = '<?= addslashes($design['back_image_path'] ?? '') ?>';
-// Placement belongs to the design/product PAIR, so this is seeded from the
-// selected product's link row, and reloaded whenever the product changes.
-let positions = {
-    front: { x: <?= (float)($selected['pos_x'] ?? 0) ?>, y: <?= (float)($selected['pos_y'] ?? 0) ?>, size: <?= (float)($selected['pos_size'] ?? 55) ?> },
-    back:  { x: <?= (float)($selected['pos_back_x'] ?? 0) ?>, y: <?= (float)($selected['pos_back_y'] ?? 0) ?>, size: <?= (float)($selected['pos_back_size'] ?? 55) ?> }
-};
-</script>
-<script src="<?= htmlspecialchars(Asset::url('/js/premade_position.js')) ?>" defer></script>
+<?= View::json('premade-position-data', [
+    'frontImage' => $design['image_path'] ?? '',
+    'backImage'  => $design['back_image_path'] ?? '',
+    'positions'  => [
+        'front' => ['x' => (float)($selected['pos_x'] ?? 0), 'y' => (float)($selected['pos_y'] ?? 0), 'size' => (float)($selected['pos_size'] ?? 55)],
+        'back'  => ['x' => (float)($selected['pos_back_x'] ?? 0), 'y' => (float)($selected['pos_back_y'] ?? 0), 'size' => (float)($selected['pos_back_size'] ?? 55)],
+    ],
+]) ?>
+<script src="<?= htmlspecialchars(Asset::url('/js/admin/premade-position.js')) ?>" defer></script>
 
 </body>
 </html>

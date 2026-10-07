@@ -134,7 +134,7 @@ class ShopController extends Controller {
 
         // base_price is the SUPPLIER cost — attach the qty-1 retail price for
         // the initial render. The page's JS recomputes with Pricing.unitPrice
-        // (pricing.js) as quantity/product change; this keeps the first paint
+        // (lib/pricing.js) as quantity/product change; this keeps the first paint
         // consistent with those later updates.
         foreach ($availableProducts as &$product) {
             $product['retail_price'] = Pricing::unitPrice(
@@ -342,7 +342,7 @@ public function designer(): void {
         // Single-unit retail price, for the sticky action bar on phones.
         // products.base_price is the SUPPLIER cost, so it has to go through
         // the pricing engine — rendering it raw would advertise a EUR 2.14
-        // t-shirt. price-tiers.js takes over as soon as it has run; this is
+        // t-shirt. lib/price-tiers.js takes over as soon as it has run; this is
         // what the bar shows on the first paint, so that it never flashes a
         // zero before the script catches up.
         $retailPrice = Pricing::unitPrice(

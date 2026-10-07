@@ -2,12 +2,12 @@
 /**
  * Garment mockup colour tinting, server side.
  *
- * PHP mirror of public/js/color-tint.js. Some previews are rendered on the
+ * PHP mirror of public/js/lib/color-tint.js. Some previews are rendered on the
  * server (saved-design cards, cart lines, the admin order view) and some in the
  * browser, and they must agree — a design card showing a different shade from
  * the studio that produced it looks like a bug to the person who saved it.
  *
- * Keep this file and color-tint.js in step: same formula, same override table.
+ * Keep this file and lib/color-tint.js in step: same formula, same override table.
  * The reasoning behind the overrides is documented there.
  */
 class Tint

@@ -221,10 +221,6 @@
     </div>
 </div>
 
-<script>
-const availableColors = <?= json_encode($colors) ?>;
-const existingSizes = <?= json_encode($sizes) ?>;
-const existingVariants = <?= json_encode($variants) ?>;
-</script>
-<script src="<?= htmlspecialchars(Asset::url('/js/products_edit.js')) ?>" defer></script>
+<?= View::json('product-edit-data', ['availableColors' => $colors, 'existingSizes' => $sizes, 'existingVariants' => $variants]) ?>
+<script src="<?= htmlspecialchars(Asset::url('/js/admin/product-edit.js')) ?>" defer></script>
 <?php include View::path('layouts/admin_footer'); ?>

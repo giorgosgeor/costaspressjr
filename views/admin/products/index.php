@@ -219,5 +219,5 @@
     </div>
 </div>
 
-<script src="<?= htmlspecialchars(Asset::url('/js/admin_products.js')) ?>" defer></script>
+<script src="<?= htmlspecialchars(Asset::url('/js/admin/products.js')) ?>" defer></script>
 <?php require View::path('layouts/admin_footer'); ?>

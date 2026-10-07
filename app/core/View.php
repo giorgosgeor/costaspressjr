@@ -16,6 +16,23 @@ class View {
         return __DIR__ . '/../../views/' . $template . '.php';
     }
 
+    /**
+     * Data for a page's script, as a JSON block the browser never executes:
+     *   <?= View::json('product-data', ['variants' => $variants]) ?>
+     * and in the script: JSON.parse(document.getElementById('product-data').textContent).
+     * The flags escape < > & ' " so no value can close the tag early.
+     */
+    public static function json(string $id, mixed $data): string {
+        return '<script type="application/json" id="' . htmlspecialchars($id, ENT_QUOTES, 'UTF-8') . '">'
+            . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)
+            . '</script>';
+    }
+
+    /** A page script tag with a cache-busting version: <?= View::script('/js/pages/cart.js') ?> */
+    public static function script(string $path): string {
+        return '<script src="' . htmlspecialchars(Asset::url($path), ENT_QUOTES, 'UTF-8') . '"></script>';
+    }
+
     public static function render(string $template, array $data = []): void {
         $file = self::path($template);
         if (!is_file($file)) {

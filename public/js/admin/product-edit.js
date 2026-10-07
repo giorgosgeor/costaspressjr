@@ -1,3 +1,9 @@
+// Data from the page (views/admin/products/edit.php).
+const productEditData  = JSON.parse(document.getElementById('product-edit-data').textContent);
+const availableColors  = productEditData.availableColors;
+const existingSizes    = productEditData.existingSizes;
+const existingVariants = productEditData.existingVariants;
+
 let sizeIndex = 0;
 let currentSizeRow = null;
 

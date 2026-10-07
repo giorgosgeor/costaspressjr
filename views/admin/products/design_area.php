@@ -112,10 +112,7 @@
     </div>
 </div>
 
-<script>
-// PHP-generated data — must be inline
-const products = <?= json_encode($products) ?>;
-</script>
-<script src="<?= htmlspecialchars(Asset::url('/js/design_area_editor.js')) ?>" defer></script>
+<?= View::json('design-area-data', ['products' => $products]) ?>
+<script src="<?= htmlspecialchars(Asset::url('/js/admin/design-area.js')) ?>" defer></script>
 </body>
 </html>
