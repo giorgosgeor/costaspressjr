@@ -1,9 +1,13 @@
 <?php $title = t('studio.title', false); ?>
 <?php $pageCss[] = '/css/pages/designer.css'; require View::path('layouts/customer_header'); ?>
 
-<?php // The studio's pop-ups (add to cart, design saved, save design). They used to
-      // be printed before the layout, ahead of <!DOCTYPE html>, which put the whole
-      // page in the browser's quirks mode. ?>
+<?= View::script('/js/pages/designer/cart-modal.js') ?>
+<?= View::script('/js/pages/designer/save-design.js') ?>
+
+<?php // The studio's pop-ups (add to cart, design saved, save design). The footer
+      // prints them after </main> (see $overlays). They used to be printed before
+      // the layout, ahead of <!DOCTYPE html>, which put the page in quirks mode.
+ob_start(); ?>
 <!-- Add to Cart Modal (with size/color/quantity selection) -->
 <div id="addToCartModal" style="display:none; position:fixed; z-index:35000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25); align-items:center; justify-content:center;" data-on-click="closeAddToCartModal" data-click-self>
     <div style="background:#fff; border-radius:18px; max-width:520px; width:95vw; margin:auto; box-shadow:0 2px 24px rgba(0,0,0,0.16); padding:2rem; position:relative; max-height:90vh; overflow-y:auto;" data-stop-click>
@@ -84,7 +88,7 @@
     </div>
 </div>
 
-<?= View::script('/js/pages/designer/cart-modal.js') ?>
+
 
 <!-- Design Saved Success Modal -->
 <div id="designSavedModal" style="display:none; position:fixed; z-index:30000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.18); align-items:center; justify-content:center;">
@@ -140,7 +144,7 @@
         </div>
     </div>
 </div>
-<?= View::script('/js/pages/designer/save-design.js') ?>
+<?php $overlays = ob_get_clean(); ?>
 
 <!-- Interact.js for drag & resize -->
 <script src="/js/vendor/interact.min.js"></script>

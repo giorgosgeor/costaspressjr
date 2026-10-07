@@ -1,4 +1,8 @@
 </main>
+<?php // Full-screen pop-ups a page hands over in $overlays. They belong out here:
+      // <main> has its own z-index, so inside it they would sit under the
+      // sticky header. ?>
+<?= $overlays ?? '' ?>
 
 <?php
 // Consent state for the cookie notice.
