@@ -252,7 +252,7 @@ function initCookiePopup(loggedIn, cookieAccepted) {
 
     if (!loggedIn || cookieAccepted !== 0) return;
 
-    // Markup only — every dimension and colour is in customer.css, so this
+    // Markup only — every dimension and colour is in shop.css, so this
     // notice follows the palette instead of carrying its own gradient and
     // rounded corners from a theme the site no longer uses. It also has to
     // work as a bottom sheet on a phone, which inline styles made awkward.

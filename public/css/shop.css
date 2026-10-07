@@ -36,7 +36,7 @@
     --gradient-success:  linear-gradient(135deg, var(--spot-3), #15803D);
     /* --radius-sm and --radius-lg are NOT redefined here.
        This legacy alias block used to set them to 6px and 16px, and because
-       customer.css loads after style.css those values quietly replaced the
+       shop.css loads after base.css those values quietly replaced the
        press-floor radii (1px and 3px) for the entire customer side. Corners
        that were meant to be cut stayed rounded — the product panel, the
        colour swatches and every card carrying --radius-lg — which is why
@@ -85,7 +85,7 @@
     box-shadow: var(--stamp-sm);
 }
 
-/* Legacy gradient/outline buttons now live in style.css, with the rest of the
+/* Legacy gradient/outline buttons now live in base.css, with the rest of the
    button system. */
 
 

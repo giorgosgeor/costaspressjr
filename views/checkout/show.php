@@ -2,7 +2,7 @@
 // GET /checkout — see CheckoutController::show().
 // $cartItems, $cartTotal, $checkout, $accountEmail, $accountPhone
 $title        = t('checkout.page.title', false);
-$extraCss     = ['/css/checkout.css'];
+$extraCss     = ['/css/pages/checkout.css'];
 $checkoutMode = true;
 require View::path('layouts/customer_header');
 

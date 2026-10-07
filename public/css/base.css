@@ -1,5 +1,5 @@
 /* ============================================================
-   COSTAS PRESS JR. — PRESS FLOOR (style.css)
+   COSTAS PRESS JR. — PRESS FLOOR (base.css)
    The shop's own production language: newsprint stock, warm
    press black, two spot inks, hard offset shadows, square
    corners. Base tokens, type, buttons, forms, auth, admin.
@@ -546,7 +546,7 @@ a:hover {
    Applied while a request is in flight. The label is hidden rather than
    replaced so the button keeps its width and the layout doesn't jump.
 
-   There was a .btn-loading in cart.css that never worked: its @keyframes had an
+   There was a .btn-loading in pages/cart.css that never worked: its @keyframes had an
    empty `to {}` so nothing rotated, the element had no border-radius so it was
    a square, and it was never centred. Both names are supported here. */
 .btn.is-loading,
@@ -598,7 +598,7 @@ a:hover {
 
    These used to be spread over five stylesheets with duplicate and CONFLICTING
    definitions — .btn-outline existed twice and .btn-lg had different padding in
-   customer.css and shop_custom.css, so which one applied depended on stylesheet
+   shop.css and shop_custom.css, so which one applied depended on stylesheet
    order. Everything now lives here; the older names below are kept as aliases
    so existing markup keeps working.
    ============================================================ */

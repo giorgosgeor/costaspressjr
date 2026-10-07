@@ -34,8 +34,8 @@ $currentLocale   = I18n::locale();
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/style.css')) ?>">
-    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/customer.css')) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/base.css')) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/shop.css')) ?>">
     <?php // The Studio look, over the base styles and under the page ones. ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/studio.css')) ?>">
     <?php if (!empty($extraCss)): foreach ($extraCss as $css): ?>

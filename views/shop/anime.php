@@ -1,6 +1,6 @@
 <?php
 $title    = t('shop.anime.title', false);
-$extraCss = ['/css/shop_anime.css'];
+$extraCss = ['/css/pages/anime.css'];
 require View::path('layouts/customer_header');
 
 $designCount = count($designs ?? []);
@@ -213,7 +213,7 @@ $designCount = count($designs ?? []);
     var hover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
     // Scroll entrance: the art and each card play their entrance when they
-    // come into view (see shop_anime.css). Cards in a row go one after another.
+    // come into view (see pages/anime.css). Cards in a row go one after another.
     var page = document.querySelector('.anime-page');
     if (page && !calm && 'IntersectionObserver' in window) {
         page.classList.add('js-reveal');

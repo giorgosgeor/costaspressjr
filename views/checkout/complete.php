@@ -3,7 +3,7 @@
 // $state: placed | processing | not_paid | failed
 // $result from OrderPlacement::place(); $placed from orderForConfirmation() (may be null)
 $title    = $state === 'placed' ? t('checkout.success.title', false) : t('checkout.complete.title', false);
-$extraCss = ['/css/checkout.css'];
+$extraCss = ['/css/pages/checkout.css'];
 require View::path('layouts/customer_header');
 
 $money   = static fn($v) => '€' . number_format((float)$v, 2);

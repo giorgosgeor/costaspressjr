@@ -2,7 +2,7 @@
    CHECKOUT — /checkout and /checkout/complete
    One page, three numbered sections (details → collection →
    payment) beside a receipt-style order summary. Built on the
-   press-floor tokens in style.css.
+   press-floor tokens in base.css.
 
    Choices that come from checkout research rather than taste:
    - The total is always in view: the sidebar on desktop, the

@@ -7,7 +7,7 @@
    Loaded on every page (customer, auth and admin layouts all put
    theme-studio on <body>); every rule is scoped to that class. The
    admin panel's own pieces are at the end of this file. It works mostly
-   by re-pointing the tokens style.css defines, so page stylesheets
+   by re-pointing the tokens base.css defines, so page stylesheets
    built on them follow along; the rest overrides the few places the
    old press-floor look was hard-coded (uppercase condensed headings,
    ink-ruled cards, offset shadows, hover lifts).
@@ -723,7 +723,7 @@ body.theme-studio .auth-section .form-footer a:hover { color: var(--st-red-txt);
    ADMIN — /admin in the same look (admin_header.php)
    The bar matches the shop header; numbers sit on warm grey
    tiles; tables, badges, cards and dialogs take hairlines where
-   admin.css and style.css had stamps, dashed rules and the old
+   admin.css and base.css had stamps, dashed rules and the old
    purple highlight.
    ============================================================ */
 
@@ -753,7 +753,7 @@ body.theme-studio .admin-nav a:not(.admin-nav-brand) {
 }
 body.theme-studio .admin-nav a:not(.admin-nav-brand):hover { background: transparent; color: var(--st-ink); }
 body.theme-studio .admin-nav a.active { background: transparent; color: var(--st-ink); font-weight: 500; box-shadow: inset 0 -1px 0 var(--st-ink); }
-/* style.css set these with !important, so they are answered in kind. */
+/* base.css set these with !important, so they are answered in kind. */
 body.theme-studio .admin-nav .logout-link { color: var(--st-muted) !important; border-radius: 0; }
 body.theme-studio .admin-nav .logout-link:hover { background: transparent !important; color: var(--st-red-txt) !important; }
 

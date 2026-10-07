@@ -10,10 +10,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sofia+Sans:wght@400..800&family=Sofia+Sans+Extra+Condensed:wght@600..900&display=swap" rel="stylesheet">
-    <?php // Standalone page, outside the admin layout — style.css holds the var()
+    <?php // Standalone page, outside the admin layout — base.css holds the var()
           // definitions this stylesheet is built on and must load first. ?>
-    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/style.css')) ?>">
-    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/design_area_editor.css')) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/base.css')) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/admin/design-area.css')) ?>">
     <script src="/js/vendor/interact.min.js"></script>
 </head>
 <body>

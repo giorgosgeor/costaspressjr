@@ -1,4 +1,4 @@
-<?php $extraCss = ['/css/account.css']; ?>
+<?php $extraCss = ['/css/pages/account.css']; ?>
 <?php require View::path('layouts/customer_header'); ?>
 
 

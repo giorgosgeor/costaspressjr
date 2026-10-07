@@ -3,7 +3,7 @@
 // (account or session guest) and passes an empty cart when there is neither.
 
 $title = t('cart.title', false);
-$extraCss = ['/css/cart.css'];
+$extraCss = ['/css/pages/cart.css'];
 require View::path('layouts/customer_header');
 ?>
 
@@ -260,7 +260,7 @@ let _pendingRemoveId = null;
 function removeFromCart(cartItemId) {
     _pendingRemoveId = cartItemId;
     const overlay = document.getElementById('removeConfirmOverlay');
-    // Every direct child of <body> is its own z-index:1 layer (style.css, to
+    // Every direct child of <body> is its own z-index:1 layer (base.css, to
     // sit above the paper grain). Inside <main> this dialog's z-index only
     // counted within main, so the footer painted over it.
     if (overlay.parentNode !== document.body) document.body.appendChild(overlay);

@@ -1,8 +1,8 @@
 <?php
 $title = t('site.brand', false);
 // The site-wide Studio look is in studio.css (loaded by the layout);
-// home-studio.css adds this page's hero.
-$extraCss = ['/css/home-studio.css'];
+// pages/home.css adds this page's hero.
+$extraCss = ['/css/pages/home.css'];
 require View::path('layouts/customer_header');
 ?>
 

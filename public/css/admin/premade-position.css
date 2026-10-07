@@ -17,7 +17,7 @@ body { background: var(--paper); }
     margin: 0;
     font-family: var(--font-display);
     font-size: 1.3rem;
-    /* style.css sets a colour on bare h1, which beats the light colour this
+    /* base.css sets a colour on bare h1, which beats the light colour this
        dark bar passes down by inheritance — so state it here. */
     color: var(--paper);
 }

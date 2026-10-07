@@ -1,4 +1,4 @@
-<?php $extraCss = ['/css/admin_products.css']; ?>
+<?php $extraCss = ['/css/admin/products.css']; ?>
 <?php include View::path('layouts/admin_header'); ?>
 
 <div class="admin-container">

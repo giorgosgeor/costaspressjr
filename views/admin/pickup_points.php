@@ -1,25 +1,7 @@
 <?php $title = 'Pickup Points'; ?>
-<?php require View::path('layouts/admin_header'); ?>
+<?php $extraCss[] = '/css/admin/pickup-points.css'; require View::path('layouts/admin_header'); ?>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
-<style>
-.pp-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; }
-.pp-status div { border: 1px solid var(--border); background: var(--paper-2); padding: 12px 14px; }
-.pp-status strong { display: block; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); margin-bottom: 4px; }
-.pp-ok { color: #166534; font-weight: 600; }
-.pp-missing { color: #991B1B; font-weight: 600; }
-.pp-flash { padding: 10px 14px; margin-bottom: 18px; border: 1px solid; }
-.pp-flash.success { color: #166534; border-color: rgba(34,197,94,.4); background: rgba(34,197,94,.1); }
-.pp-flash.error { color: #991B1B; border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.1); }
-.pp-grid { display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start; }
-#ppMap { height: 320px; border: 1px solid var(--border); margin-bottom: 12px; }
-.pp-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-.pp-table th, .pp-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
-.pp-table tr.inactive td { opacity: 0.5; }
-.pp-kind { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid var(--border); padding: 1px 6px; }
-.pp-actions form { display: inline; }
-@media (max-width: 900px) { .pp-grid { grid-template-columns: 1fr; } }
-</style>
 
 <div class="admin-header">
     <h1>Pickup Points</h1>

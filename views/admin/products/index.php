@@ -1,5 +1,5 @@
 <?php $title = 'Manage Products'; ?>
-<?php $extraCss = ['/css/admin_products.css']; ?>
+<?php $extraCss = ['/css/admin/products.css']; ?>
 <?php require View::path('layouts/admin_header'); ?>
 
 <div class="admin-header">

@@ -269,4 +269,4 @@
 /* The collection line in the cart summary ("chosen at checkout"). */
 .summary-value-note { font-size: 0.85rem; color: var(--ink-muted); text-align: right; }
 
-/* Checkout styles live in checkout.css (the /checkout page). */
+/* Checkout styles live in pages/checkout.css (the /checkout page). */

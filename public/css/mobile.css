@@ -201,7 +201,7 @@
     /* The sliding underline is a pointer affordance; on a phone the current
        page is better marked by something simply visible. The :not(.btn) and
        .active parts are here only to out-specify the base rule in
-       customer.css, which is otherwise more specific than this one and left
+       shop.css, which is otherwise more specific than this one and left
        the active row carrying a dash AND an underline. */
     .main-nav > a::after,
     .main-nav > a:not(.btn)::after,

@@ -10,10 +10,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sofia+Sans:wght@400..800&family=Sofia+Sans+Extra+Condensed:wght@600..900&display=swap" rel="stylesheet">
     <?php // This page renders standalone, outside the admin layout, so it has to
-          // pull in style.css itself — every colour, radius and font below is a
+          // pull in base.css itself — every colour, radius and font below is a
           // var() defined there. Without it the controls render unstyled. ?>
-    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/style.css')) ?>">
-    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/premade_position.css')) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/base.css')) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/admin/premade-position.css')) ?>">
     <script src="/js/vendor/interact.min.js"></script>
 </head>
 <body>
