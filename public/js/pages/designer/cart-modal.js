@@ -348,6 +348,7 @@ function selectCartSize(sizeId) {
 
     // Update color availability based on selected size
     updateColorAvailability();
+    updateCartPrices();
 }
 
 function selectCartColor(colorId) {
@@ -374,6 +375,7 @@ function selectCartColor(colorId) {
 
     // Update size availability based on selected color
     updateSizeAvailability();
+    updateCartPrices();
 }
 
 function updateColorAvailability() {
@@ -422,14 +424,19 @@ function updateCartPrices() {
     // basePrice holds the SUPPLIER cost; print add-ons (designFee) are the raw
     // pre-margin cost. Both are marked up through the quantity-tiered margin so
     // the preview matches what the server charges.
+    // The chosen size + colour's cost, not the base price: a black or 3XL tee
+    // costs more than the white one, and the cart charges the variant's cost.
     const category = window.Pricing ? Pricing.categoryFor('', cartModalState.productName) : 'tshirt';
     const rawExtra = cartModalState.designFee || 0;
-    const unitBase = window.Pricing
-        ? Pricing.unitPrice(cartModalState.basePrice, category, qty)
+    const supplier = window.Pricing
+        ? Pricing.variantCost(cartModalState.variants, cartModalState.selectedSize, cartModalState.selectedColor, cartModalState.basePrice)
         : cartModalState.basePrice;
+    const unitBase = window.Pricing
+        ? Pricing.unitPrice(supplier, category, qty)
+        : supplier;
     const unitAll = window.Pricing
-        ? Pricing.unitPrice(cartModalState.basePrice, category, qty, rawExtra)
-        : (cartModalState.basePrice + rawExtra);
+        ? Pricing.unitPrice(supplier, category, qty, rawExtra)
+        : (supplier + rawExtra);
 
     const baseTotal = unitBase * qty;
     const designFee = (unitAll - unitBase) * qty; // marked-up print add-ons

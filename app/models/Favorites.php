@@ -31,14 +31,32 @@ class Favorites {
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Products store the SUPPLIER cost, so show the same qty-1 retail price
-        // the shop does. Designs already carry a customer-facing price.
+        // the shop does. A design's price is only its fee on top of a garment,
+        // so show what it costs on its cheapest garment, as the design page's
+        // "From" does (it used to show the bare fee: €12 for a €25.80 tee).
         foreach ($rows as &$r) {
             $r['display_price'] = $r['kind'] === 'product'
                 ? Pricing::unitPrice((float)$r['base_price'], Pricing::categoryFor($r['slug'] ?? '', $r['name'] ?? ''), 1)
-                : (float)$r['base_price'];
+                : $this->cheapestGarment((int)$r['item_id']) + (float)$r['base_price'];
         }
         unset($r);
         return $rows;
+    }
+
+    /** Qty-1 retail price of the cheapest active garment a design is offered on (0 if none). */
+    private function cheapestGarment(int $designId): float {
+        $stmt = $this->db->prepare("
+            SELECT p.base_price, p.slug, p.name
+            FROM design_products dp
+            JOIN products p ON p.id = dp.product_id AND p.active = 1
+            WHERE dp.design_id = ?
+        ");
+        $stmt->execute([$designId]);
+        $prices = array_map(
+            static fn($p) => Pricing::unitPrice((float)$p['base_price'], Pricing::categoryFor($p['slug'] ?? '', $p['name'] ?? ''), 1),
+            $stmt->fetchAll(PDO::FETCH_ASSOC)
+        );
+        return $prices ? min($prices) : 0.0;
     }
 
     /**

@@ -174,11 +174,13 @@
 $previewColors = [];
 $previewAllSizes = [];   // prodId => [{id, name}, ...]
 $previewColorSizes = []; // prodId => {colorId => [sizeId, ...]}
+$previewColorCosts = []; // prodId => {colorId => cheapest supplier cost in that colour}
 foreach ($availableProducts as $prod):
     $pid = $prod['id'];
     $prodColors = [];
     $allSizesMap = []; // sizeId => size_name (ordered)
     $colorSizeMap = []; // colorId => [sizeId, ...]
+    $colorCostMap = []; // colorId => cheapest cost
     foreach ($prod['sizes'] as $sz):
         $sid   = $sz['id'];
         $sname = $sz['size_name'];
@@ -186,6 +188,7 @@ foreach ($availableProducts as $prod):
         $cIds   = $sz['color_ids']   ? explode(',', $sz['color_ids'])   : [];
         $cNames = $sz['color_names'] ? explode(',', $sz['color_names']) : [];
         $cHexes = $sz['color_hexes'] ? explode(',', $sz['color_hexes']) : [];
+        $cCosts = $sz['color_costs'] ? explode(',', $sz['color_costs']) : [];
         foreach ($cIds as $ci => $cid):
             $cid = trim($cid);
             if (!$cid) continue;
@@ -197,11 +200,15 @@ foreach ($availableProducts as $prod):
             }
             if (!isset($colorSizeMap[$cid])) $colorSizeMap[$cid] = [];
             if (!in_array($sid, $colorSizeMap[$cid])) $colorSizeMap[$cid][] = $sid;
+            if (isset($cCosts[$ci]) && $cCosts[$ci] !== '') {
+                $colorCostMap[$cid] = min($colorCostMap[$cid] ?? INF, (float)$cCosts[$ci]);
+            }
         endforeach;
     endforeach;
     $previewColors[$pid]     = $prodColors;
     $previewAllSizes[$pid]   = $allSizesMap;
     $previewColorSizes[$pid] = $colorSizeMap;
+    $previewColorCosts[$pid] = $colorCostMap;
 endforeach;
 ?>
 
@@ -394,6 +401,7 @@ ob_start(); ?>
     'productLeftSleeveImage' => $availableProducts[0]['left_sleeve_image_path'] ?? '',
     'productRightSleeveImage'=> $availableProducts[0]['right_sleeve_image_path'] ?? '',
     'previewColorSizes'      => $previewColorSizes,
+    'previewColorCosts'      => $previewColorCosts ?? [],
 ]) ?>
 <?= View::script('/js/pages/premade-design.js') ?>
 

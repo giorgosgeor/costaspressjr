@@ -76,10 +76,44 @@
         return Math.round(price * 100) / 100;
     }
 
+    /**
+     * Supplier cost of the chosen size + colour, from /api/product-variants
+     * (each variant carries `cost`). Coloured and larger garments cost more
+     * than the product's base price, and the cart charges the variant's cost
+     * (CartPricing), so the pop-ups price with it too. Falls back to
+     * `fallback` (the base price) until both are chosen.
+     */
+    function variantCost(variants, sizeId, colorId, fallback) {
+        var v = (variants || []).find(function (x) {
+            return x.size_id == sizeId && x.color_id == colorId && x.cost != null;
+        });
+        return v ? parseFloat(v.cost) : (parseFloat(fallback) || 0);
+    }
+
     /** Flat euro cost of the print add-ons. Mirrors Pricing::printExtraCost(). */
     function printExtraCost(frontAndBack, sleeves) {
         return (frontAndBack ? FRONT_AND_BACK_EXTRA : 0)
              + Math.max(0, sleeves || 0) * SLEEVE_EXTRA;
+    }
+
+    /**
+     * Print add-ons of a design's elements, view-keyed or as saved designs
+     * store them (a flat list, each element naming its view). Mirrors
+     * CartPricing::printExtraCostFor().
+     */
+    function printExtraFor(elements) {
+        if (typeof elements === 'string') {
+            try { elements = JSON.parse(elements); } catch (e) { elements = null; }
+        }
+        var printed = {};
+        Object.keys(elements || {}).forEach(function (key) {
+            var value = elements[key];
+            if (key === '_meta' || !value || typeof value !== 'object') return;
+            if (Array.isArray(value)) { if (value.length && isNaN(key)) printed[key] = true; }
+            else if (typeof value.view === 'string') printed[value.view] = true;
+        });
+        return printExtraCost(!!(printed.front && printed.back),
+                              (printed['left-sleeve'] ? 1 : 0) + (printed['right-sleeve'] ? 1 : 0));
     }
 
     global.Pricing = {
@@ -90,6 +124,8 @@
         categoryFor: categoryFor,
         marginFor: marginFor,
         unitPrice: unitPrice,
-        printExtraCost: printExtraCost
+        variantCost: variantCost,
+        printExtraCost: printExtraCost,
+        printExtraFor: printExtraFor
     };
 })(window);

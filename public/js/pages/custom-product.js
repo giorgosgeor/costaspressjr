@@ -5,6 +5,7 @@ const product = customProductData.product;
 const colors = customProductData.colors;
 const sizes = customProductData.sizes;
 const colorSizeMatrix = customProductData.colorSizeMatrix; // { color_id: [size_id, ...] }
+const variantCosts = customProductData.variantCosts || {};  // { color_id: { size_id: supplier cost } }
 const thumbnails = customProductData.thumbnails;
 
 let selectedColor = null;
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (typeof setSelectedSwatch === 'function') {
             setSelectedSwatch(selectedColor);
         }
+        syncVariantPrice();
     }
 
     // Color selection logic
@@ -30,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedColor = e.target.getAttribute('data-color-id');
                 renderSizes(selectedColor);
                 setSelectedSwatch(selectedColor);
+                syncVariantPrice();
                 // Optionally, apply color tint if needed
                 const color = colors.find(c => c.id == selectedColor);
                 if (color && typeof applyColorTint === 'function') {
@@ -46,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
         colorSwatches.addEventListener('mouseout', function(e) {
             if (e.target.classList.contains('color-swatch')) {
                 renderSizes(selectedColor);
+                syncVariantPrice();
             }
         });
     }
@@ -181,7 +185,20 @@ document.addEventListener('click', function (e) {
         c.classList.toggle('is-selected', on);
         c.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
+    syncVariantPrice();
 });
+
+// The price follows the colour and size picked: a black or 3XL tee costs more
+// than the white one the page opens with, and the cart charges the variant's
+// cost. lib/price-tiers.js re-renders with it (and the phone action bar
+// mirrors that).
+function syncVariantPrice() {
+    const box  = document.getElementById('productPriceTiers');
+    const cost = (variantCosts[selectedColor] || {})[selectedSize];
+    if (box && window.PriceTiers && cost != null) {
+        window.PriceTiers.update(box, { supplierCost: cost });
+    }
+}
 
 // Move modal logic inside DOMContentLoaded
 // (No extra closing brace here)

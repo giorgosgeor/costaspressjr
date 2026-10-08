@@ -430,6 +430,7 @@ function selectCartSize(sizeId) {
     });
 
     updateColorAvailability();
+    updateCartPrices();
 }
 
 function selectCartColor(colorId, colorHex) {
@@ -456,6 +457,7 @@ function selectCartColor(colorId, colorHex) {
     });
 
     updateSizeAvailability();
+    updateCartPrices();
 }
 
 function updateColorAvailability() {
@@ -501,12 +503,19 @@ function updateCartPrices() {
     const qty = parseInt(document.getElementById('cartQuantity').value) || 1;
     cartModalState.quantity = qty;
 
-    // basePrice holds the SUPPLIER cost; apply the quantity-tiered margin so the
+    // The chosen size + colour's SUPPLIER cost (a black or 3XL tee costs more
+    // than the white base price); apply the quantity-tiered margin so the
     // preview matches what the server charges.
     const category = window.Pricing ? Pricing.categoryFor('', cartModalState.productName) : 'tshirt';
-    const unitRetail = window.Pricing
-        ? Pricing.unitPrice(cartModalState.basePrice, category, qty)
+    const supplier = window.Pricing
+        ? Pricing.variantCost(cartModalState.variants, cartModalState.selectedSize, cartModalState.selectedColor, cartModalState.basePrice)
         : cartModalState.basePrice;
+    // The cart also charges the design's print add-ons (front+back, sleeves —
+    // CartPricing::printExtraCostFor), so the price shown here includes them.
+    const extra = window.Pricing ? Pricing.printExtraFor(cartModalState.elementsJson) : 0;
+    const unitRetail = window.Pricing
+        ? Pricing.unitPrice(supplier, category, qty, extra)
+        : supplier + extra;
     const total = unitRetail * qty;
 
     document.getElementById('cartBasePrice').textContent = '€' + total.toFixed(2);

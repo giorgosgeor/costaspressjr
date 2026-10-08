@@ -27,16 +27,26 @@ class CartPricing {
     }
 
     /**
-     * Flat euro cost of a custom design's print add-ons, derived from its
-     * view-keyed elements: front+back print and each printed sleeve.
+     * Flat euro cost of a custom design's print add-ons: front+back print and
+     * each printed sleeve. Takes the elements either view-keyed
+     * (['front' => [el, …], …]) or as saved designs store them — one flat
+     * list, each element naming its 'view', plus '_meta'. Only the first was
+     * read before, so a saved design printed on both sides was charged no
+     * extra while the designer's pop-up quoted it.
      */
     public static function printExtraCostFor($elements): float {
         if (!is_array($elements)) return 0.0;
-        $count = function ($view) use ($elements) {
-            return isset($elements[$view]) && is_array($elements[$view]) ? count($elements[$view]) : 0;
-        };
-        $frontAndBack = $count('front') > 0 && $count('back') > 0;
-        $sleeves = ($count('left-sleeve') > 0 ? 1 : 0) + ($count('right-sleeve') > 0 ? 1 : 0);
+        $printed = []; // view => true
+        foreach ($elements as $key => $value) {
+            if ($key === '_meta' || !is_array($value) || !$value) continue;
+            if (is_string($key) && array_is_list($value)) {
+                $printed[$key] = true;               // view-keyed
+            } elseif (isset($value['view']) && is_string($value['view'])) {
+                $printed[$value['view']] = true;     // flat list
+            }
+        }
+        $frontAndBack = isset($printed['front'], $printed['back']);
+        $sleeves = (isset($printed['left-sleeve']) ? 1 : 0) + (isset($printed['right-sleeve']) ? 1 : 0);
         return Pricing::printExtraCost($frontAndBack, $sleeves);
     }
 

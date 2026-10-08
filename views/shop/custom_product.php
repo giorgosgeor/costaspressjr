@@ -83,7 +83,7 @@
     </div>
 		</div>
 
-<?= View::json('custom-product-data', ['product' => $product ?? [], 'colors' => $colors ?? [], 'sizes' => $sizes ?? [], 'colorSizeMatrix' => $colorSizeMatrix ?? [], 'thumbnails' => $thumbnails ?? []]) ?>
+<?= View::json('custom-product-data', ['product' => $product ?? [], 'colors' => $colors ?? [], 'sizes' => $sizes ?? [], 'colorSizeMatrix' => $colorSizeMatrix ?? [], 'variantCosts' => $variantCosts ?? [], 'thumbnails' => $thumbnails ?? []]) ?>
 <?= View::script('/js/pages/custom-product.js') ?>
 <?php require View::path('partials/size_guide_modal'); ?>
 <?php // ---- Sticky action bar (phones only) ----------------------------

@@ -113,13 +113,16 @@ class ShopController extends Controller {
         $stmt->execute([$designId]);
         $availableProducts = $stmt->fetchAll();
 
-        // Get sizes for each product
+        // Get sizes for each product, with each colour's supplier cost in that
+        // size (color_costs, in color_ids order): the price box follows the
+        // preview colour, the way the cart charges it (CartPricing).
         foreach ($availableProducts as &$product) {
             $stmt = $this->db->prepare("
-                SELECT ps.*, 
+                SELECT ps.*,
                        GROUP_CONCAT(ac.color_name ORDER BY ac.id) as color_names,
                        GROUP_CONCAT(ac.color_hex ORDER BY ac.id) as color_hexes,
-                       GROUP_CONCAT(ac.id ORDER BY ac.id) as color_ids
+                       GROUP_CONCAT(ac.id ORDER BY ac.id) as color_ids,
+                       GROUP_CONCAT(IF(ac.id IS NULL, NULL, COALESCE(pv.unit_price, ? + COALESCE(ps.price_modifier, 0))) ORDER BY ac.id) as color_costs
                 FROM product_sizes ps
                 JOIN product_variants pv ON ps.id = pv.size_id AND pv.is_available = 1
                 LEFT JOIN available_colors ac ON pv.color_id = ac.id
@@ -127,7 +130,7 @@ class ShopController extends Controller {
                 GROUP BY ps.id
                 ORDER BY ps.size_order
             ");
-            $stmt->execute([$product['id']]);
+            $stmt->execute([(float)$product['base_price'], $product['id']]);
             $product['sizes'] = $stmt->fetchAll();
         }
         unset($product);
@@ -314,18 +317,25 @@ public function designer(): void {
         ");
         $stmt->execute([$id]);
         $sizes = $stmt->fetchAll();
-        // Build color-to-size matrix
+        // Build color-to-size matrix, and each variant's supplier cost: a
+        // coloured or larger garment costs more than base_price, and the price
+        // shown follows the colour and size picked, as the cart charges it.
         $stmt = $this->db->prepare("
-            SELECT pv.color_id, pv.size_id
+            SELECT pv.color_id, pv.size_id,
+                   COALESCE(pv.unit_price, p.base_price + COALESCE(ps.price_modifier, 0)) AS cost
             FROM product_variants pv
+            JOIN products p ON p.id = pv.product_id
+            LEFT JOIN product_sizes ps ON ps.id = pv.size_id
             WHERE pv.product_id = ?
               AND pv.is_available = 1
         ");
         $stmt->execute([$id]);
         $matrixRows = $stmt->fetchAll();
         $colorSizeMatrix = [];
+        $variantCosts    = []; // color_id => [size_id => supplier cost]
         foreach ($matrixRows as $row) {
             $colorSizeMatrix[$row['color_id']][] = $row['size_id'];
+            $variantCosts[$row['color_id']][$row['size_id']] = (float)$row['cost'];
         }
         // Get product thumbnails (if you have a table or logic for this)
         $thumbnails = [];
@@ -351,7 +361,7 @@ public function designer(): void {
             1
         );
 
-        $this->render('shop/custom_product', ['product' => $product, 'colors' => $colors, 'sizes' => $sizes, 'colorSizeMatrix' => $colorSizeMatrix, 'thumbnails' => $thumbnails, 'deliveryEstimate' => $deliveryEstimate, 'retailPrice' => $retailPrice]);
+        $this->render('shop/custom_product', ['product' => $product, 'colors' => $colors, 'sizes' => $sizes, 'colorSizeMatrix' => $colorSizeMatrix, 'variantCosts' => $variantCosts, 'thumbnails' => $thumbnails, 'deliveryEstimate' => $deliveryEstimate, 'retailPrice' => $retailPrice]);
     }
 
     public function product(?int $id = null): void {
@@ -449,14 +459,23 @@ public function designer(): void {
         $stmt->execute([$productId]);
         $colors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Get all variants with availability
+        // Get all variants with availability, and each one's supplier cost —
+        // coloured and larger garments cost more than the white base_price, so
+        // the add-to-cart pop-ups price the chosen variant with it, the same
+        // way CartPricing charges it.
         $stmt = $this->db->prepare("
-            SELECT pv.id, pv.size_id, pv.color_id, pv.stock_quantity, pv.is_available
+            SELECT pv.id, pv.size_id, pv.color_id, pv.stock_quantity, pv.is_available,
+                   COALESCE(pv.unit_price, p.base_price + COALESCE(ps.price_modifier, 0)) AS cost
             FROM product_variants pv
+            JOIN products p ON p.id = pv.product_id
+            LEFT JOIN product_sizes ps ON ps.id = pv.size_id
             WHERE pv.product_id = ?
         ");
         $stmt->execute([$productId]);
-        $variants = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $variants = array_map(static function ($v) {
+            $v['cost'] = $v['cost'] !== null ? (float)$v['cost'] : null;
+            return $v;
+        }, $stmt->fetchAll(PDO::FETCH_ASSOC));
 
         echo json_encode([
             'sizes' => $sizes,

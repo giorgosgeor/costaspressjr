@@ -40,6 +40,16 @@ let designPositions = {
 // picker's call threw and skipped the rest of the picker (the price box kept
 // the previous product's price).
 const previewColorSizes = premadeDesignData.previewColorSizes;
+// Cheapest supplier cost of each preview colour (prodId → colorId → cost): a
+// coloured tee costs more than the white base price, so the price box follows
+// the colour on show. The exact size is priced in the add-to-cart pop-up.
+const previewColorCosts = premadeDesignData.previewColorCosts || {};
+
+function previewedCost() {
+    const radio = document.querySelector('input[name="preview_color_' + selectedProductId + '"]:checked');
+    const cost  = radio && previewColorCosts[selectedProductId] ? previewColorCosts[selectedProductId][radio.value] : undefined;
+    return cost != null ? parseFloat(cost) : selectedBasePrice;
+}
 
 function updatePreviewSizeChips(productId, colorId) {
     const container = document.getElementById('preview-sizes-' + productId);
@@ -550,9 +560,10 @@ function updatePrice() {
     const qtyInput = document.getElementById('quantity');
     const qty = qtyInput ? (parseInt(qtyInput.value) || 1) : 1;
     const category = window.Pricing ? Pricing.categoryFor('', productName) : 'tshirt';
+    const supplier = previewedCost();
     const unitRetail = window.Pricing
-        ? Pricing.unitPrice(selectedBasePrice, category, qty)
-        : selectedBasePrice;
+        ? Pricing.unitPrice(supplier, category, qty)
+        : supplier;
 
     // Lines are per item; the total is for the whole quantity, the way the
     // cart charges it (it used to show one item's price as the total).
@@ -769,6 +780,8 @@ function selectConfirmColor(colorId, colorHex, colorName) {
 
     // Update size availability
     updateConfirmSizeAvailability();
+    // The colour changes the price (a coloured tee costs more than white).
+    updateConfirmPrices();
 }
 
 function selectConfirmSize(sizeId, modifier) {
@@ -835,12 +848,16 @@ function adjustConfirmQty(delta) {
 function updateConfirmPrices(sizeModifier) {
     const mod       = sizeModifier !== undefined ? sizeModifier : 0;
     const qty       = parseInt(document.getElementById('confirmQty').value) || 1;
-    // basePrice + size modifier is the SUPPLIER cost; apply the quantity-tiered
-    // margin to match the server. The premade design fee is added per unit.
+    // The chosen variant's SUPPLIER cost (a black or 3XL tee costs more than
+    // the white base price); apply the quantity-tiered margin to match the
+    // server. The premade design fee is added per unit.
     const selectedOpt = document.querySelector('.product-option.selected');
     const productName = selectedOpt ? (selectedOpt.dataset.productName || '') : '';
     const category  = window.Pricing ? Pricing.categoryFor('', productName) : 'tshirt';
-    const supplier  = (confirmModalState.basePrice || 0) + mod;
+    const fallback  = (confirmModalState.basePrice || 0) + mod;
+    const supplier  = window.Pricing
+        ? Pricing.variantCost(confirmModalState.variants, confirmModalState.selectedSizeId, confirmModalState.selectedColorId, fallback)
+        : fallback;
     const unitPrice = window.Pricing ? Pricing.unitPrice(supplier, category, qty) : supplier;
     const designFee = confirmModalState.designFee || 0;
     const total     = (unitPrice + designFee) * qty;
@@ -953,8 +970,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.dataset.hex) applyColorTint(this.dataset.hex);
             const prodId = this.name.replace('preview_color_', '');
             updatePreviewSizeChips(prodId, this.value);
+            updatePrice();
         });
     });
+    updatePrice();
 
     // Initialize drag & resize (only for non-fixed designs)
     if (!isFixedDesign) {
