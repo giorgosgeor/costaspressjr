@@ -1,4 +1,4 @@
-<?php $title = t('orders.title', false); ?>
+<?php $title = t('orders.title', false); $verifyBannerAlways = true; ?>
 <?php $pageCss[] = '/css/pages/orders.css'; require View::path('layouts/customer_header'); ?>
 
 

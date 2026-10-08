@@ -1,4 +1,4 @@
-<?php $title = I18n::t('order.title', ['id' => (int)$order['id']]); ?>
+<?php $title = I18n::t('order.title', ['id' => (int)$order['id']]); $verifyBannerAlways = true; ?>
 <?php $pageCss[] = '/css/pages/order.css'; require View::path('layouts/customer_header'); ?>
 
 

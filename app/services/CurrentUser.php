@@ -32,8 +32,11 @@ class CurrentUser {
      * once; then it stays away for ten minutes so it doesn't nag while the
      * email is on its way, and comes back ('unverified', with the Resend
      * button) only if the address still isn't confirmed by then.
+     *
+     * $always skips that pause: the account pages show the reminder on every
+     * visit until the address is confirmed.
      */
-    public static function verifyBanner(?PDO $db): ?string {
+    public static function verifyBanner(?PDO $db, bool $always = false): ?string {
         if (!self::needsEmailVerification($db)) {
             return null;
         }
@@ -41,7 +44,7 @@ class CurrentUser {
             unset($_SESSION['verify_banner_sent']);
             return 'sent';
         }
-        if ((int)($_SESSION['verify_banner_hidden_until'] ?? 0) > time()) {
+        if (!$always && (int)($_SESSION['verify_banner_hidden_until'] ?? 0) > time()) {
             return null;
         }
         return 'unverified';

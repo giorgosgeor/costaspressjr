@@ -212,7 +212,8 @@ $currentLocale   = I18n::locale();
     <?php
     // 'sent' once after Resend, then hidden for a while, then 'unverified'
     // again if the address still isn't confirmed (CurrentUser::verifyBanner).
-    $verifyBanner = CurrentUser::verifyBanner($db ?? null);
+    // The account pages set $verifyBannerAlways: there it never takes a break.
+    $verifyBanner = CurrentUser::verifyBanner($db ?? null, !empty($verifyBannerAlways));
     ?>
     <?php if ($verifyBanner !== null): ?>
     <div class="verify-banner" role="status">
