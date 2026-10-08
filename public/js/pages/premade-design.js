@@ -33,6 +33,30 @@ let designPositions = {
     back: { x: 0, y: 0, width: 160, height: 160 }
 };
 
+// ==================== PREVIEW SIZE CHIPS ====================
+// Colour → available size ids per product, for the size chips under each
+// product's preview colours. At top level so the product picker below can
+// call it: it used to sit inside the DOMContentLoaded handler, where the
+// picker's call threw and skipped the rest of the picker (the price box kept
+// the previous product's price).
+const previewColorSizes = premadeDesignData.previewColorSizes;
+
+function updatePreviewSizeChips(productId, colorId) {
+    const container = document.getElementById('preview-sizes-' + productId);
+    if (!container) return;
+    const available = (previewColorSizes[productId] && previewColorSizes[productId][colorId]) || [];
+    container.querySelectorAll('.preview-size-chip').forEach(chip => {
+        const sid = chip.dataset.sizeId;
+        if (available.includes(parseInt(sid)) || available.includes(sid)) {
+            chip.classList.remove('unavailable');
+            chip.classList.add('available');
+        } else {
+            chip.classList.remove('available');
+            chip.classList.add('unavailable');
+        }
+    });
+}
+
 // ==================== PRODUCT SELECTION ====================
 document.querySelectorAll('.product-option').forEach(option => {
     option.addEventListener('click', function() {
@@ -65,6 +89,12 @@ document.querySelectorAll('.product-option').forEach(option => {
         updateViewButtons();
         if (isFixedDesign) applyFixedDesignForSide(currentSide);
 
+        // Clear the previous product's colour, then show this product's
+        // preview colour (if one is picked) and its sizes. The reset used to
+        // come after the new tint and would have wiped it.
+        document.getElementById('mockupProduct').style.filter = 'none';
+        document.getElementById('mockupContainer').classList.remove('dark-bg');
+
         // Show correct customization panel
         document.querySelectorAll('.product-customization').forEach(panel => {
             panel.style.display = 'none';
@@ -78,10 +108,6 @@ document.querySelectorAll('.product-option').forEach(option => {
                 updatePreviewSizeChips(selectedProductId, firstPreviewColorRadio.value);
             }
         }
-
-        // Reset product color filter
-        document.getElementById('mockupProduct').style.filter = 'none';
-        document.getElementById('mockupContainer').classList.remove('dark-bg');
 
         updatePrice();
     });
@@ -528,17 +554,34 @@ function updatePrice() {
         ? Pricing.unitPrice(selectedBasePrice, category, qty)
         : selectedBasePrice;
 
-    document.getElementById('basePrice').textContent = '€' + unitRetail.toFixed(2);
+    // Lines are per item; the total is for the whole quantity, the way the
+    // cart charges it (it used to show one item's price as the total).
+    document.getElementById('basePrice').textContent = priceEach(unitRetail, qty);
+    document.getElementById('designPriceValue').textContent = '+' + priceEach(designPrice, qty);
     // Second design cost (front + back print)
     let secondDesignCost = 0;
     if (document.getElementById('addSecondDesign').checked) {
         secondDesignCost = designPrice;
+        document.getElementById('secondDesignCost').textContent = '+' + priceEach(designPrice, qty);
         document.getElementById('secondDesignRow').style.display = 'flex';
     } else {
         document.getElementById('secondDesignRow').style.display = 'none';
     }
-    const total = unitRetail + designPrice + secondDesignCost;
+    const total = (unitRetail + designPrice + secondDesignCost) * qty;
+    document.getElementById('totalLabel').textContent = totalLabel(qty, 'view_design.price.total');
     document.getElementById('totalPrice').textContent = '€' + total.toFixed(2);
+}
+
+// "€27.14", or "€27.14 each" once there is more than one.
+function priceEach(amount, qty) {
+    const each = window.I18N ? I18N.t('view_design.price.each') : 'each';
+    return '€' + amount.toFixed(2) + (qty > 1 ? ' ' + each : '');
+}
+
+// "Total:", or "Total (14 items):" once there is more than one.
+function totalLabel(qty, key) {
+    if (!window.I18N) return qty > 1 ? 'Total (' + qty + ' items):' : 'Total:';
+    return qty > 1 ? I18N.t('view_design.price.total_qty', { qty: qty }) : I18N.t(key);
 }
 
 // ==================== CART ====================
@@ -806,9 +849,13 @@ function updateConfirmPrices(sizeModifier) {
     const unitPrice = window.Pricing ? Pricing.unitPrice(supplier, category, qty) : supplier;
     const designFee = confirmModalState.designFee || 0;
     const total     = (unitPrice + designFee) * qty;
-    document.getElementById('confirmBase').textContent      = '€' + (unitPrice * qty).toFixed(2);
-    document.getElementById('confirmDesignFee').textContent = '+€' + designFee.toFixed(2);
-    document.getElementById('confirmTotal').textContent     = '€' + total.toFixed(2);
+    // Per item, like the page's price box; the total covers the quantity.
+    // (The base line used to be for the whole quantity and the design fee for
+    // one item, so the two lines didn't add up to the total.)
+    document.getElementById('confirmBase').textContent       = priceEach(unitPrice, qty);
+    document.getElementById('confirmDesignFee').textContent  = '+' + priceEach(designFee, qty);
+    document.getElementById('confirmTotalLabel').textContent = totalLabel(qty, 'view_design.modal.total');
+    document.getElementById('confirmTotal').textContent      = '€' + total.toFixed(2);
 }
 
 function doAddToCart() {
@@ -898,25 +945,6 @@ document.addEventListener('DOMContentLoaded', function() {
             designElement.style.height = '160px';
         }
     }
-    // Color → available size IDs per product
-    const previewColorSizes = premadeDesignData.previewColorSizes;
-
-    function updatePreviewSizeChips(productId, colorId) {
-        const container = document.getElementById('preview-sizes-' + productId);
-        if (!container) return;
-        const available = (previewColorSizes[productId] && previewColorSizes[productId][colorId]) || [];
-        container.querySelectorAll('.preview-size-chip').forEach(chip => {
-            const sid = chip.dataset.sizeId;
-            if (available.includes(parseInt(sid)) || available.includes(sid)) {
-                chip.classList.remove('unavailable');
-                chip.classList.add('available');
-            } else {
-                chip.classList.remove('available');
-                chip.classList.add('unavailable');
-            }
-        });
-    }
-
     // Initialize preview color tint for first product
     const firstProductId = premadeDesignData.productId;
     const firstPreviewColor = document.querySelector('input[name="preview_color_' + firstProductId + '"]:checked');
@@ -1003,5 +1031,16 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             preview.innerHTML = '';
         }
+    });
+});
+
+// Typing a quantity re-prices, the same as the −/+ buttons. It used to leave
+// the one-item price on show until a button was pressed. (Bound once the page
+// has loaded: the add-to-cart pop-up is printed after this script, see $overlays.)
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('quantity').addEventListener('input', updatePrice);
+    document.getElementById('confirmQty').addEventListener('input', function () {
+        confirmModalState.quantity = Math.min(99, Math.max(1, parseInt(this.value) || 1));
+        updateConfirmPrices();
     });
 });

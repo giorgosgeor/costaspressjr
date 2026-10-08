@@ -276,14 +276,14 @@ endforeach;
                             </div>
                             <div class="price-row">
                                 <span><?= t('view_design.price.design') ?></span>
-                                <span>+€<?= number_format($design['price'], 2) ?></span>
+                                <span id="designPriceValue">+€<?= number_format($design['price'], 2) ?></span>
                             </div>
 <div class="price-row" id="secondDesignRow" style="display:none;">
                                 <span><?= t('view_design.price.second_side') ?></span>
                                 <span id="secondDesignCost">+€<?= number_format($design['price'], 2) ?></span>
                             </div>
                             <div class="price-row total">
-                                <span><?= t('view_design.price.total') ?></span>
+                                <span id="totalLabel"><?= t('view_design.price.total') ?></span>
                                 <span id="totalPrice">€<?= number_format(($availableProducts[0]['retail_price'] ?? $availableProducts[0]['base_price'] ?? 0) + $design['price'], 2) ?></span>
                             </div>
                         </div>
@@ -355,7 +355,7 @@ ob_start(); ?>
         <div class="confirm-price-box">
             <div class="confirm-price-row"><span><?= t('view_design.modal.base') ?></span><span id="confirmBase">-</span></div>
             <div class="confirm-price-row"><span><?= t('view_design.modal.design') ?></span><span id="confirmDesignFee">-</span></div>
-            <div class="confirm-price-row confirm-price-total"><span><?= t('view_design.modal.total') ?></span><span id="confirmTotal">-</span></div>
+            <div class="confirm-price-row confirm-price-total"><span id="confirmTotalLabel"><?= t('view_design.modal.total') ?></span><span id="confirmTotal">-</span></div>
         </div>
 
         <div id="confirmError" style="display:none;color:#dc3545;text-align:center;margin-bottom:10px;font-size:0.9rem;"></div>

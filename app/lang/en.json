@@ -791,6 +791,8 @@
     "view_design.price.design": "Design:",
     "view_design.price.second_side": "Second Side Design:",
     "view_design.price.total": "Total:",
+    "view_design.price.total_qty": "Total ({qty} items):",
+    "view_design.price.each": "each",
     "view_design.from_price": "From €{price}",
     "view_design.modal.title": "Add to Cart",
     "view_design.modal.color": "Select Color:",

@@ -791,6 +791,8 @@
     "view_design.price.design": "Σχέδιο:",
     "view_design.price.second_side": "Σχέδιο Δεύτερης Πλευράς:",
     "view_design.price.total": "Σύνολο:",
+    "view_design.price.total_qty": "Σύνολο ({qty} τεμάχια):",
+    "view_design.price.each": "το τεμάχιο",
     "view_design.from_price": "Από €{price}",
     "view_design.modal.title": "Προσθήκη στο Καλάθι",
     "view_design.modal.color": "Επιλογή Χρώματος:",
