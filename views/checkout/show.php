@@ -228,6 +228,19 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                     <p class="visually-hidden" id="peStatus" role="status"><?= t('checkout.payment.loading') ?></p>
                 </section>
 
+                <?php // Required before paying: pages/checkout.js stops at it, and
+                      // /api/create-payment-intent refuses a payment without it. ?>
+                <div class="co-terms" id="coTerms">
+                    <label class="co-terms-label">
+                        <input type="checkbox" id="termsAccept" aria-required="true" aria-describedby="termsError">
+                        <span><?= t('checkout.terms_accept', false, [
+                            'terms'   => '<a href="/terms" target="_blank" rel="noopener">' . t('checkout.review.terms_link', false) . '</a>',
+                            'privacy' => '<a href="/privacy" target="_blank" rel="noopener">' . t('checkout.review.privacy_link', false) . '</a>',
+                        ]) ?></span>
+                    </label>
+                    <p class="co-terms-error" id="termsError" hidden><?= t('checkout.errors.terms') ?></p>
+                </div>
+
                 <div class="co-alert" id="payError" role="alert" hidden>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     <span id="payErrorText"></span>
@@ -241,13 +254,6 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                         <span class="co-pay-label" id="payLabel"><?= t('checkout.pay') ?> <span data-co-total><?= money($cartTotal) ?></span></span>
                     </button>
                 </div>
-
-                <p class="co-legal">
-                    <?= t('checkout.legal', false, [
-                        'terms'   => '<a href="/terms" target="_blank" rel="noopener">' . t('checkout.review.terms_link', false) . '</a>',
-                        'privacy' => '<a href="/privacy" target="_blank" rel="noopener">' . t('checkout.review.privacy_link', false) . '</a>',
-                    ]) ?>
-                </p>
 
                 <ul class="co-trust">
                     <li>

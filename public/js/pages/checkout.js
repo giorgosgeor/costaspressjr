@@ -406,6 +406,15 @@
         box.hidden = !msg;
     }
 
+    // ------------------------------------------------------------- terms
+
+    function termsOk() {
+        var ok = $('termsAccept').checked;
+        $('coTerms').classList.toggle('is-invalid', !ok);
+        $('termsError').hidden = ok;
+        return ok;
+    }
+
     function mountPayment() {
         if (!cfg.stripeKey || typeof Stripe === 'undefined') {
             showPayError(t('checkout.errors.stripe_missing'));
@@ -457,6 +466,11 @@
         // Accordion: Stripe's recommendation above four payment methods.
         state.paymentEl = state.elements.create('payment', {
             layout: { type: 'accordion', defaultCollapsed: false, radios: 'always', spacedAccordionItems: true },
+            // No Link. With the customer's email filled in, Stripe recognised
+            // a Link account and put a one-time-code prompt over the card
+            // form, with "pay without Link" hidden behind a ⋯ menu. The card
+            // form now shows straight away; Apple Pay / Google Pay unaffected.
+            wallets: { link: 'never' },
             business: { name: cfg.business },
             defaultValues: { billingDetails: { name: c.name, email: c.email || cfg.accountEmail || '', phone: c.phone } },
             fields: { billingDetails: { address: 'if_required' } }
@@ -496,11 +510,13 @@
         var firstBad = validateDetails();
         var pointMissing = state.method === 'acs_point' && !state.point;
         if (pointMissing) showPointError(t('checkout.pickup.errors.no_point'));
+        var termsAccepted = termsOk();
         markSections();
-        if (firstBad || pointMissing) {
-            var target = firstBad || $('acsLocator');
+        if (firstBad || pointMissing || !termsAccepted) {
+            var target = firstBad || (pointMissing ? $('acsLocator') : $('coTerms'));
             scrollToEl(target);
             if (firstBad) firstBad.focus({ preventScroll: true });
+            else if (!pointMissing) $('termsAccept').focus({ preventScroll: true });
             return;
         }
         if (!state.elements) {
@@ -528,6 +544,7 @@
                     delivery_method: state.method,
                     pickup_point_id: state.point ? state.point.id : null,
                     contact: contact(),
+                    terms_accepted: $('termsAccept').checked,
                     expected_amount: totalCents()
                 })
             });
@@ -564,6 +581,10 @@
     // ------------------------------------------------------------- wiring
 
     form.addEventListener('submit', pay);
+    // Ticking the box clears its error straight away.
+    $('termsAccept').addEventListener('change', function () {
+        if (this.checked) termsOk();
+    });
 
     document.querySelectorAll('input[name="deliveryMethod"]').forEach(function (r) {
         r.addEventListener('change', function () { if (r.checked) setMethod(r.value); });

@@ -49,6 +49,13 @@ class CheckoutController extends Controller {
 
         $data   = json_decode(file_get_contents('php://input'), true);
         $data   = is_array($data) ? $data : [];
+        // The checkbox above Pay is required; checking it here too means a
+        // payment cannot be started without it, whatever the browser did.
+        if (($data['terms_accepted'] ?? false) !== true) {
+            http_response_code(422);
+            echo json_encode(['error' => I18n::t('checkout.errors.terms')]);
+            return;
+        }
         $choice = Pickup::validateChoice($this->db, $data, $this->accountEmail());
         if (isset($choice['error'])) {
             http_response_code(422);
