@@ -95,9 +95,12 @@
         <h3>🔄 Update Status</h3>
         <?php $statusLabels = ['pending'=>'Pending','processing'=>'Processing','in-transit'=>'In Transit','delivered'=>'Delivered','cancelled'=>'Cancelled']; ?>
         <p style="margin-bottom:8px; color:#666; font-size:0.9rem;">Current: <span class="status status-<?= htmlspecialchars($order['status']) ?>"><?= htmlspecialchars($statusLabels[$order['status']] ?? ucfirst($order['status'])) ?></span></p>
-        <?php if (($payment['status'] ?? '') === 'refunded'): ?>
+        <?php if ($order['status'] === 'cancelled' && in_array($payment['status'] ?? '', ['refunded', 'partially_refunded'], true)): ?>
         <?php // AdminOrderController::updateStatus refuses to move it, too. ?>
-        <p class="order-locked">Refunded in full — this order stays cancelled. Don't print it.</p>
+        <p class="order-locked">
+            Cancelled and refunded<?= $payment['refunded_amount'] !== null ? ' (€' . number_format((float)$payment['refunded_amount'], 2) . ' of €' . number_format((float)$payment['amount'], 2) . ')' : '' ?>
+            — this order stays cancelled. Don't print it.
+        </p>
         <?php else: ?>
         <form method="POST" action="/admin/orders/status/<?= $order['id'] ?>" class="status-form">
             <?= Csrf::field() ?>

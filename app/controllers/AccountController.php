@@ -135,7 +135,7 @@ class AccountController extends Controller {
         $stmt = $this->db->prepare("
             SELECT o.*, op.payment_method, op.card_brand, op.card_last4, op.card_exp_month,
                    op.card_exp_year, op.amount as payment_amount, op.status as payment_status,
-                   op.payment_intent_id
+                   op.payment_intent_id, op.refunded_amount
             FROM orders o
             LEFT JOIN order_payments op ON op.order_id = o.id
             WHERE o.id = ? AND o.user_id = ?
@@ -180,10 +180,16 @@ class AccountController extends Controller {
             unset($_SESSION['order_notice']);
         }
 
+        // Cancelling refunds the payment minus Stripe's fee; the exact sums
+        // are shown before the customer confirms (null: shown without figures).
+        $canCancel = OrderCancellation::canCancel($order);
+        $quote     = $canCancel ? OrderCancellation::quote((string)$order['payment_intent_id']) : null;
+
         $this->render('account/order', [
             'order'      => $order,
             'orderItems' => $orderItems,
-            'canCancel'  => OrderCancellation::canCancel($order),
+            'canCancel'  => $canCancel,
+            'quote'      => $quote,
             'notice'     => $notice,
         ]);
     }

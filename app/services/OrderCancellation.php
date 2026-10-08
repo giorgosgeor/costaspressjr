@@ -1,20 +1,19 @@
 <?php
 
 /**
- * A customer cancelling their own order for a full refund.
- *
- * Allowed only while the order is 'pending' and paid. Once the shop moves it
- * to 'processing' the printing has started and it is no longer the
- * customer's to undo from the website — they contact the shop instead.
+ * Orders are not refundable. The one exception: a customer may cancel their
+ * own order while it is still 'pending' (before production), and gets back
+ * what they paid MINUS Stripe's processing fee — Stripe keeps its fee on a
+ * refund, so the shop passes that cost on rather than paying it. Once the
+ * shop moves the order to 'processing' it can't be cancelled at all.
  *
  * Order of work matters:
  *   1. The order is claimed with a conditional UPDATE (pending → cancelled),
  *      so a customer cancelling at the moment staff start the order can't
- *      both win: whichever write lands first decides.
- *   2. Stripe refunds the payment. Stripe refuses a second full refund of
- *      the same charge, so a double submit cannot pay out twice.
- *   3. If Stripe refuses, the order goes back to 'pending' — nothing changed
- *      for the customer except an error message, and they can try again.
+ *      both win — and a double submit reaches Stripe only once.
+ *   2. The fee is read from Stripe and the rest of the payment refunded.
+ *   3. If either step fails, the order goes back to 'pending' — nothing
+ *      changed for the customer except an error message.
  * The shop is emailed after every cancellation so nobody prints it.
  */
 class OrderCancellation
@@ -32,7 +31,26 @@ class OrderCancellation
     }
 
     /**
-     * Cancel and refund. Only the customer's own order.
+     * What cancelling would give back, in cents: the payment, Stripe's fee
+     * on it, and the refund (the difference). Null when Stripe can't say —
+     * the order page then words it without figures.
+     *
+     * @return ?array{paid:int, fee:int, refund:int}
+     */
+    public static function quote(string $piId): ?array
+    {
+        try {
+            $a = Stripe::paymentAmounts($piId);
+        } catch (Throwable $e) {
+            Log::warning('cancellation quote unavailable', ['pi' => $piId, 'error' => $e->getMessage()]);
+            return null;
+        }
+        $refund = $a['amount'] - $a['fee'] - $a['refunded'];
+        return ['paid' => $a['amount'], 'fee' => $a['fee'], 'refund' => max(0, $refund)];
+    }
+
+    /**
+     * Cancel and refund (minus the fee). Only the customer's own order.
      *
      * @return string 'cancelled' | 'not_allowed' | 'refund_failed'
      */
@@ -49,7 +67,7 @@ class OrderCancellation
         $order = $stmt->fetch(PDO::FETCH_ASSOC);
         // A second submit (double click, back button) finds it done already;
         // that is the outcome they asked for, not a refusal.
-        if ($order && $order['status'] === 'cancelled' && $order['payment_status'] === 'refunded') {
+        if ($order && $order['status'] === 'cancelled' && in_array($order['payment_status'], ['refunded', 'partially_refunded'], true)) {
             return 'cancelled';
         }
         if (!$order || !self::canCancel($order)) {
@@ -65,33 +83,43 @@ class OrderCancellation
             $now->execute([$orderId]);
             return $now->fetchColumn() === 'cancelled' ? 'cancelled' : 'not_allowed';
         }
+        $undo = function () use ($orderId): void {
+            $this->db->prepare("UPDATE orders SET status = 'pending' WHERE id = ? AND status = 'cancelled'")
+                ->execute([$orderId]);
+        };
 
-        // 2. Refund it.
-        $piId = (string)$order['payment_intent_id'];
+        // 2. The fee, then the refund of the rest.
+        $piId  = (string)$order['payment_intent_id'];
+        $quote = self::quote($piId);
+        if ($quote === null || $quote['refund'] <= 0) {
+            $undo();
+            return $quote === null ? 'refund_failed' : 'not_allowed';
+        }
         try {
-            Stripe::refundPaymentIntent($piId, 'Order #' . $orderId . ' cancelled by the customer on the website', 'requested_by_customer');
+            Stripe::refundPaymentIntent(
+                $piId,
+                sprintf('Order #%d cancelled by the customer before production; refunded minus the %s Stripe fee', $orderId, money($quote['fee'] / 100)),
+                'requested_by_customer',
+                $quote['refund']
+            );
         } catch (Throwable $e) {
-            $alreadyRefunded = $e instanceof StripeApiException && $e->stripeCode === 'charge_already_refunded';
-            if (!$alreadyRefunded) {
-                // 3. Put it back the way it was.
-                $this->db->prepare("UPDATE orders SET status = 'pending' WHERE id = ? AND status = 'cancelled'")
-                    ->execute([$orderId]);
-                Log::error('customer cancellation: refund failed', ['order' => $orderId, 'pi' => $piId, 'error' => $e->getMessage()]);
-                return 'refund_failed';
-            }
+            // 3. Put it back the way it was.
+            $undo();
+            Log::error('customer cancellation: refund failed', ['order' => $orderId, 'pi' => $piId, 'error' => $e->getMessage()]);
+            return 'refund_failed';
         }
 
-        // The refund is Stripe's record; mark it here at once, then read the
-        // exact state back (the charge.refunded webhook does the same later).
-        $this->db->prepare("UPDATE order_payments SET status = 'refunded' WHERE payment_intent_id = ?")
-            ->execute([$piId]);
+        // Record it at once, then read the exact state back from Stripe (the
+        // charge.refunded webhook does the same later).
+        $this->db->prepare("UPDATE order_payments SET status = 'partially_refunded', refunded_amount = ? WHERE payment_intent_id = ?")
+            ->execute([round($quote['refund'] / 100, 2), $piId]);
         try {
             (new OrderPlacement($this->db))->syncPaymentStatus($piId);
         } catch (Throwable $e) {
             Log::warning('customer cancellation: status sync deferred to the webhook', ['order' => $orderId, 'error' => $e->getMessage()]);
         }
 
-        PaymentAlert::orderCancelled($this->db, $orderId, $piId, (float)$order['total_price']);
+        PaymentAlert::orderCancelled($this->db, $orderId, $piId, $quote['paid'] / 100, $quote['refund'] / 100, $quote['fee'] / 100);
         return 'cancelled';
     }
 }

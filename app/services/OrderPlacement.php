@@ -280,8 +280,9 @@ class OrderPlacement
             return false;
         }
 
-        $this->db->prepare("UPDATE order_payments SET status = ? WHERE payment_intent_id = ?")
-            ->execute([$status, $piId]);
+        $refunded = (int)($charge['amount_refunded'] ?? 0);
+        $this->db->prepare("UPDATE order_payments SET status = ?, refunded_amount = ? WHERE payment_intent_id = ?")
+            ->execute([$status, $refunded > 0 ? round($refunded / 100, 2) : null, $piId]);
         return true;
     }
 

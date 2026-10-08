@@ -96,6 +96,29 @@ class Stripe {
         return self::request('POST', '/payment_intents', $params);
     }
 
+    /**
+     * What a payment came to, what Stripe kept as its fee, and how much has
+     * been refunded so far — all in cents. The fee comes from the charge's
+     * balance transaction (the key needs "Balance transactions: read").
+     *
+     * @return array{amount:int, fee:int, refunded:int}
+     */
+    public static function paymentAmounts(string $id): array {
+        $pi = self::request('GET', '/payment_intents/' . urlencode($id), [
+            'expand[]' => 'latest_charge.balance_transaction',
+        ]);
+        $charge = is_array($pi['latest_charge'] ?? null) ? $pi['latest_charge'] : [];
+        $bt     = is_array($charge['balance_transaction'] ?? null) ? $charge['balance_transaction'] : null;
+        if ($bt === null || !isset($bt['fee'])) {
+            throw new \RuntimeException('Stripe has no fee for this payment yet');
+        }
+        return [
+            'amount'   => (int)($charge['amount'] ?? $pi['amount'] ?? 0),
+            'fee'      => (int)$bt['fee'],
+            'refunded' => (int)($charge['amount_refunded'] ?? 0),
+        ];
+    }
+
     public static function retrievePaymentIntent(string $id): array {
         return self::request('GET', '/payment_intents/' . urlencode($id), [
             'expand[]' => 'latest_charge',
@@ -160,9 +183,13 @@ class Stripe {
      * fraudulent and requested_by_customer, and none of them describes a
      * checkout that couldn't become an order. Pass $stripeReason when one
      * of them does (a customer cancelling: 'requested_by_customer').
+     * $amountCents makes it a partial refund; null refunds everything.
      */
-    public static function refundPaymentIntent(string $id, string $why = '', string $stripeReason = ''): array {
+    public static function refundPaymentIntent(string $id, string $why = '', string $stripeReason = '', ?int $amountCents = null): array {
         $params = ['payment_intent' => $id];
+        if ($amountCents !== null) {
+            $params['amount'] = $amountCents;
+        }
         if ($why !== '') {
             $params['metadata[reason]'] = mb_substr($why, 0, 500);
         }

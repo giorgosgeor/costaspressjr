@@ -9,7 +9,7 @@
  *                      delivered (so the webhook may be broken), or found
  *                      payments it still can't settle.
  *   orderCancelled()   a customer cancelled a pending order on the website
- *                      and was refunded — so nobody prints it.
+ *                      and was refunded minus the fee — so nobody prints it.
  *
  * Each payment is alerted about at most once per kind (payment_alerts table):
  * the webhook retries for days and the job runs every half hour.
@@ -47,10 +47,10 @@ class PaymentAlert
 
     /**
      * A customer cancelled their order from the website and was refunded
-     * (OrderCancellation). It was still 'pending', but someone may already
-     * have it on the bench — this tells them to stop.
+     * minus Stripe's fee (OrderCancellation). It was still 'pending', but
+     * someone may already have it on the bench — this tells them to stop.
      */
-    public static function orderCancelled(PDO $db, int $orderId, string $piId, float $amount): void
+    public static function orderCancelled(PDO $db, int $orderId, string $piId, float $paid, float $refunded, float $fee): void
     {
         try {
             if (!self::firstTime($db, $piId, 'customer_cancelled')) {
@@ -62,12 +62,14 @@ class PaymentAlert
             $contact = trim(implode(' · ', array_slice(array_filter(array_map('trim', explode("\n", (string)$stmt->fetchColumn()))), 1)));
             self::send(
                 $db,
-                'Order #' . $orderId . ' cancelled by the customer — refunded',
-                'The customer cancelled order #' . $orderId . ' on the website before it went into processing, '
-                . 'and the payment was refunded in full automatically. Please don\'t start or print it.',
+                'Order #' . $orderId . ' cancelled by the customer — refunded minus the fee',
+                'The customer cancelled order #' . $orderId . ' on the website before it went into processing. '
+                . 'They were refunded automatically, minus Stripe\'s processing fee. Please don\'t start or print it.',
                 [[
                     'Order'    => '#' . $orderId,
-                    'Refunded' => '€' . number_format($amount, 2),
+                    'Paid'     => '€' . number_format($paid, 2),
+                    'Refunded' => '€' . number_format($refunded, 2),
+                    'Fee kept' => '€' . number_format($fee, 2) . ' (Stripe)',
                     'Payment'  => $piId,
                     'Customer' => $contact !== '' ? $contact : 'see the order',
                 ]]
