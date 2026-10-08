@@ -47,15 +47,23 @@ class OrderCancellation
         ");
         $stmt->execute([$orderId, $userId]);
         $order = $stmt->fetch(PDO::FETCH_ASSOC);
+        // A second submit (double click, back button) finds it done already;
+        // that is the outcome they asked for, not a refusal.
+        if ($order && $order['status'] === 'cancelled' && $order['payment_status'] === 'refunded') {
+            return 'cancelled';
+        }
         if (!$order || !self::canCancel($order)) {
             return 'not_allowed';
         }
 
-        // 1. Claim it. Zero rows means staff moved it on a moment ago.
+        // 1. Claim it. Zero rows means another request got there first:
+        //    staff moving it on, or this customer's own second click.
         $claim = $this->db->prepare("UPDATE orders SET status = 'cancelled' WHERE id = ? AND user_id = ? AND status = 'pending'");
         $claim->execute([$orderId, $userId]);
         if ($claim->rowCount() !== 1) {
-            return 'not_allowed';
+            $now = $this->db->prepare("SELECT status FROM orders WHERE id = ?");
+            $now->execute([$orderId]);
+            return $now->fetchColumn() === 'cancelled' ? 'cancelled' : 'not_allowed';
         }
 
         // 2. Refund it.
