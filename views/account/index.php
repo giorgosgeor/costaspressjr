@@ -328,61 +328,65 @@ ob_start(); ?>
 
 <?php // Add-to-cart pop-up: printed by the footer after </main> (see $overlays).
 ob_start(); ?>
-<!-- Include the Add to Cart Modal from shop_custom -->
-<div id="addToCartModal" style="display:none; position:fixed; z-index:35000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
-    <div style="background:var(--bg-dark-secondary, #16213e); border-radius:18px; max-width:520px; width:95vw; margin:auto; box-shadow:0 2px 24px rgba(0,0,0,0.3); padding:2rem; position:relative; max-height:90vh; overflow-y:auto; border:1px solid var(--border-light, rgba(255,255,255,0.1));">
-        <button data-on-click="closeAddToCartModal" style="position:absolute; top:1rem; right:1rem; background:none; border:none; font-size:2rem; color:var(--text-light-muted, #888); cursor:pointer;">&times;</button>
-        <h2 style="font-size:1.4rem; font-weight:700; margin-bottom:1rem; text-align:center; color:var(--text-light, #fff);"><?= t('account.cart_modal.title') ?></h2>
-        
-        <div id="cartDesignPreview" style="text-align:center; margin-bottom:1.5rem; background:var(--bg-card-dark, rgba(255,255,255,0.05)); border-radius:12px; padding:1rem; position:relative;">
-            <div id="cartPreviewContainer" style="position:relative; width:220px; height:220px; margin:0 auto; border-radius:8px; overflow:hidden; background:#fff;">
+<?php // Add a saved design to the cart. The shared pop-up (studio.css .popup*),
+      // like the premade design page's and the designer's; it was the last
+      // piece of an old dark theme (navy box, white text, a red button). ?>
+<div id="addToCartModal" class="popup-overlay" style="display:none;" data-on-click="closeAddToCartModal" data-click-self>
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="accountCartTitle" data-stop-click>
+        <button type="button" class="popup-close" data-on-click="closeAddToCartModal" aria-label="<?= t('common.close') ?>">&times;</button>
+        <h2 class="popup-title" id="accountCartTitle"><?= t('account.cart_modal.title') ?></h2>
+
+        <div id="cartDesignPreview" class="popup-stage">
+            <div id="cartPreviewContainer" class="account-cart-preview">
                 <!-- Pre-rendered composite preview (preferred, shown until color changed) -->
-                <img id="cartPreviewImg" src="" alt="Preview" style="display:none; width:100%; height:100%; object-fit:contain; position:absolute; top:0; left:0; z-index:10;">
+                <img id="cartPreviewImg" src="" alt="Preview" class="account-cart-layer account-cart-composite" style="display:none;">
                 <!-- Colored shirt base -->
-                <img id="cartProductImage" src="" alt="Product" style="width:100%; height:100%; object-fit:contain; position:relative; z-index:1;">
-                <div id="cartColorOverlay" style="position:absolute; top:0; left:0; width:100%; height:100%; mix-blend-mode:multiply; pointer-events:none; z-index:2;"></div>
+                <img id="cartProductImage" src="" alt="Product" class="account-cart-base">
+                <div id="cartColorOverlay" class="account-cart-layer account-cart-tint"></div>
                 <!-- Design-only transparent PNG overlay (exact match to composite, no coordinate math needed) -->
-                <img id="cartDesignOverlay" src="" alt="" style="display:none; width:100%; height:100%; object-fit:contain; position:absolute; top:0; left:0; z-index:3; pointer-events:none;">
+                <img id="cartDesignOverlay" src="" alt="" class="account-cart-layer account-cart-design" style="display:none;">
                 <!-- Fallback: DOM-based positioned elements (used when no design-only PNG available) -->
-                <div id="cartPreviewDesignArea" style="position:absolute; top:25%; left:27.5%; width:45%; height:60%; pointer-events:none; z-index:3;"></div>
+                <div id="cartPreviewDesignArea" class="account-cart-design-area"></div>
             </div>
-            <div id="cartProductName" style="font-weight:600; margin-top:0.75rem; color:var(--text-light, #fff);"></div>
-            <div id="cartDesignName" style="font-size:0.9rem; color:var(--text-light-secondary, #aaa);"></div>
-        </div>
-        
-        <div style="margin-bottom:1.2rem;">
-            <label style="font-weight:600; display:block; margin-bottom:0.5rem; color:var(--text-light, #fff);"><?= t('account.cart_modal.select_size') ?></label>
-            <div id="cartSizeOptions" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+            <div id="cartProductName" class="popup-stage-name"></div>
+            <div id="cartDesignName" class="popup-stage-meta"></div>
         </div>
 
-        <div style="margin-bottom:1.2rem;">
-            <label style="font-weight:600; display:block; margin-bottom:0.5rem; color:var(--text-light, #fff);"><?= t('account.cart_modal.select_color') ?></label>
-            <div id="cartColorOptions" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+        <div class="popup-field">
+            <p class="popup-label"><?= t('account.cart_modal.select_size') ?></p>
+            <div id="cartSizeOptions" class="popup-options"></div>
         </div>
 
-        <div style="margin-bottom:1.5rem;">
-            <label style="font-weight:600; display:block; margin-bottom:0.5rem; color:var(--text-light, #fff);"><?= t('account.cart_modal.quantity') ?></label>
-            <div style="display:flex; align-items:center; gap:12px;">
-                <button data-on-click="adjustCartQuantity" data-args='[-1]' class="qty-btn" style="width:36px; height:36px; background:rgba(255,255,255,0.1); border:none; border-radius:8px; font-size:1.2rem; cursor:pointer; color:#fff;">âˆ’</button>
-                <input id="cartQuantity" type="number" value="1" min="1" max="100" style="width:60px; text-align:center; padding:8px; border:1px solid var(--border-light, rgba(255,255,255,0.2)); border-radius:8px; font-size:1rem; background:rgba(255,255,255,0.05); color:#fff;">
-                <button data-on-click="adjustCartQuantity" data-args='[1]' class="qty-btn" style="width:36px; height:36px; background:rgba(255,255,255,0.1); border:none; border-radius:8px; font-size:1.2rem; cursor:pointer; color:#fff;">+</button>
+        <div class="popup-field">
+            <p class="popup-label"><?= t('account.cart_modal.select_color') ?></p>
+            <div id="cartColorOptions" class="popup-options"></div>
+        </div>
+
+        <div class="popup-row">
+            <label class="popup-label" for="cartQuantity"><?= t('account.cart_modal.quantity') ?></label>
+            <div class="qty-stepper">
+                <button type="button" data-on-click="adjustCartQuantity" data-args='[-1]' aria-label="&minus;">&minus;</button>
+                <input id="cartQuantity" type="number" value="1" min="1" max="100">
+                <button type="button" data-on-click="adjustCartQuantity" data-args='[1]' aria-label="+">+</button>
             </div>
         </div>
-        
-        <div id="cartPriceSummary" style="background:var(--bg-card-dark, rgba(255,255,255,0.05)); padding:1rem; border-radius:10px; margin-bottom:1.2rem; border:1px solid var(--border-light, rgba(255,255,255,0.1));">
-            <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; color:var(--text-light-secondary, #aaa);">
+
+        <div id="cartPriceSummary" class="popup-prices">
+            <div class="popup-price-row">
                 <span><?= t('account.cart_modal.base_price') ?></span>
-                <span id="cartBasePrice">$0.00</span>
+                <span id="cartBasePrice">€0.00</span>
             </div>
-            <div style="display:flex; justify-content:space-between; font-weight:700; border-top:1px solid var(--border-light, rgba(255,255,255,0.1)); padding-top:0.5rem; margin-top:0.5rem; color:var(--ok);">
-                <span style="color:var(--text-light, #fff);"><?= t('account.cart_modal.total') ?></span>
-                <span id="cartTotalPrice">$0.00</span>
+            <div class="popup-price-row popup-price-total">
+                <span><?= t('account.cart_modal.total') ?></span>
+                <span id="cartTotalPrice">€0.00</span>
             </div>
         </div>
 
-        <div id="cartError" style="display:none; color:#ef4444; text-align:center; margin-bottom:1rem; font-size:0.95rem;"></div>
+        <div id="cartError" class="popup-error" style="display:none;"></div>
 
-        <button id="confirmAddToCartBtn" class="btn-primary-gradient" style="width:100%; font-weight:600; font-size:1.1rem; padding:12px 0; border:none; border-radius:8px; cursor:pointer;"><?= t('account.cart_modal.cta') ?></button>
+        <div class="popup-actions">
+            <button type="button" id="confirmAddToCartBtn" class="btn btn-lg"><?= t('account.cart_modal.cta') ?></button>
+        </div>
     </div>
 </div>
 <?php $overlays = ($overlays ?? '') . ob_get_clean(); ?>

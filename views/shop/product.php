@@ -66,18 +66,21 @@
                     <div class="form-group">
                         <label for="quantity"><?= t('product.quantity') ?></label>
                         <div class="quantity-selector">
-                            <button type="button" class="qty-btn" data-on-click="changeQty" data-args='[-1]'>-</button>
+                            <button type="button" class="qty-btn" data-on-click="changeQty" data-args='[-1]' aria-label="&minus;">&minus;</button>
                             <input type="number" id="quantity" name="quantity" value="1" min="1" max="10">
-                            <button type="button" class="qty-btn" data-on-click="changeQty" data-args='[1]'>+</button>
+                            <button type="button" class="qty-btn" data-on-click="changeQty" data-args='[1]' aria-label="+">+</button>
                         </div>
                     </div>
                     <div class="form-group">
                         <label for="description"><?= t('product.instructions') ?></label>
                         <textarea id="description" name="description" rows="3" placeholder="<?= t('product.instructions_placeholder') ?>"></textarea>
                     </div>
-                    <button type="submit" class="btn btn-lg btn-block btn-success"><?= t('product.add_to_cart') ?></button>
+                    <button type="submit" class="btn btn-lg btn-block"><?= t('product.add_to_cart') ?></button>
                 </form>
-                <button id="startDesigningBtn" class="btn btn-primary" style="margin-top:18px;"><?= t('product.start_designing') ?></button>
+                <?php // The other way forward from here, so the same size as Add to Cart
+                      // but an outline: one filled button per decision. It is disabled
+                      // until a colour and size are chosen (product.js). ?>
+                <button id="startDesigningBtn" class="btn btn-lg btn-block btn-secondary product-design-btn"><?= t('product.start_designing') ?></button>
                 <div class="product-meta">
                     <div class="meta-item"><?= t('product.free_shipping') ?></div>
                     <div class="meta-item"><?= t('product.easy_returns') ?></div>

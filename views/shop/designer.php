@@ -8,139 +8,133 @@
       // prints them after </main> (see $overlays). They used to be printed before
       // the layout, ahead of <!DOCTYPE html>, which put the page in quirks mode.
 ob_start(); ?>
+<?php // All three use the shared pop-up classes in studio.css (.popup-overlay,
+      // .popup, .popup-title …) — the same look as the premade design page's and
+      // the account page's add-to-cart pop-ups. Inline styles left here are state
+      // the scripts flip (display) or positions of the preview layers. ?>
 <!-- Add to Cart Modal (with size/color/quantity selection) -->
-<div id="addToCartModal" style="display:none; position:fixed; z-index:35000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25); align-items:center; justify-content:center;" data-on-click="closeAddToCartModal" data-click-self>
-    <div style="background:#fff; border-radius:18px; max-width:520px; width:95vw; margin:auto; box-shadow:0 2px 24px rgba(0,0,0,0.16); padding:2rem; position:relative; max-height:90vh; overflow-y:auto;" data-stop-click>
-        <button data-on-click="closeAddToCartModal" style="position:absolute; top:1rem; right:1rem; background:none; border:none; font-size:2rem; color:#888; cursor:pointer;">&times;</button>
-        <h2 style="font-size:1.4rem; font-weight:700; margin-bottom:1rem; text-align:center; color:#333;"><?= t('studio.cart.title') ?></h2>
-        
+<div id="addToCartModal" class="popup-overlay" style="display:none;" data-on-click="closeAddToCartModal" data-click-self>
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="studioCartTitle" data-stop-click>
+        <button type="button" class="popup-close" data-on-click="closeAddToCartModal" aria-label="<?= t('common.close') ?>">&times;</button>
+        <h2 class="popup-title" id="studioCartTitle"><?= t('studio.cart.title') ?></h2>
+
         <!-- Design Preview - HTML based for reliability -->
-        <div id="cartDesignPreview" style="text-align:center; margin-bottom:1.5rem; background:#f5f5f5; border-radius:12px; padding:1rem; position:relative;">
-            <div id="cartPreviewContainer" style="position:relative; width:200px; height:200px; margin:0 auto; overflow:hidden; border-radius:8px;">
-                <img id="cartPreviewProduct" src="" alt="Product" style="width:100%; height:100%; object-fit:contain;">
-                <div id="cartPreviewDesignArea" style="position:absolute; left:50%; top:25%; width:45%; height:60%; transform:translateX(-50%); overflow:hidden;"></div>
+        <div id="cartDesignPreview" class="popup-stage">
+            <div id="cartPreviewContainer" class="studio-cart-preview">
+                <img id="cartPreviewProduct" src="" alt="Product">
+                <div id="cartPreviewDesignArea"></div>
             </div>
-            <div id="cartProductName" style="font-weight:600; margin-top:0.5rem; color:#333;"></div>
-            <div id="cartDesignName" style="font-size:0.9rem; color:#666;"></div>
+            <div id="cartProductName" class="popup-stage-name"></div>
+            <div id="cartDesignName" class="popup-stage-meta"></div>
         </div>
-        
-        <!-- Size Selection -->
-        <div style="margin-bottom:1.2rem;">
-            <label style="font-weight:600; display:block; margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center;">
+
+        <div class="popup-field">
+            <div class="popup-label">
                 <span><?= t('studio.cart.size') ?></span>
-                <a id="studioSizeGuideLink" href="#"
-                   data-on-click="openCurrentProductSizeGuide" data-prevent-default
-                   style="display:none; font-size:0.8rem; color:#2A4FE0; text-decoration:none; font-weight:500;">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:4px;"><path d="M2 12h20"/><path d="M6 9v6M10 7v10M14 9v6M18 7v10"/></svg>Size guide
+                <a id="studioSizeGuideLink" href="#" class="size-guide-link" style="display:none;"
+                   data-on-click="openCurrentProductSizeGuide" data-prevent-default>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12h20"/><path d="M6 9v6M10 7v10M14 9v6M18 7v10"/></svg><?= t('footer.size_guide') ?>
                 </a>
-            </label>
-            <div id="cartSizeOptions" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+            </div>
+            <div id="cartSizeOptions" class="popup-options"></div>
         </div>
-        
-        <!-- Color Selection -->
-        <div style="margin-bottom:1.2rem;">
-            <label style="font-weight:600; display:block; margin-bottom:0.5rem;"><?= t('studio.cart.color') ?></label>
-            <div id="cartColorOptions" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+
+        <div class="popup-field">
+            <p class="popup-label"><?= t('studio.cart.color') ?></p>
+            <div id="cartColorOptions" class="popup-options"></div>
         </div>
-        
-        <!-- Availability Grid -->
-        <div id="availabilityGrid" style="margin-bottom:1.2rem; overflow-x:auto; display:none;">
-            <table id="variantTable" style="border-collapse:collapse; width:100%; font-size:0.85rem;">
-                <thead id="variantTableHead"></thead>
-                <tbody id="variantTableBody"></tbody>
-            </table>
-        </div>
-        
-        <!-- Quantity Selector -->
-        <div style="margin-bottom:1.5rem;">
-            <label style="font-weight:600; display:block; margin-bottom:0.5rem;"><?= t('studio.cart.quantity') ?></label>
-            <div style="display:flex; align-items:center; gap:12px;">
-                <button data-on-click="adjustCartQuantity" data-args='[-1]' style="width:36px; height:36px; background:#eee; border:1px solid #ddd; border-radius:8px; font-size:1.2rem; cursor:pointer;">−</button>
-                <input id="cartQuantity" type="number" value="1" min="1" max="100" style="width:60px; text-align:center; padding:8px; border:1px solid #ddd; border-radius:8px; font-size:1rem;">
-                <button data-on-click="adjustCartQuantity" data-args='[1]' style="width:36px; height:36px; background:#eee; border:1px solid #ddd; border-radius:8px; font-size:1.2rem; cursor:pointer;">+</button>
+
+        <div class="popup-row">
+            <label class="popup-label" for="cartQuantity"><?= t('studio.cart.quantity') ?></label>
+            <div class="qty-stepper">
+                <button type="button" data-on-click="adjustCartQuantity" data-args='[-1]' aria-label="&minus;">&minus;</button>
+                <input id="cartQuantity" type="number" value="1" min="1" max="100">
+                <button type="button" data-on-click="adjustCartQuantity" data-args='[1]' aria-label="+">+</button>
             </div>
         </div>
-        
-        <!-- Price Summary -->
-        <div id="cartPriceSummary" style="background:#f9f9f9; padding:1rem; border-radius:10px; margin-bottom:1.2rem;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+
+        <div id="cartPriceSummary" class="popup-prices">
+            <div class="popup-price-row">
                 <span><?= t('studio.cart.base_price') ?></span>
                 <span id="cartBasePrice">€0.00</span>
             </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+            <div class="popup-price-row">
                 <span><?= t('studio.cart.design_fee') ?></span>
                 <span id="cartDesignFee">€0.00</span>
             </div>
-            <div style="display:flex; justify-content:space-between; font-weight:700; border-top:1px solid #ddd; padding-top:0.5rem; margin-top:0.5rem;">
+            <div class="popup-price-row popup-price-total">
                 <span><?= t('studio.cart.total') ?></span>
                 <span id="cartTotalPrice">€0.00</span>
             </div>
         </div>
-        
-        <!-- Error Message -->
-        <div id="cartError" style="display:none; color:#dc3545; text-align:center; margin-bottom:1rem; font-size:0.95rem;"></div>
-        
-        <!-- Add to Cart Button -->
-        <button id="confirmAddToCartBtn" style="width:100%; background:#2d5fff; color:#fff; font-weight:600; font-size:1.1rem; padding:12px 0; border:none; border-radius:8px; cursor:pointer; margin-bottom:0.7rem;"><?= t('studio.cart.add') ?></button>
 
-        <!-- Go to Checkout Button -->
-        <button id="goToCheckoutFromCartBtn" data-href="/cart" style="width:100%; background:#28a745; color:#fff; font-weight:600; font-size:1rem; padding:10px 0; border:none; border-radius:8px; cursor:pointer;"><?= t('studio.cart.checkout') ?></button>
+        <div id="cartError" class="popup-error" style="display:none;"></div>
+
+        <div class="popup-actions">
+            <button type="button" id="confirmAddToCartBtn" class="btn btn-lg"><?= t('studio.cart.add') ?></button>
+            <button type="button" id="goToCheckoutFromCartBtn" class="btn btn-lg btn-secondary" data-href="/cart"><?= t('studio.cart.checkout') ?></button>
+        </div>
     </div>
 </div>
 
-
-
 <!-- Design Saved Success Modal -->
-<div id="designSavedModal" style="display:none; position:fixed; z-index:30000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.18); align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:18px; max-width:420px; width:92vw; margin:auto; box-shadow:0 2px 24px rgba(0,0,0,0.13); padding:2.2rem 2.2rem 1.5rem 2.2rem; position:relative; text-align:center;">
-        <button data-on-click="closeDesignSavedModal" style="position:absolute; top:1.1rem; right:1.1rem; background:none; border:none; font-size:2rem; color:#888; cursor:pointer;">&times;</button>
-        <h2 style="font-size:1.5rem; font-weight:700; margin-bottom:0.7rem; color:#2d5fff;"><?= t('studio.saved.title') ?></h2>
-        <div style="font-size:1.08rem; color:#444; margin-bottom:1.2rem;"><?= t('studio.saved.lead') ?></div>
-        <button id="addToCartNowBtn" style="background:#2d5fff; color:#fff; font-weight:600; font-size:1.1rem; padding:12px 32px; border-radius:8px; border:none; margin-bottom:0.7rem; cursor:pointer; width:100%;"><?= t('studio.saved.add_to_cart') ?></button>
-        <button data-on-click="closeDesignSavedModal" data-href="/" style="background:#eee; color:#666; font-weight:600; font-size:1rem; padding:10px 24px; border-radius:8px; border:none; cursor:pointer; width:100%;"><?= t('studio.saved.exit') ?></button>
+<div id="designSavedModal" class="popup-overlay" style="display:none;">
+    <div class="popup popup-narrow" role="dialog" aria-modal="true" aria-labelledby="designSavedTitle">
+        <button type="button" class="popup-close" data-on-click="closeDesignSavedModal" aria-label="<?= t('common.close') ?>">&times;</button>
+        <h2 class="popup-title" id="designSavedTitle"><?= t('studio.saved.title') ?></h2>
+        <p class="popup-lead"><?= t('studio.saved.lead') ?></p>
+        <div class="popup-actions">
+            <button type="button" id="addToCartNowBtn" class="btn btn-lg"><?= t('studio.saved.add_to_cart') ?></button>
+            <button type="button" class="btn btn-lg btn-secondary" data-on-click="closeDesignSavedModal" data-href="/"><?= t('studio.saved.exit') ?></button>
+        </div>
     </div>
 </div>
 <!-- Save Design Modal -->
-<div id="saveDesignModal" style="display:none; position:fixed; z-index:20000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.18); align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:18px; max-width:420px; width:95vw; margin:auto; box-shadow:0 2px 24px rgba(0,0,0,0.13); padding:2.2rem 2.2rem 1.5rem 2.2rem; position:relative;">
-        <button data-on-click="closeSaveDesignModal" style="position:absolute; top:1.1rem; right:1.1rem; background:none; border:none; font-size:2rem; color:#888; cursor:pointer;">&times;</button>
-        <h2 id="saveModalTitle" style="font-size:2rem; font-weight:700; margin-bottom:0.5rem; text-align:center;"><?= t('studio.save_modal.title') ?></h2>
-        <div style="text-align:center; color:#444; font-size:1.08rem; margin-bottom:1.2rem;"><?= t('studio.save_modal.subtitle') ?></div>
-        
+<div id="saveDesignModal" class="popup-overlay" style="display:none;">
+    <div class="popup popup-narrow" role="dialog" aria-modal="true" aria-labelledby="saveModalTitle">
+        <button type="button" class="popup-close" data-on-click="closeSaveDesignModal" aria-label="<?= t('common.close') ?>">&times;</button>
+        <h2 id="saveModalTitle" class="popup-title"><?= t('studio.save_modal.title') ?></h2>
+        <p class="popup-lead"><?= t('studio.save_modal.subtitle') ?></p>
+
         <!-- Editing mode: Show update options -->
-        <div id="saveEditingMode" style="display:none; margin-bottom:1.5rem;">
-            <div style="background:#f0f4ff; border-radius:10px; padding:1rem; margin-bottom:1rem;">
-                <div style="font-weight:600; color:#333; margin-bottom:0.3rem;"><?= t('studio.save_modal.editing_prefix') ?> <span id="editingDesignName"></span></div>
-                <div style="font-size:0.9rem; color:#666;"><?= t('studio.save_modal.editing_note') ?></div>
+        <div id="saveEditingMode" style="display:none;">
+            <div class="popup-panel">
+                <div class="popup-stage-name"><?= t('studio.save_modal.editing_prefix') ?> <span id="editingDesignName"></span></div>
+                <div class="popup-stage-meta"><?= t('studio.save_modal.editing_note') ?></div>
             </div>
-            <button id="updateDesignBtn" type="button" style="width:100%;background:#2d5fff;color:#fff;font-size:1.13rem;font-weight:600;padding:12px 0;border:none;border-radius:8px;cursor:pointer;margin-bottom:0.8rem;"><?= t('studio.save_modal.update') ?></button>
-            <button id="deleteDesignBtn" type="button" style="width:100%;background:#dc3545;color:#fff;font-size:1rem;font-weight:600;padding:10px 0;border:none;border-radius:8px;cursor:pointer;margin-bottom:0.8rem;"><?= t('studio.save_modal.delete') ?></button>
-            <div style="text-align:center; color:#888; font-size:0.9rem; margin-bottom:0.8rem;"><?= t('studio.save_modal.or') ?></div>
+            <div class="popup-actions">
+                <button id="updateDesignBtn" type="button" class="btn btn-lg"><?= t('studio.save_modal.update') ?></button>
+                <?php // Destructive, so the red outline — never as loud as Update. ?>
+                <button id="deleteDesignBtn" type="button" class="btn btn-lg btn-danger"><?= t('studio.save_modal.delete') ?></button>
+            </div>
+            <p class="popup-divider"><?= t('studio.save_modal.or') ?></p>
         </div>
-        
+
         <!-- Login required notice (shown when guest tries to save) -->
-        <div id="saveLoginNotice" style="display:none; background:#fff3cd; border:1.5px solid #ffc107; border-radius:10px; padding:1rem 1.2rem; margin-bottom:1.2rem; text-align:center;">
-            <div style="font-size:1rem; font-weight:600; color:#856404; margin-bottom:0.5rem;"><?= t('studio.save_modal.login_title') ?></div>
-            <div style="font-size:0.9rem; color:#856404; margin-bottom:0.8rem;"><?= t('studio.save_modal.login_note') ?></div>
-            <a href="/login" target="_blank" data-on-click="showSaveRetryHint" data-args='["$this"]' style="display:inline-block; background:#2d5fff; color:#fff; font-weight:600; padding:8px 24px; border-radius:7px; text-decoration:none; font-size:1rem;"><?= t('studio.save_modal.login_btn') ?></a>
-            <div class="retry-hint" style="display:none; margin-top:0.7rem; font-size:0.88rem; color:#555;"><?= t('studio.save_modal.login_retry', false) ?></div>
+        <div id="saveLoginNotice" class="popup-panel popup-notice" style="display:none;">
+            <p class="popup-stage-name"><?= t('studio.save_modal.login_title') ?></p>
+            <p class="popup-stage-meta"><?= t('studio.save_modal.login_note') ?></p>
+            <a href="/login" target="_blank" class="btn" data-on-click="showSaveRetryHint" data-args='["$this"]'><?= t('studio.save_modal.login_btn') ?></a>
+            <p class="retry-hint popup-note" style="display:none;"><?= t('studio.save_modal.login_retry', false) ?></p>
         </div>
 
         <div id="saveNewMode">
-            <div style="margin-bottom:1.1rem;">
-                <label for="saveDesignName" style="font-weight:500;"><?= t('studio.save_modal.name_label') ?></label>
-                <input id="saveDesignName" maxlength="25" placeholder="<?= t('studio.save_modal.name_placeholder') ?>" style="width:100%;margin-top:6px;padding:8px 10px;font-size:1rem;border:1.5px solid #ddd;border-radius:7px;">
-                <div style="font-size:0.92rem;color:#888;margin-top:2px;"><?= t('studio.save_modal.name_hint') ?></div>
+            <div class="form-group">
+                <label for="saveDesignName"><?= t('studio.save_modal.name_label') ?></label>
+                <input id="saveDesignName" maxlength="25" placeholder="<?= t('studio.save_modal.name_placeholder') ?>">
+                <p class="popup-note"><?= t('studio.save_modal.name_hint') ?></p>
             </div>
-            <div style="margin-bottom:1.1rem;">
-                <label for="saveDesignEmail" style="font-weight:500;"><?= t('studio.save_modal.email_label') ?></label>
-                <input id="saveDesignEmail" type="email" placeholder="<?= t('studio.save_modal.email_placeholder') ?>" style="width:100%;margin-top:6px;padding:8px 10px;font-size:1rem;border:1.5px solid #ddd;border-radius:7px;">
+            <div class="form-group">
+                <label for="saveDesignEmail"><?= t('studio.save_modal.email_label') ?></label>
+                <input id="saveDesignEmail" type="email" placeholder="<?= t('studio.save_modal.email_placeholder') ?>">
             </div>
-            <div style="margin-bottom:1.1rem;display:flex;align-items:center;gap:8px;">
-                <input id="saveDesignPrivacy" type="checkbox" style="width:18px;height:18px;">
-                <label for="saveDesignPrivacy" style="font-size:0.98rem;"><?= t('studio.save_modal.privacy', false, ['link' => '<a href="/privacy" style="color:#2d5fff;" target="_blank">' . t('studio.save_modal.privacy_link', false) . '</a>']) ?></label>
+            <div class="popup-check">
+                <input id="saveDesignPrivacy" type="checkbox">
+                <label for="saveDesignPrivacy"><?= t('studio.save_modal.privacy', false, ['link' => '<a href="/privacy" target="_blank">' . t('studio.save_modal.privacy_link', false) . '</a>']) ?></label>
             </div>
-            <button id="saveDesignModalBtn" type="button" style="width:100%;background:#eee;color:#aaa;font-size:1.13rem;font-weight:600;padding:12px 0;border:none;border-radius:8px;cursor:not-allowed;margin-bottom:1.2rem;"><?= t('studio.save_modal.save_new') ?></button>
+            <div class="popup-actions">
+                <button id="saveDesignModalBtn" type="button" class="btn btn-lg" disabled><?= t('studio.save_modal.save_new') ?></button>
+            </div>
         </div>
     </div>
 </div>
@@ -212,13 +206,13 @@ ob_start(); ?>
                 </div>
 
                 <!-- Product Color & Size Selection -->
-                <div class="product-options-panel" id="productOptionsPanel" style="display:none; background:#fff; border-radius:12px; padding:1rem; margin-top:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-                    <h4 style="margin:0 0 0.75rem 0; font-size:1rem; color:#333;"><?= t('studio.panel.color') ?></h4>
-                    <div id="studioColorSwatches" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:1rem;"></div>
+                <div class="product-options-panel" id="productOptionsPanel" style="display:none;">
+                    <h4><?= t('studio.panel.color') ?></h4>
+                    <div id="studioColorSwatches" class="studio-swatch-row"></div>
 
-                    <h4 style="margin:0 0 0.5rem 0; font-size:1rem; color:#333;"><?= t('studio.panel.sizes') ?></h4>
-                    <div id="studioAvailableSizes" style="display:flex; flex-wrap:wrap; gap:6px;">
-                        <span style="color:#888; font-size:0.9rem;"><?= t('studio.panel.select_color_first') ?></span>
+                    <h4><?= t('studio.panel.sizes') ?></h4>
+                    <div id="studioAvailableSizes" class="studio-size-row">
+                        <span class="studio-empty-note"><?= t('studio.panel.select_color_first') ?></span>
                     </div>
                 </div>
 
@@ -248,9 +242,9 @@ ob_start(); ?>
                                 <div class="upload-or" style="font-size:0.85rem;margin:0.3rem 0;"><?= t('studio.upload.drag', false) ?></div>
                                 <input type="file" id="uploadFileInput" accept="image/*" style="display:none;" data-on-change="handleUploadFile" data-args='["$files"]'>
                             </div>
-                            <div class="upload-hint" style="font-size:0.78rem;color:#999;margin-top:0.4rem;text-align:center;"><?= t('studio.upload.hint') ?></div>
+                            <div class="upload-hint"><?= t('studio.upload.hint') ?></div>
                             <div id="uploadRecentList" style="display:none;margin-top:0.7rem;width:100%;min-width:0;box-sizing:border-box;">
-                                <div style="font-size:0.8rem;font-weight:600;color:#555;margin-bottom:0.3rem;"><?= t('studio.upload.recent') ?></div>
+                                <div class="upload-recent-title"><?= t('studio.upload.recent') ?></div>
                                 <div class="upload-recent-list" id="uploadRecentStrip"></div>
                             </div>
                         </div>
@@ -261,11 +255,11 @@ ob_start(); ?>
                             <button class="upload-editor-close" data-on-click="hideTextEditor">&times;</button>
                             <h2 id="textEditorTitle" style="margin-bottom:18px;"><?= t('studio.text.title') ?></h2>
                             <div class="option-group" style="margin-bottom:14px;">
-                                <label for="textContent" style="font-weight:500;"><?= t('studio.text.label') ?>:</label>
+                                <label for="textContent" style="font-weight:500;"><?= t('studio.text.label') ?></label>
                                 <input type="text" id="textContent" placeholder="<?= t('studio.text.placeholder') ?>" maxlength="50" style="width:100%;margin-top:6px;">
                             </div>
                             <div class="option-group" style="margin-bottom:14px;">
-                                <label for="fontFamily" style="font-weight:500;"><?= t('studio.text.font') ?>:</label>
+                                <label for="fontFamily" style="font-weight:500;"><?= t('studio.text.font') ?></label>
                                 <select id="fontFamily" style="width:100%;margin-top:6px;">
                                     <option value="Arial, sans-serif" selected>Arial</option>
                                     <option value="'Times New Roman', serif">Times New Roman</option>
@@ -279,17 +273,17 @@ ob_start(); ?>
                             </div>
                             <div style="display:flex; gap:16px; margin-bottom:14px;">
                                 <div style="flex:1;">
-                                    <label for="fontSize" style="font-weight:500;"><?= t('studio.text.size') ?>:</label>
+                                    <label for="fontSize" style="font-weight:500;"><?= t('studio.text.size') ?></label>
                                     <input type="range" id="fontSize" min="12" max="200" value="24" style="width:100%;margin-top:6px;">
                                     <span id="fontSizeDisplay">24px</span>
                                 </div>
                                 <div style="flex:1;">
-                                    <label for="textColor" style="font-weight:500;"><?= t('studio.text.color') ?>:</label>
+                                    <label for="textColor" style="font-weight:500;"><?= t('studio.text.color') ?></label>
                                     <input type="color" id="textColor" value="#000000" style="width:100%;margin-top:6px;">
                                 </div>
                             </div>
                             <div class="option-group" style="margin-bottom:14px;">
-                                <label style="font-weight:500;"><?= t('studio.text.style') ?>:</label>
+                                <label style="font-weight:500;"><?= t('studio.text.style') ?></label>
                                 <div class="style-buttons" style="margin-top:6px;display:flex;gap:10px;">
                                     <button type="button" class="img-edit-btn" id="boldBtn" title="Bold"><b>B</b></button>
                                     <button type="button" class="img-edit-btn" id="italicBtn" title="Italic"><i>/</i></button>
@@ -297,8 +291,8 @@ ob_start(); ?>
                                 </div>
                             </div>
                             <div style="display:flex; gap:10px; margin-top:18px;">
-                                <button type="button" class="img-edit-btn" style="flex:1; background:#2d5fff; color:#fff;" id="applyTextBtn"><?= t('studio.text.apply') ?></button>
-                                <button type="button" class="img-edit-btn" style="flex:1; background:#eee; color:#888;" id="cancelTextBtn"><?= t('studio.text.cancel') ?></button>
+                                <button type="button" class="btn btn-block" id="applyTextBtn"><?= t('studio.text.apply') ?></button>
+                                <button type="button" class="btn btn-block btn-secondary" id="cancelTextBtn"><?= t('studio.text.cancel') ?></button>
                             </div>
                         </div>
                     </div>
@@ -309,7 +303,7 @@ ob_start(); ?>
                                 <button class="upload-editor-close" data-on-click="hideImageEditor">&times;</button>
                                 <h2 style="margin-bottom:18px;"><?= t('studio.image_edit.title') ?></h2>
                                 <div style="margin-bottom:12px;">
-                                    <div style="font-size:13px; color:#888;"><?= t('studio.image_edit.size') ?></div>
+                                    <div class="studio-field-caption"><?= t('studio.image_edit.size') ?></div>
                                     <div style="display:flex; gap:8px; align-items:center; margin-top:2px;">
                                         <input id="imgEditWidth" type="number" min="0.1" step="0.01" style="width:60px;" data-on-change="updateImageSize" data-args='["width"]'> in ×
                                         <input id="imgEditHeight" type="number" min="0.1" step="0.01" style="width:60px;" data-on-change="updateImageSize" data-args='["height"]'> in
@@ -338,7 +332,7 @@ ob_start(); ?>
                                     <input id="imgEditRotationVal" type="number" min="0" max="360" value="0" style="width:48px;" data-on-input="updateImageRotation">
                                 </div>
                                 <div style="display:flex; gap:10px; margin-top:10px;">
-                                    <button class="img-edit-btn" style="flex:1; background:#eee; color:#888;" data-on-click="resetImageEdit"><?= t('studio.image_edit.reset') ?></button>
+                                    <button type="button" class="btn btn-block btn-secondary" data-on-click="resetImageEdit"><?= t('studio.image_edit.reset') ?></button>
                                 </div>
                             </div>
                         </div>

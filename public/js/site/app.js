@@ -225,11 +225,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function _showCartReplayToast(msg) {
-    const toast = document.createElement('div');
-    toast.textContent = msg;
-    toast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;padding:12px 28px;border-radius:8px;font-weight:600;font-size:1rem;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.18);';
-    document.body.appendChild(toast);
-    setTimeout(() => { toast.style.transition = 'opacity 0.4s'; toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 3000);
+    UI.success(msg);
 }
 
 /**

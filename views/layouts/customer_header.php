@@ -116,7 +116,9 @@ $currentLocale   = I18n::locale();
                         <a href="/account" class="btn btn-sm"><?= t('header.my_account') ?></a>
                         <form method="post" action="/logout" class="logout-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="btn btn-sm btn-danger"><?= t('header.logout') ?></button>
+                            <?php // Signing out loses nothing, so it is a plain secondary
+                                  // button — red is kept for actions that destroy something. ?>
+                            <button type="submit" class="btn btn-sm btn-secondary"><?= t('header.logout') ?></button>
                         </form>
                     <?php else: ?>
                         <?php // Register is the primary action, Login the quiet one.

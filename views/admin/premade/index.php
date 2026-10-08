@@ -65,7 +65,7 @@
                 <td>
                     <span class="count-badge"><?= $design['product_count'] ?? 0 ?> products</span>
                 </td>
-                <td><strong>$<?= number_format($design['price'], 2) ?></strong></td>
+                <td><strong>€<?= number_format($design['price'], 2) ?></strong></td>
                 <td>
                     <span class="status-badge <?= $design['active'] ? 'active' : 'inactive' ?>">
                         <?= $design['active'] ? 'Active' : 'Inactive' ?>
@@ -142,7 +142,7 @@
                                         <img src="/<?= htmlspecialchars($product['image_path']) ?>" alt="" class="product-mini-thumb">
                                     <?php endif; ?>
                                     <?= htmlspecialchars($product['name']) ?>
-                                    <small>($<?= number_format($product['base_price'], 2) ?>)</small>
+                                    <small>(€<?= number_format($product['base_price'], 2) ?>)</small>
                                 </span>
                             </label>
                             <?php endforeach; ?>

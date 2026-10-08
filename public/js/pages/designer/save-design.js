@@ -7,17 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const privacy = document.getElementById('saveDesignPrivacy').checked;
         const btn = document.getElementById('saveDesignModalBtn');
         const validEmail = /^\S+@\S+\.\S+$/.test(email);
-        if (name && email && validEmail && privacy) {
-            btn.disabled = false;
-            btn.style.background = '#2d5fff';
-            btn.style.color = '#fff';
-            btn.style.cursor = 'pointer';
-        } else {
-            btn.disabled = true;
-            btn.style.background = '#eee';
-            btn.style.color = '#aaa';
-            btn.style.cursor = 'not-allowed';
-        }
+        // The button is a normal .btn; its disabled look comes from the stylesheet.
+        btn.disabled = !(name && email && validEmail && privacy);
     }
     ['saveDesignName','saveDesignEmail','saveDesignPrivacy'].forEach(id => {
         document.getElementById(id).addEventListener('input', updateSaveDesignBtnState);
@@ -456,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
                 document.getElementById('updateDesignBtn').disabled = false;
-                document.getElementById('updateDesignBtn').textContent = 'Update Design';
+                document.getElementById('updateDesignBtn').textContent = window.I18N.t('studio.save_modal.update');
                 let parsed = null;
                 try { parsed = JSON.parse(xhr.responseText); } catch(e){}
                 if (parsed && parsed.requireLogin) {
@@ -499,7 +490,7 @@ document.addEventListener('DOMContentLoaded', function() {
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
                 document.getElementById('deleteDesignBtn').disabled = false;
-                document.getElementById('deleteDesignBtn').textContent = 'Delete Design';
+                document.getElementById('deleteDesignBtn').textContent = window.I18N.t('studio.save_modal.delete');
                 let parsed = null;
                 try { parsed = JSON.parse(xhr.responseText); } catch(e){}
                 if (parsed && parsed.requireLogin) {

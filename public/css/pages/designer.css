@@ -1,17 +1,24 @@
 /* Styles for views/shop/designer.php — moved here from the template. */
 
+/* Small tool buttons (centre, flip, bold…): hairline outline, ink on hover
+   or when on — the same as the size chips. */
 .img-edit-btn {
-    background: #f7f7f7;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 0;
     padding: 6px 14px;
+    color: var(--ink);
     font-size: 14px;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 .img-edit-btn:hover {
-    background: #e6eaff;
-    color: #2d5fff;
+    border-color: var(--ink);
+}
+.img-edit-btn.active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
 }
 
 /* Modern Upload Modal Buttons */
@@ -19,43 +26,39 @@
     position: absolute;
     top: 0.4rem;
     right: 0.4rem;
-    background: #f3f6fa;
+    background: transparent;
     border: none;
-    border-radius: 50%;
+    border-radius: 0;
     width: 38px;
     height: 38px;
     font-size: 1.7rem;
-    color: #15130E;
+    color: var(--ink-soft);
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(102,126,234,0.08);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background 0.15s, color 0.15s;
 }
 .upload-editor-close:hover {
-    background: #e0e7ff;
-    color: #3346d3;
+    background: var(--paper-soft);
+    color: var(--ink);
 }
+/* "Browse files": the panel's primary button, so a normal .btn in all but name. */
 .upload-browse-btn {
     background: var(--ink);
     color: #fff;
     border: none;
-    border-radius: 8px;
-    padding: 0.6rem 1.4rem;
+    border-radius: 0;
+    padding: 0.7rem 1.4rem;
     font-size: 0.95rem;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
     margin-bottom: 0.6rem;
-    box-shadow: 0 2px 8px rgba(102,126,234,0.08);
-    letter-spacing: 0.01em;
-    transition: background 0.15s, box-shadow 0.15s, transform 0.12s;
+    transition: background var(--dur) var(--ease);
     width: 100%;
 }
 .upload-browse-btn:hover {
-    background: var(--ink);
-    box-shadow: 0 4px 16px rgba(102,126,234,0.13);
-    transform: translateY(-1px);
+    background: var(--spot-hover);
 }
 .upload-recent-list {
     display: flex;
@@ -68,28 +71,31 @@
     max-width: 100%;
     box-sizing: border-box;
     scrollbar-width: thin;
-    scrollbar-color: #c7d2fe transparent;
+    scrollbar-color: var(--border) transparent;
 }
 .upload-recent-list::-webkit-scrollbar { height: 5px; }
-.upload-recent-list::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 3px; }
+.upload-recent-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 .upload-recent-item {
     flex-shrink: 0;
     width: 52px;
     height: 52px;
-    border-radius: 7px;
-    border: 2px solid #e5e7ff;
+    border-radius: var(--st-r-img, 12px);
+    border: 1px solid var(--border);
     object-fit: cover;
     cursor: pointer;
-    transition: border-color 0.15s, transform 0.12s;
+    transition: border-color var(--dur) var(--ease);
 }
 .upload-recent-item:hover {
-    border-color: #15130E;
-    transform: scale(1.07);
+    border-color: var(--ink);
 }
+.upload-hint { margin-top: 0.4rem; font-size: 0.78rem; text-align: center; color: var(--ink-muted); }
+.upload-recent-title { margin-bottom: 0.3rem; font-size: 0.8rem; font-weight: 500; color: var(--ink-soft); }
+.studio-field-caption { font-size: 13px; color: var(--ink-muted); }
+/* The tools: a card (white, hairline, the site's 18px corners), no shadow. */
 .whats-next-panel {
     background: #fff;
-    border-radius: 14px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+    border-radius: var(--st-r, 18px);
     padding: 1.2rem 1rem 1rem 1rem;
     margin-top: 1rem;
     text-align: center;
@@ -109,10 +115,10 @@
     position: relative;
 }
 .whats-next-title {
-    font-size: 1.3rem;
-    font-weight: 700;
+    font-size: 1.2rem;
+    font-weight: 500;
     margin-bottom: 1rem;
-    color: #222;
+    color: var(--ink);
 }
 .whats-next-actions {
     display: flex;
@@ -127,18 +133,15 @@
     flex-direction: column;
     align-items: center;
     cursor: pointer;
-    transition: transform 0.12s, box-shadow 0.12s;
+    transition: background-color var(--dur) var(--ease);
     min-width: 100px;
     padding: 0.7rem 0.5rem 0.5rem 0.5rem;
-    border-radius: 10px;
-    background: #f8fafd;
-    box-shadow: 0 1px 4px rgba(102,126,234,0.04);
+    border-radius: var(--st-r-img, 12px);
+    background: var(--paper-soft);
     margin-bottom: 0;
 }
 .whats-next-action:hover {
-    background: #f0f4ff;
-    transform: translateY(-2px) scale(1.04);
-    box-shadow: 0 4px 16px rgba(102,126,234,0.10);
+    background: var(--st-panel, var(--paper-soft));
 }
 .whats-next-icon {
     margin-bottom: 0.3rem;
@@ -154,24 +157,24 @@
 }
 .whats-next-label {
     font-size: 0.95rem;
-    color: #334;
+    color: var(--ink);
     font-weight: 500;
     margin-top: 0.1rem;
     letter-spacing: 0.01em;
 }
 .whats-next-upload-hint {
     margin-top: 1rem;
-    background: #f8fafd;
-    border-radius: 8px;
+    background: var(--paper-soft);
+    border-radius: var(--st-r-img, 12px);
     padding: 0.8rem 0.8rem;
     display: inline-block;
     text-align: left;
     font-size: 0.9rem;
 }
 .hint-title {
-    font-weight: 600;
+    font-weight: 500;
     margin-bottom: 0.4rem;
-    color: #222;
+    color: var(--ink);
     font-size: 0.95rem;
 }
 .hint-row {
@@ -192,19 +195,20 @@
     top: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0,0,0,0.3);
+    background: rgba(13, 13, 13, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
 }
+/* Set like the shared .popup (studio.css). */
 .change-color-modal-content {
     background: #fff;
-    border-radius: 16px;
+    border-radius: var(--st-r, 18px);
     padding: 1.5rem;
     max-width: 400px;
     width: 90vw;
     position: relative;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    box-shadow: 0 30px 80px -30px rgba(13, 13, 13, 0.55);
 }
 .change-color-modal-close {
     position: absolute;
@@ -213,7 +217,7 @@
     background: none;
     border: none;
     font-size: 1.8rem;
-    color: #888;
+    color: var(--ink-soft);
     cursor: pointer;
 }
 .modal-color-swatches {
@@ -223,22 +227,21 @@
     margin-top: 0.5rem;
 }
 .modal-color-swatch {
-    width: 28px; height: 28px;
-    border-radius: 6px;
-    border: 2px solid #eee;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(13, 13, 13, 0.18);
     cursor: pointer;
     position: relative;
     box-sizing: border-box;
     display: flex; align-items: center; justify-content: center;
 }
 .modal-color-selected {
-    border: 2.5px solid #15130E;
-    box-shadow: 0 0 0 2px #e0e7ff;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--ink);
 }
 .modal-color-check {
     color: #fff;
     font-size: 1.2rem;
-    background: #15130E;
+    background: var(--ink);
     border-radius: 50%;
     width: 18px; height: 18px;
     display: flex; align-items: center; justify-content: center;
@@ -251,20 +254,10 @@
     gap: 0.5rem;
     margin-top: 0.5rem;
 }
-.modal-size-item {
-    padding: 0.3rem 0.7rem;
-    border-radius: 6px;
-    border: 1.5px solid #eee;
-    background: #f8fafd;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background 0.13s, border 0.13s;
-}
+/* Sizes in the change-colour pop-up are information (studio.css size tags). */
 .modal-size-selected {
-    border: 2px solid #15130E;
-    background: #e0e7ff;
-    font-weight: 600;
-    color: #222;
+    background: var(--ink);
+    color: #fff;
 }
 
 .custom-design-section {
@@ -322,7 +315,7 @@
     width: 11px;
     height: 11px;
     padding: 0;
-    border: 2px solid #bdbdbd;
+    border: 2px solid var(--ink-muted);
     background: transparent;
     border-radius: 50%;
     cursor: pointer;
@@ -331,26 +324,26 @@
 }
 
 .view-btn:hover {
-    border-color: #15130E;
-    transform: scale(1.15);
+    border-color: var(--ink);
 }
 
 .view-btn:focus-visible {
-    outline: 2px solid #2d5fff;
+    outline: 2px solid var(--ink);
     outline-offset: 2px;
 }
 
 .view-btn.active {
-    background: #15130E;
-    border-color: #15130E;
+    background: var(--ink);
+    border-color: var(--ink);
 }
 
+/* A small caption, set like every other one on the site (.spec). */
 .view-current-label {
-    font-size: 0.86rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #6b6b6b;
+    color: var(--ink-muted);
     white-space: nowrap;
 }
 
@@ -375,49 +368,42 @@
 
 .studio-action {
     width: 100%;
-    padding: 12px 16px;
+    padding: 13px 16px;
     border: 1px solid transparent;
-    border-radius: var(--radius, 2px);
-    border-width: 1.5px;
+    border-radius: 0;
     font-family: inherit;
     font-size: 0.95rem;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
     white-space: nowrap;
-    transition: background-color .15s, border-color .15s;
+    transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
-/* Was green. Green is the success colour in this palette, not an identity,
-   and using it for Add to Cart made the studio's main action look like a
-   confirmation message. These are the site's buttons now: a solid block of
-   the spot ink, and an outlined one beside it. */
+/* The site's two buttons (.btn and .btn-secondary in studio.css): Add to
+   Cart in solid ink, Save Design as an ink outline. Add to Cart was red —
+   the colour of Delete — and before that green, the colour of "done". */
 .studio-action-primary {
-    background: var(--spot, #C83017);
+    background: var(--ink);
     color: #fff;
-    border-color: transparent;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 700;
 }
-.studio-action-primary:hover { background: var(--spot-hover, #A82611); }
+.studio-action-primary:hover { background: var(--spot-hover); }
 
 .studio-action-secondary {
     background: transparent;
-    border-color: var(--ink, #16130F);
-    color: var(--ink, #16130F);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 700;
+    border-color: var(--ink);
+    color: var(--ink);
 }
-.studio-action-secondary:hover { background: var(--ink, #16130F); color: var(--paper, #F4F0E6); }
+.studio-action-secondary:hover { background: var(--ink); color: #fff; }
 
 .studio-action:disabled { opacity: .55; cursor: not-allowed; }
 
+/* White, hairline, the site's 18px corners — the same frame the premade
+   design page puts round its garment. (It was a 1.5px ink box.) */
 .mockup-container {
     position: relative;
     background: #ffffff;
-    border: 1.5px solid var(--ink, #16130F);
-    border-radius: var(--radius, 2px);
+    border: 1px solid var(--border);
+    border-radius: var(--st-r, 18px);
     /* Swiping to change view is a drag, and a drag across an image is also a
        text/image selection — so the whole mockup lit up blue mid-swipe. The
        design elements inside already set this for their own dragging; the
@@ -452,7 +438,7 @@
 }
 
 .mockup-placeholder {
-    color: #999;
+    color: var(--ink-muted);
     font-size: 1.2rem;
 }
 
@@ -582,7 +568,7 @@
     right: -10px;
     width: 20px;
     height: 20px;
-    background: #dc3545;
+    background: var(--bad);
     color: #fff;
     border: none;
     border-radius: 50%;
@@ -600,7 +586,7 @@
     left: -10px;
     width: 20px;
     height: 20px;
-    background: #15130E;
+    background: var(--ink);
     color: #fff;
     border: none;
     border-radius: 50%;
@@ -620,15 +606,15 @@
 /* Layer Controls */
 .layer-controls {
     margin-top: 1rem;
-    background: #f8f9fa;
-    border-radius: 8px;
+    background: var(--paper-soft);
+    border-radius: var(--st-r-img, 12px);
     padding: 1rem;
 }
 
 .layer-controls h4 {
     margin: 0 0 0.5rem 0;
     font-size: 0.9rem;
-    color: #666;
+    color: var(--ink-soft);
 }
 
 .layer-list {
@@ -642,23 +628,23 @@
     justify-content: space-between;
     padding: 0.5rem;
     background: #fff;
-    border-radius: 4px;
+    border-radius: 0;
     margin-bottom: 4px;
     cursor: pointer;
     font-size: 0.85rem;
 }
 
 .layer-item:hover {
-    background: #e9ecef;
+    background: var(--st-panel, var(--paper-soft));
 }
 
 .layer-item.active {
-    background: #15130E;
+    background: var(--ink);
     color: #fff;
 }
 
 .layer-empty {
-    color: #999;
+    color: var(--ink-muted);
     font-size: 0.85rem;
     text-align: center;
     padding: 1rem;
@@ -673,15 +659,15 @@
 
 .control-section {
     background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--st-r-img, 12px);
     padding: 1.5rem;
 }
 
 .control-section h3 {
     margin: 0 0 1rem 0;
     font-size: 1rem;
-    color: #333;
+    color: var(--ink);
 }
 
 /* Product Grid */
@@ -692,8 +678,8 @@
 }
 
 .product-choice {
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--st-r-img, 12px);
     padding: 0.75rem;
     cursor: pointer;
     transition: all 0.2s;
@@ -701,12 +687,12 @@
 }
 
 .product-choice:hover {
-    border-color: #15130E;
+    border-color: var(--ink);
 }
 
 .product-choice.selected {
-    border-color: #15130E;
-    background: rgba(125, 128, 218, 0.05);
+    border-color: var(--ink);
+    background: #fff;
 }
 
 .product-choice-img {
@@ -724,7 +710,7 @@
 }
 
 .product-choice-img .no-img {
-    color: #999;
+    color: var(--ink-muted);
     font-size: 0.8rem;
 }
 
@@ -736,7 +722,7 @@
 }
 
 .product-choice-info .product-price {
-    color: #15130E;
+    color: var(--ink);
     font-weight: 600;
     font-size: 0.9rem;
 }
@@ -770,15 +756,15 @@
 .size-btn span {
     display: inline-block;
     padding: 0.5rem 1rem;
-    border: 2px solid #ddd;
-    border-radius: 6px;
+    border: 1px solid var(--border);
+    border-radius: 0;
     font-size: 0.85rem;
     transition: all 0.2s;
 }
 
 .size-btn input:checked + span {
-    border-color: #15130E;
-    background: #15130E;
+    border-color: var(--ink);
+    background: var(--ink);
     color: #fff;
 }
 
@@ -803,7 +789,7 @@
 }
 
 .color-swatch.selected {
-    border-color: #15130E;
+    border-color: var(--ink);
 }
 
 .color-swatch.is-white {
@@ -819,9 +805,9 @@
 
 .add-btn {
     padding: 1rem;
-    border: 2px dashed #ddd;
-    background: #f8f9fa;
-    border-radius: 8px;
+    border: 1px dashed var(--border);
+    background: var(--paper-soft);
+    border-radius: var(--st-r-img, 12px);
     cursor: pointer;
     transition: all 0.2s;
     text-align: center;
@@ -829,8 +815,8 @@
 }
 
 .add-btn:hover {
-    border-color: #15130E;
-    background: rgba(125, 128, 218, 0.05);
+    border-color: var(--ink);
+    background: #fff;
 }
 
 .add-btn .add-icon {
@@ -841,8 +827,8 @@
 
 /* Text Editor Panel */
 .text-editor-panel {
-    background: #f8f9fa;
-    border-color: #15130E;
+    background: var(--paper-soft);
+    border-color: var(--ink);
 }
 
 .option-row {
@@ -858,8 +844,8 @@
 .option-group select {
     width: 100%;
     padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    border: 1px solid var(--border);
+    border-radius: 0;
     font-size: 0.9rem;
 }
 
@@ -870,8 +856,8 @@
 .option-group input[type="color"] {
     width: 100%;
     height: 36px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    border: 1px solid var(--border);
+    border-radius: 0;
     cursor: pointer;
 }
 
@@ -883,17 +869,17 @@
 .style-btn {
     width: 36px;
     height: 36px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     background: #fff;
-    border-radius: 6px;
+    border-radius: 0;
     cursor: pointer;
     font-size: 1rem;
 }
 
 .style-btn.active {
-    background: #15130E;
+    background: var(--ink);
     color: #fff;
-    border-color: #15130E;
+    border-color: var(--ink);
 }
 
 .text-editor-actions {
@@ -904,8 +890,8 @@
 
 /* Order Summary */
 .order-summary {
-    background: #f8f9fa;
-    border-radius: 8px;
+    background: var(--paper-soft);
+    border-radius: var(--st-r-img, 12px);
     padding: 1rem;
     margin-bottom: 1rem;
 }
@@ -918,7 +904,7 @@
 }
 
 .summary-row.total {
-    border-top: 2px solid #ddd;
+    border-top: 1px solid var(--border);
     margin-top: 0.5rem;
     padding-top: 0.75rem;
     font-weight: 700;
@@ -935,8 +921,8 @@
 .quantity-control {
     display: flex;
     align-items: center;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    border: 1px solid var(--border);
+    border-radius: 0;
     overflow: hidden;
 }
 
@@ -944,13 +930,13 @@
     width: 36px;
     height: 36px;
     border: none;
-    background: #f8f9fa;
+    background: var(--paper-soft);
     cursor: pointer;
     font-size: 1.2rem;
 }
 
 .qty-btn:hover {
-    background: #e9ecef;
+    background: var(--st-panel, var(--paper-soft));
 }
 
 .quantity-control input {
@@ -971,7 +957,7 @@
 }
 
 .no-options {
-    color: #666;
+    color: var(--ink-soft);
     font-style: italic;
 }
 
@@ -1031,9 +1017,9 @@
         max-width: none;
         z-index: 1200;
         margin: 0;
-        background: var(--paper-2, #fff);
-        border-right: 2px solid var(--ink, #15130E);
-        box-shadow: 10px 0 26px rgba(22, 19, 15, 0.16);
+        background: #fff;
+        border-right: 1px solid var(--border);
+        box-shadow: 10px 0 26px rgba(13, 13, 13, 0.16);
         transform: translateX(-100%);
         transition: transform .24s cubic-bezier(0.2, 0, 0.1, 1);
         overflow-y: auto;
@@ -1059,7 +1045,7 @@
         position: fixed;
         inset: 0;
         z-index: 1190;
-        background: rgba(22, 19, 15, 0.42);
+        background: rgba(13, 13, 13, 0.42);
         opacity: 0;
         pointer-events: none;
         transition: opacity .24s ease;
@@ -1084,12 +1070,12 @@
         min-width: 38px;
         min-height: 104px;
         padding: 12px 6px;
-        background: var(--paper-2, #fff);
-        color: var(--ink, #15130E);
-        border: 2px solid var(--ink, #15130E);
+        background: #fff;
+        color: var(--ink);
+        border: 1px solid var(--border);
         border-left: 0;
         border-radius: 0 var(--radius, 2px) var(--radius, 2px) 0;
-        box-shadow: 3px 3px 0 rgba(22, 19, 15, 0.16);
+        box-shadow: none;
         cursor: pointer;
     }
 
@@ -1116,7 +1102,7 @@
        being stranded underneath it. */
     .studio-tools-tab.is-open {
         left: min(88vw, 400px);
-        border-left: 2px solid var(--ink, #15130E);
+        border-left: 1px solid var(--border);
     }
 
     /* ---- Actions ----
@@ -1135,9 +1121,9 @@
         gap: var(--space-2, 8px);
         padding: var(--space-3, 12px) var(--space-4, 16px);
         padding-bottom: calc(var(--space-3, 12px) + env(safe-area-inset-bottom, 0px));
-        background: var(--paper-2, #fff);
-        border-top: 2px solid var(--ink, #15130E);
-        box-shadow: 0 -6px 18px rgba(22, 19, 15, 0.12);
+        background: #fff;
+        border-top: 1px solid var(--border);
+        box-shadow: 0 -6px 18px rgba(13, 13, 13, 0.12);
     }
     .studio-mobile-actions .studio-action { margin: 0; }
     .studio-mobile-actions .studio-action-primary { flex: 2; }
@@ -1161,3 +1147,26 @@
 .sleeve-area#designAreaRightSleeve {
     left: 65% !important;
 }
+
+/* ---- Add-to-cart pop-up: the shirt with the design laid over it ----------
+   The pop-up itself is the shared .popup (studio.css). These place the
+   preview layers; cart-modal.js scales the design into #cartPreviewDesignArea. */
+.studio-cart-preview { position: relative; width: 200px; height: 200px; margin: 0 auto; overflow: hidden; background: #fff; border-radius: var(--st-r-img, 12px); }
+.studio-cart-preview > img { width: 100%; height: 100%; object-fit: contain; }
+#cartPreviewDesignArea { position: absolute; left: 50%; top: 25%; width: 45%; height: 60%; transform: translateX(-50%); overflow: hidden; }
+/* "Add to cart" can be opened from the "design saved" pop-up, so it stacks
+   above that one, which stacks above "save design" (the order they had). */
+#designSavedModal { z-index: 30000; }
+#saveDesignModal { z-index: 20000; }
+
+/* Colour and sizes under the garment: a card like the layers panel beside it. */
+.product-options-panel {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--st-r-img, 12px);
+}
+.product-options-panel h4 { margin: 0 0 0.6rem; font-size: 0.9rem; font-weight: 500; color: var(--ink); }
+.studio-swatch-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; padding: 3px; }
+.studio-size-row { display: flex; flex-wrap: wrap; gap: 6px; }

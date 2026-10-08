@@ -20,6 +20,21 @@
    - secondary text #5F5E59 6.50:1
    - red #D7262E 4.99:1; red as small text #B8202A 6.41:1
    - field borders #8A8983 3.53:1 (WCAG asks 3:1 of a control's edge)
+
+   What each colour MEANS — every page keeps to this, so a colour
+   tells the customer the same thing wherever they meet it:
+   - Black is the interface: text, every button that moves you
+     forward (add to cart, checkout, pay, save, send), and every
+     "this one is chosen" state (selected chip, size, colour ring,
+     active tab, current step). A secondary action is a black outline.
+   - Red is never a forward action. It is the brand's accent (the
+     hero's second line, the cart count, a favourited heart), errors,
+     and destructive actions. A destructive button is a red outline;
+     only the final "yes, delete it" in a confirmation is solid red.
+   - Green is success that already happened (paid, delivered, free,
+     a completed step, a bulk saving); amber is pending.
+   Base.css's --spot ("the accent") therefore points at black here,
+   and the red is spelled --st-red / --st-red-txt where it is meant.
    ============================================================ */
 
 body.theme-studio {
@@ -47,10 +62,14 @@ body.theme-studio {
     --stock:         #FFFFFF;
     --border:        var(--st-line);
     --border-strong: var(--st-ink);
-    --spot:          var(--st-red-txt);
-    --spot-rgb:      184, 32, 42;
-    --spot-hover:    #8F1720;
+    /* The accent of the interface is ink (see "What each colour means"
+       above). Older stylesheets use --spot for primary buttons, links,
+       focus rings and selected states, so those all follow. */
+    --spot:          var(--st-ink);
+    --spot-rgb:      13, 13, 13;
+    --spot-hover:    #2B2B2B;
     --spot-2:        var(--st-ink);
+    --bad:           var(--st-red-txt);
     --ochre:         var(--st-tile);
     --rule:          1px solid var(--st-line);
     --rule-hair:     1px solid var(--st-line);
@@ -95,7 +114,7 @@ body.theme-studio :is(h1, h2, h3, h4) {
 :where(body.theme-studio) ::selection { background: var(--st-ink); color: #FFFFFF; }
 :where(body.theme-studio) :focus-visible { outline: 2px solid var(--st-ink); outline-offset: 2px; }
 :where(body.theme-studio) a { color: var(--st-ink); }
-:where(body.theme-studio) a:hover { color: var(--st-red-txt); }
+:where(body.theme-studio) a:hover { color: var(--st-muted); }
 
 @media (min-width: 901px) {
     body.theme-studio .container {
@@ -127,9 +146,24 @@ body.theme-studio .btn-ghost:hover { background: var(--st-tile); color: var(--st
 /* Success keeps a clear "go" meaning on checkout-style buttons, in ink. */
 body.theme-studio .btn-success { background: var(--st-ink); color: #FFFFFF; }
 body.theme-studio .btn-success:hover { background: #2B2B2B; }
-body.theme-studio .btn-danger { background: var(--st-red-txt); color: #FFFFFF; }
-body.theme-studio .btn-danger:hover { background: #8F1720; }
+/* Destructive: a red outline, so a Delete beside an Add to cart is
+   clearly the other kind of button without shouting louder than it.
+   The final "yes, delete" inside a confirmation (.confirm-btn-danger)
+   is the one solid red button on the site. */
+body.theme-studio .btn-danger { background: transparent; color: var(--st-red-txt); border: 1px solid var(--st-red-txt); }
+body.theme-studio .btn-danger:hover { background: var(--st-red-txt); color: #FFFFFF; }
 body.theme-studio .btn:focus-visible { outline: 2px solid var(--st-ink); outline-offset: 3px; }
+/* A disabled button keeps its look under the pointer, so it never seems
+   to answer a click it is going to ignore. */
+body.theme-studio .btn:disabled:hover { background: var(--st-ink); color: #FFFFFF; }
+body.theme-studio :is(.btn-secondary, .btn-outline):disabled:hover { background: transparent; color: var(--st-ink); }
+
+/* Every control speaks in the site's face. Browsers give <button>,
+   <input> and <select> their own font (Arial on Windows), so any of
+   them without a font rule of its own — favourite hearts, view dots,
+   chips built in JavaScript — showed up in Arial. :where() keeps this
+   at zero specificity, so a rule that names a font still wins. */
+:where(body.theme-studio) :where(button, input, select, textarea) { font-family: inherit; }
 
 /* ---- Form fields ----------------------------------------------------- */
 body.theme-studio input[type="text"],
@@ -244,7 +278,7 @@ body.theme-studio .section-head-action {
     font-weight: 400;
     font-size: 0.95rem;
 }
-body.theme-studio .section-head-action:hover { background: none; color: var(--st-red-txt); border-color: var(--st-red-txt); }
+body.theme-studio .section-head-action:hover { background: none; color: var(--st-muted); border-color: var(--st-muted); }
 
 /* ---- Info pages, About -----------------------------------------------
    Headings stand on their own: the red underline was the old look's
@@ -480,7 +514,7 @@ body.theme-studio :is(.info-article-body, .about-text) h2 {
 body.theme-studio :is(.info-article-body, .about-text) > h2:first-child { margin-top: 0; }
 body.theme-studio :is(.info-article-body, .about-text) :is(p, li) { font-family: var(--font); }
 body.theme-studio .info-article-body a:not(.btn) { color: var(--st-ink); text-decoration: underline; text-decoration-color: var(--st-field); text-underline-offset: 3px; }
-body.theme-studio .info-article-body a:not(.btn):hover { color: var(--st-red-txt); text-decoration-color: currentColor; }
+body.theme-studio .info-article-body a:not(.btn):hover { color: var(--st-ink); text-decoration-color: currentColor; }
 body.theme-studio .info-article-body .info-disclaimer {
     background: var(--st-tile);
     border: 0;
@@ -694,7 +728,7 @@ body.theme-studio .auth-section .form-footer {
     font-family: var(--font);
 }
 body.theme-studio .auth-section .form-footer a { color: var(--st-ink); text-decoration: underline; text-underline-offset: 3px; }
-body.theme-studio .auth-section .form-footer a:hover { color: var(--st-red-txt); }
+body.theme-studio .auth-section .form-footer a:hover { color: var(--st-muted); }
 
 @media (max-width: 900px) {
     body.theme-studio .contact-grid,
@@ -755,7 +789,7 @@ body.theme-studio .admin-nav a:not(.admin-nav-brand):hover { background: transpa
 body.theme-studio .admin-nav a.active { background: transparent; color: var(--st-ink); font-weight: 500; box-shadow: inset 0 -1px 0 var(--st-ink); }
 /* base.css set these with !important, so they are answered in kind. */
 body.theme-studio .admin-nav .logout-link { color: var(--st-muted) !important; border-radius: 0; }
-body.theme-studio .admin-nav .logout-link:hover { background: transparent !important; color: var(--st-red-txt) !important; }
+body.theme-studio .admin-nav .logout-link:hover { background: transparent !important; color: var(--st-ink) !important; }
 
 /* ---- Page heading ------------------------------------------------------ */
 body.theme-studio .admin-header { border-bottom-color: var(--st-line); }
@@ -806,6 +840,9 @@ body.theme-studio .section-badge {
     padding: 4px 10px;
 }
 body.theme-studio .count-badge { background: var(--st-tile); color: var(--st-ink); }
+/* Switched off is a state, not a fault: grey, so red keeps meaning "wrong"
+   (a cancelled or refunded order) or "destructive". */
+body.theme-studio .status-badge.inactive { background: var(--st-tile); color: var(--st-muted); }
 
 /* ---- Cards, rows, forms ------------------------------------------------ */
 body.theme-studio .info-card,
@@ -820,9 +857,12 @@ body.theme-studio .preview-card { box-shadow: none; }
 body.theme-studio .preview-card .preview-label { font-family: var(--font); font-weight: 500; }
 body.theme-studio .no-preview-msg { background: var(--st-tile); box-shadow: none; }
 body.theme-studio .order-back { font-family: var(--font); font-size: 0.95rem; }
-body.theme-studio .order-back:hover { background: none; color: var(--st-red-txt); }
+body.theme-studio .order-back:hover { background: none; color: var(--st-muted); }
 
-body.theme-studio .form-group label { font-family: var(--font); font-size: 0.85rem; font-weight: 500; color: var(--st-ink); }
+/* Field labels are sentence case, like the checkout's ("Full name"). The
+   spaced capitals base.css gives them are for small meta captions — a
+   table head, a contact item's heading — not for the name of a field. */
+body.theme-studio .form-group label { font-family: var(--font); font-size: 0.9rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--st-ink); }
 body.theme-studio .form-actions { border-top: 1px solid var(--st-line); }
 body.theme-studio .status-form button { font-family: var(--font); font-weight: 500; box-shadow: none; }
 body.theme-studio .status-form button:hover { background: #2B2B2B; }
@@ -860,3 +900,285 @@ body.theme-studio .color-card:hover,
 body.theme-studio .form-group input:focus,
 body.theme-studio .form-group select:focus,
 body.theme-studio .form-group textarea:focus { transform: none; }
+
+/* ============================================================
+   SHARED CONTROLS — the same control looks the same everywhere
+   The cart, product page, premade design page, designer and
+   account each drew their own quantity buttons, size chips and
+   colour swatches (grey rounded buttons, pills, a green ring,
+   a blue ring, white-on-navy leftovers from an old dark theme).
+   These are the one version of each; the page scripts only
+   toggle .is-selected and the disabled attribute.
+   ============================================================ */
+
+/* ---- Quantity stepper: minus, value, plus in one hairline box ------------ */
+body.theme-studio :is(.quantity-controls, .quantity-selector, .quantity-control, .confirm-qty-ctrl, .qty-stepper) {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 0;
+    border: 1px solid var(--st-field);
+    border-radius: 0;
+    background: #FFFFFF;
+    box-shadow: none;
+}
+body.theme-studio :is(.quantity-controls, .quantity-selector, .quantity-control, .confirm-qty-ctrl, .qty-stepper) button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--st-ink);
+    font-family: var(--font);
+    font-size: 1.15rem;
+    font-weight: 400;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color var(--dur) var(--ease);
+}
+body.theme-studio :is(.quantity-controls, .quantity-selector, .quantity-control, .confirm-qty-ctrl, .qty-stepper) button:hover:not(:disabled) { background: var(--st-tile); color: var(--st-ink); }
+body.theme-studio :is(.quantity-controls, .quantity-selector, .quantity-control, .confirm-qty-ctrl, .qty-stepper) button:disabled { background: transparent; color: var(--st-label); opacity: 0.5; cursor: not-allowed; }
+body.theme-studio :is(.quantity-controls, .quantity-selector, .quantity-control, .confirm-qty-ctrl, .qty-stepper) :is(input, .qty-value) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    min-width: 52px;
+    height: 40px;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-left: 1px solid var(--st-line);
+    border-right: 1px solid var(--st-line);
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    color: var(--st-ink);
+    font-family: var(--font);
+    font-size: 1rem;
+    text-align: center;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+body.theme-studio :is(.quantity-controls, .quantity-selector, .quantity-control, .confirm-qty-ctrl, .qty-stepper) input::-webkit-outer-spin-button,
+body.theme-studio :is(.quantity-controls, .quantity-selector, .quantity-control, .confirm-qty-ctrl, .qty-stepper) input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+body.theme-studio :is(.quantity-controls, .quantity-selector, .quantity-control, .confirm-qty-ctrl, .qty-stepper) input:focus {
+    border-color: var(--st-line);
+    box-shadow: none;
+    outline: 2px solid var(--st-ink);
+    outline-offset: -2px;
+}
+/* A thumb is wider than a cursor: 44px targets on touch screens. */
+@media (max-width: 900px) {
+    body.theme-studio :is(.quantity-controls, .quantity-selector, .quantity-control, .confirm-qty-ctrl, .qty-stepper) button { width: 44px; height: 44px; }
+    body.theme-studio :is(.quantity-controls, .quantity-selector, .quantity-control, .confirm-qty-ctrl, .qty-stepper) :is(input, .qty-value) { height: 44px; }
+}
+
+/* ---- Size chips: square, hairline, ink when chosen ------------------------
+   The same as the filter chips on "Choose your product". A size that is out
+   of stock in the chosen colour is disabled: greyed and struck through, so it
+   reads as "not now" rather than as a broken button. */
+body.theme-studio :is(.cart-size-btn, .size-chip, .size-label, .size-btn span) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 1px solid var(--st-line);
+    border-radius: 0;
+    background: #FFFFFF;
+    color: var(--st-ink);
+    font-family: var(--font);
+    font-size: 0.9rem;
+    font-weight: 400;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+body.theme-studio :is(.cart-size-btn, .size-chip):hover:not(:disabled),
+body.theme-studio .size-chip-label:hover .size-chip,
+body.theme-studio .size-option:hover .size-label,
+body.theme-studio .size-btn:hover span { border-color: var(--st-ink); }
+body.theme-studio :is(.cart-size-btn, .size-chip).is-selected,
+body.theme-studio .size-chip-label input:checked + .size-chip,
+body.theme-studio .size-option input:checked + .size-label,
+body.theme-studio .size-btn input:checked + span { background: var(--st-ink); border-color: var(--st-ink); color: #FFFFFF; }
+body.theme-studio :is(.cart-size-btn, .size-chip):disabled {
+    background: var(--st-tile);
+    border-color: var(--st-line);
+    color: var(--st-label);
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+body.theme-studio :is(.cart-size-btn, .size-chip):focus-visible { outline: 2px solid var(--st-ink); outline-offset: 2px; }
+
+/* ---- Size tags: sizes that exist, shown for information (not buttons) ---- */
+body.theme-studio :is(.size-tag, .preview-size-chip, .modal-size-item) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    padding: 5px 10px;
+    border: 0;
+    border-radius: 0;
+    background: var(--st-tile);
+    color: var(--st-muted);
+    font-family: var(--font);
+    font-size: 0.85rem;
+    font-weight: 400;
+}
+body.theme-studio .studio-empty-note { font-size: 0.9rem; color: var(--st-label); }
+
+/* ---- Colour swatches: round, hairline, an ink ring when chosen ------------ */
+body.theme-studio :is(.cart-color-btn, .studio-color-swatch) {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid rgba(13, 13, 13, 0.18);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: box-shadow var(--dur) var(--ease);
+}
+body.theme-studio :is(.cart-color-btn, .studio-color-swatch):hover:not(:disabled) { box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 3px var(--st-field); }
+body.theme-studio :is(.cart-color-btn.is-selected, .studio-color-swatch.selected) { box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px var(--st-ink); }
+body.theme-studio :is(.cart-color-btn, .studio-color-swatch).is-white { border-color: rgba(13, 13, 13, 0.3); }
+body.theme-studio .cart-color-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+body.theme-studio .cart-color-btn:focus-visible { outline: 2px solid var(--st-ink); outline-offset: 4px; }
+
+/* ============================================================
+   POP-UPS — add to cart (premade design, designer, account)
+   and save design. One layout: the page dimmed behind a white
+   card, the title on the left with a close button in the
+   corner, labelled sections, the price on a warm-grey panel,
+   then the primary action with the secondary one under it.
+   Whether one is open is still decided by its own script
+   (style.display or .active), so nothing here sets display.
+   ============================================================ */
+body.theme-studio .popup-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 35000;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(13, 13, 13, 0.6);
+}
+body.theme-studio .popup {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    margin: auto;
+    padding: 28px;
+    background: #FFFFFF;
+    color: var(--st-ink);
+    border: 0;
+    border-radius: var(--st-r);
+    box-shadow: 0 30px 80px -30px rgba(13, 13, 13, 0.55);
+    text-align: left;
+}
+body.theme-studio .popup-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--st-muted);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+}
+body.theme-studio .popup-close:hover { background: var(--st-tile); color: var(--st-ink); }
+body.theme-studio .popup-title {
+    margin: 0 48px 20px 0;
+    font-size: 1.45rem;
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    text-align: left;
+    color: var(--st-ink);
+}
+body.theme-studio .popup-lead { margin: -10px 0 20px; font-size: 0.95rem; line-height: 1.5; color: var(--st-muted); }
+body.theme-studio .popup-field { margin-bottom: 18px; }
+body.theme-studio .popup-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--st-ink);
+}
+body.theme-studio .popup-options { display: flex; flex-wrap: wrap; gap: 8px; }
+body.theme-studio .popup-options:has(.cart-color-btn) { gap: 10px; padding: 4px; }
+body.theme-studio .popup-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+body.theme-studio .popup-row .popup-label { margin: 0; }
+body.theme-studio .popup-stage {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: var(--st-tile);
+    border-radius: var(--st-r-img);
+    text-align: center;
+}
+body.theme-studio .popup-stage-name { margin-top: 10px; font-weight: 500; color: var(--st-ink); }
+body.theme-studio .popup-stage-meta { font-size: 0.88rem; color: var(--st-muted); }
+body.theme-studio .popup-prices {
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    background: var(--st-tile);
+    border: 0;
+    border-radius: var(--st-r-img);
+}
+body.theme-studio .popup-price-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+    border: 0;
+    font-size: 0.92rem;
+    color: var(--st-muted);
+}
+body.theme-studio .popup-price-row > :last-child { color: var(--st-ink); }
+body.theme-studio .popup-price-total {
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--st-ink);
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--st-ink);
+}
+body.theme-studio .popup-error { margin: 0 0 12px; font-size: 0.9rem; color: var(--st-red-txt); }
+body.theme-studio .popup-note { margin: 4px 0 0; font-size: 0.85rem; color: var(--st-label); }
+body.theme-studio .popup-panel { margin-bottom: 18px; padding: 14px 16px; background: var(--st-tile); border-radius: var(--st-r-img); }
+body.theme-studio .popup-actions { display: flex; flex-direction: column; gap: 10px; }
+body.theme-studio .popup-actions .btn { width: 100%; }
+body.theme-studio .popup-divider { margin: 4px 0; text-align: center; font-size: 0.85rem; color: var(--st-label); }
+@media (max-width: 600px) {
+    body.theme-studio .popup { padding: 22px 18px; }
+    body.theme-studio .popup-close { top: 8px; right: 8px; }
+}
+body.theme-studio .popup-narrow { max-width: 420px; }
+body.theme-studio .popup-check { display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 20px; font-size: 0.92rem; line-height: 1.45; }
+body.theme-studio .popup-check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--st-ink); }
+body.theme-studio .popup-check a { color: var(--st-ink); text-decoration: underline; text-underline-offset: 3px; }
+body.theme-studio .popup-notice .btn { margin-top: 12px; }

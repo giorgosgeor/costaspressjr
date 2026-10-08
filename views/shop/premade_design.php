@@ -35,14 +35,14 @@
                     <span class="side-current-label" id="sideCurrentLabel" aria-live="polite"><?= t('studio.view.front') ?></span>
                 </div>
                 <?php if (empty($design['is_fixed'])): ?>
-                <div class="second-design-option" style="margin: 10px 0 20px 0;">
+                <div class="second-design-option">
                     <input type="checkbox" id="addSecondDesign" />
-                    <label for="addSecondDesign" style="font-weight:500;cursor:pointer;"><?= t('view_design.second_design', false, ['side' => '<span id="oppositeSideLabel">' . t('view_design.side.back', false) . '</span>', 'price' => '<span id="secondDesignPrice">' . number_format($design['price'], 2) . '</span>']) ?></label>
+                    <label for="addSecondDesign"><?= t('view_design.second_design', false, ['side' => '<span id="oppositeSideLabel">' . t('view_design.side.back', false) . '</span>', 'price' => '<span id="secondDesignPrice">' . number_format($design['price'], 2) . '</span>']) ?></label>
                 </div>
-                <div id="secondDesignUpload" style="display:none;margin-bottom:10px;">
-                    <label for="secondDesignFile" style="font-weight:500;"><?= t('view_design.second_upload', false, ['side' => '<span id="secondSideUploadLabel">' . t('view_design.side.back_cap', false) . '</span>']) ?></label>
+                <div id="secondDesignUpload" class="second-design-upload" style="display:none;">
+                    <label for="secondDesignFile"><?= t('view_design.second_upload', false, ['side' => '<span id="secondSideUploadLabel">' . t('view_design.side.back_cap', false) . '</span>']) ?></label>
                     <input type="file" id="secondDesignFile" accept="image/*">
-                    <div id="secondDesignPreview" style="margin-top:8px;"></div>
+                    <div id="secondDesignPreview" class="second-design-preview"></div>
                 </div>
                 <?php else: ?>
                 <!-- Hidden placeholders so JS doesn't error on fixed designs -->
@@ -239,9 +239,8 @@ endforeach;
                 <span class="preview-hint"><?= t('view_design.preview_hint_sizes') ?></span>
                 <?php if (!empty($product['size_chart_image'])): ?>
                 <a href="#" class="size-guide-link"
-                   data-on-click="openSizeGuide" data-prevent-default data-args="<?= e(json_encode([$product['size_chart_image'], $product['name']])) ?>"
-                   style="margin-left:10px; font-size:0.82rem; color:var(--spot, #2A4FE0); text-decoration:none; font-weight:500;">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-2px;margin-right:4px;"><path d="M2 12h20"/><path d="M6 9v6M10 7v10M14 9v6M18 7v10"/></svg>Size guide
+                   data-on-click="openSizeGuide" data-prevent-default data-args="<?= e(json_encode([$product['size_chart_image'], $product['name']])) ?>">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12h20"/><path d="M6 9v6M10 7v10M14 9v6M18 7v10"/></svg><?= t('footer.size_guide') ?>
                 </a>
                 <?php endif; ?>
             </h4>
@@ -297,8 +296,8 @@ endforeach;
                             </div>
                         </div>
 
-                        <button type="button" class="btn btn-large btn-add-cart" data-on-click="addToCart">
-                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align:-3px;margin-right:7px;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><?= t('studio.cart.add') ?>
+                        <button type="button" class="btn btn-lg btn-block btn-add-cart" data-on-click="addToCart">
+                            <?= t('studio.cart.add') ?>
                         </button>
                     </div>
                 <?php endif; ?>
@@ -310,10 +309,10 @@ endforeach;
 <?php // Add-to-cart confirmation: printed by the footer after </main> (see $overlays).
 ob_start(); ?>
 <!-- Confirm Add to Cart Modal -->
-<div id="confirmCartModal" class="confirm-cart-overlay" data-on-click="closeConfirmCart" data-click-self>
-    <div class="confirm-cart-box">
-        <button class="confirm-cart-close" data-on-click="closeConfirmCart">&times;</button>
-        <h2 class="confirm-cart-title"><?= t('view_design.modal.title') ?></h2>
+<div id="confirmCartModal" class="confirm-cart-overlay popup-overlay" data-on-click="closeConfirmCart" data-click-self>
+    <div class="confirm-cart-box popup" role="dialog" aria-modal="true" aria-labelledby="confirmCartTitle">
+        <button type="button" class="popup-close" data-on-click="closeConfirmCart" aria-label="<?= t('common.close') ?>">&times;</button>
+        <h2 class="popup-title" id="confirmCartTitle"><?= t('view_design.modal.title') ?></h2>
 
         <!-- Preview -->
         <div class="confirm-preview-row">
@@ -324,48 +323,48 @@ ob_start(); ?>
             <div class="confirm-item-meta">
                 <p class="confirm-product-name" id="confirmProductName"></p>
                 <p class="confirm-meta-line" id="confirmDesignLine"></p>
-                <p class="confirm-meta-line" id="confirmColorLine" style="color:#15130E;font-weight:600;"></p>
-                <p class="confirm-meta-line" id="confirmSizeLine" style="color:#15130E;font-weight:600;"></p>
+                <p class="confirm-meta-line" id="confirmColorLine"></p>
+                <p class="confirm-meta-line" id="confirmSizeLine"></p>
             </div>
         </div>
 
-        <!-- Color Selection -->
-        <div style="margin-bottom:16px;">
-            <label style="font-weight:600;display:block;margin-bottom:10px;"><?= t('view_design.modal.color') ?></label>
-            <div id="cartColorOptions" style="display:flex;flex-wrap:wrap;gap:10px;padding-bottom:8px;"></div>
+        <div class="popup-field">
+            <p class="popup-label"><?= t('view_design.modal.color') ?></p>
+            <div id="cartColorOptions" class="popup-options"></div>
         </div>
 
-        <!-- Size Selection -->
-        <div style="margin-bottom:16px;">
-            <label style="font-weight:600;display:block;margin-bottom:10px;"><?= t('view_design.modal.size') ?></label>
-            <div id="cartSizeOptions" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        <div class="popup-field">
+            <p class="popup-label"><?= t('view_design.modal.size') ?></p>
+            <div id="cartSizeOptions" class="popup-options"></div>
         </div>
 
-        <!-- Quantity -->
-        <div class="confirm-qty-row">
-            <label><?= t('studio.cart.quantity') ?></label>
+        <div class="popup-row">
+            <label class="popup-label" for="confirmQty"><?= t('studio.cart.quantity') ?></label>
             <div class="confirm-qty-ctrl">
-                <button type="button" data-on-click="adjustConfirmQty" data-args='[-1]'>−</button>
+                <button type="button" data-on-click="adjustConfirmQty" data-args='[-1]' aria-label="&minus;">&minus;</button>
                 <input type="number" id="confirmQty" value="1" min="1" max="99">
-                <button type="button" data-on-click="adjustConfirmQty" data-args='[1]'>+</button>
+                <button type="button" data-on-click="adjustConfirmQty" data-args='[1]' aria-label="+">+</button>
             </div>
         </div>
 
-        <!-- Price -->
-        <div class="confirm-price-box">
-            <div class="confirm-price-row"><span><?= t('view_design.modal.base') ?></span><span id="confirmBase">-</span></div>
-            <div class="confirm-price-row"><span><?= t('view_design.modal.design') ?></span><span id="confirmDesignFee">-</span></div>
-            <div class="confirm-price-row confirm-price-total"><span id="confirmTotalLabel"><?= t('view_design.modal.total') ?></span><span id="confirmTotal">-</span></div>
+        <div class="popup-prices">
+            <div class="popup-price-row"><span><?= t('view_design.modal.base') ?></span><span id="confirmBase">-</span></div>
+            <div class="popup-price-row"><span><?= t('view_design.modal.design') ?></span><span id="confirmDesignFee">-</span></div>
+            <div class="popup-price-row popup-price-total"><span id="confirmTotalLabel"><?= t('view_design.modal.total') ?></span><span id="confirmTotal">-</span></div>
         </div>
 
-        <div id="confirmError" style="display:none;color:#dc3545;text-align:center;margin-bottom:10px;font-size:0.9rem;"></div>
+        <div id="confirmError" class="popup-error" style="display:none;"></div>
 
-        <button id="doAddToCartBtn" class="btn btn-large btn-add-cart" data-on-click="doAddToCart" style="margin-bottom:10px;">
-            <?= t('view_design.modal.title') ?>
-        </button>
-        <button type="button" class="btn btn-large" data-href="/cart" style="background:#28a745;color:white;border:none;">
-            <?= t('view_design.modal.go_cart') ?>
-        </button>
+        <div class="popup-actions">
+            <button type="button" id="doAddToCartBtn" class="btn btn-lg" data-on-click="doAddToCart">
+                <?= t('view_design.modal.title') ?>
+            </button>
+            <?php // Going to the cart is the secondary way out, so it is an outline —
+                  // it was a green button, a third colour for the same kind of action. ?>
+            <button type="button" class="btn btn-lg btn-secondary" data-href="/cart">
+                <?= t('view_design.modal.go_cart') ?>
+            </button>
+        </div>
     </div>
 </div>
 <?php $overlays = ($overlays ?? '') . ob_get_clean(); ?>

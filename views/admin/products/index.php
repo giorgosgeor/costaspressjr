@@ -60,7 +60,7 @@
                     <br><small class="text-muted"><?= htmlspecialchars(substr($product['description'], 0, 50)) ?>...</small>
                     <?php endif; ?>
                 </td>
-                <td><strong>$<?= number_format($product['base_price'], 2) ?></strong></td>
+                <td><strong>€<?= number_format($product['base_price'], 2) ?></strong></td>
                 <td>
                     <span class="count-badge"><?= $product['size_count'] ?? 0 ?> sizes</span>
                 </td>

@@ -35,7 +35,7 @@
     text-decoration-color: var(--st-field);
     text-underline-offset: 3px;
 }
-.od-tracking a:hover { color: var(--st-red-txt); }
+.od-tracking a:hover { color: var(--st-muted); }
 
 /* Progress */
 .od-progress {

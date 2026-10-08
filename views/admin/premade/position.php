@@ -8,17 +8,21 @@
     <meta name="robots" content="noindex, nofollow">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sofia+Sans:wght@400..800&family=Sofia+Sans+Extra+Condensed:wght@600..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <?php // This page renders standalone, outside the admin layout, so it has to
           // pull in base.css itself — every colour, radius and font below is a
           // var() defined there. Without it the controls render unstyled. ?>
     <?php // data-* behaviour (replaces inline on* handlers); before any image can fail ?>
     <?= View::script('/js/site/actions.js') ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/base.css')) ?>">
+    <?php // The admin's look (studio.css, scoped to body.theme-studio), as in
+          // layouts/admin_header.php — without it this page alone was still
+          // in the old cream-and-condensed theme. ?>
+    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/studio.css')) ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/admin/premade-position.css')) ?>">
     <script src="/js/vendor/interact.min.js"></script>
 </head>
-<body>
+<body class="theme-studio admin-body">
 
 <div class="pe-header">
     <h1>Position Editor — <?= htmlspecialchars($design['name']) ?> <small style="opacity:0.7;font-weight:400;">(<?= htmlspecialchars($design['section_name']) ?>)</small></h1>

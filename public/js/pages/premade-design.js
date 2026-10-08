@@ -216,7 +216,7 @@ function updateColors(sizeInput) {
     const colorHexes = sizeInput.dataset.colorHexes ? sizeInput.dataset.colorHexes.split(',') : [];
 
     if (colorIds.length === 0 || !colorIds[0]) {
-        colorContainer.innerHTML = '<p class="no-variants">No colors available for this size</p>';
+        colorContainer.innerHTML = '<p class="no-variants">' + I18N.t('view_design.no_colors_for_size') + '</p>';
         document.getElementById('mockupProduct').style.filter = 'none';
         document.getElementById('mockupContainer').classList.remove('dark-bg');
         return;
@@ -580,7 +580,7 @@ function priceEach(amount, qty) {
 
 // "Total:", or "Total (14 items):" once there is more than one.
 function totalLabel(qty, key) {
-    if (!window.I18N) return qty > 1 ? 'Total (' + qty + ' items):' : 'Total:';
+    if (!window.I18N) return qty > 1 ? 'Total (' + qty + ' items)' : 'Total';
     return qty > 1 ? I18N.t('view_design.price.total_qty', { qty: qty }) : I18N.t(key);
 }
 
@@ -702,13 +702,17 @@ function renderConfirmColors(preSelectColorId) {
         const hasVariant = confirmModalState.variants.some(v => v.color_id == color.id && v.is_available);
         const hex = color.hex || '#ccc';
         const isWhite = hex.toLowerCase() === '#ffffff' || hex.toLowerCase() === '#fff';
+        // Look comes from .cart-color-btn in studio.css; only the colour is
+        // data, so it is the one thing set here.
         const btn = document.createElement('button');
-        btn.className = 'cart-color-btn';
+        btn.type = 'button';
+        btn.className = 'cart-color-btn' + (isWhite ? ' is-white' : '');
         btn.dataset.colorId = color.id;
         btn.dataset.colorHex = hex;
         btn.title = color.name;
-        btn.style.cssText = `width:36px;height:36px;border-radius:50%;border:3px solid #ddd;cursor:pointer;background:${hex};transition:all 0.2s;box-shadow:${isWhite ? 'inset 0 0 0 1px #ccc' : 'none'};`;
-        if (!hasVariant) { btn.style.opacity = '0.35'; btn.disabled = true; btn.style.cursor = 'not-allowed'; }
+        btn.setAttribute('aria-label', color.name);
+        btn.style.backgroundColor = hex;
+        if (!hasVariant) btn.disabled = true;
         btn.onclick = function() { if (!this.disabled) selectConfirmColor(color.id, hex, color.name); };
         container.appendChild(btn);
     });
@@ -735,12 +739,12 @@ function renderConfirmSizes() {
         const hasVariant = confirmModalState.variants.some(v => v.size_id == size.id &&
             (!confirmModalState.selectedColorId || v.color_id == confirmModalState.selectedColorId) && v.is_available);
         const btn = document.createElement('button');
+        btn.type = 'button';
         btn.className = 'cart-size-btn';
-        btn.textContent = size.name + (size.modifier > 0 ? ' (+$' + parseFloat(size.modifier).toFixed(2) + ')' : '');
+        btn.textContent = size.name + (size.modifier > 0 ? ' (+€' + parseFloat(size.modifier).toFixed(2) + ')' : '');
         btn.dataset.sizeId = size.id;
         btn.dataset.modifier = size.modifier || 0;
-        btn.style.cssText = 'padding:8px 16px;border:2px solid #ddd;border-radius:20px;background:#fff;cursor:pointer;font-weight:500;font-size:0.85rem;transition:all 0.2s;';
-        if (!hasVariant) { btn.style.opacity = '0.35'; btn.disabled = true; btn.style.cursor = 'not-allowed'; }
+        if (!hasVariant) btn.disabled = true;
         btn.onclick = function() { if (!this.disabled) selectConfirmSize(size.id, parseFloat(this.dataset.modifier)); };
         container.appendChild(btn);
     });
@@ -750,11 +754,8 @@ function selectConfirmColor(colorId, colorHex, colorName) {
     confirmModalState.selectedColorId  = colorId;
     confirmModalState.selectedColorHex = colorHex;
 
-    // Update swatch borders
     document.querySelectorAll('.cart-color-btn').forEach(btn => {
-        btn.style.borderColor  = btn.dataset.colorId == colorId ? '#333' : '#ddd';
-        btn.style.boxShadow    = btn.dataset.colorId == colorId ? '0 0 0 2px #15130E' : (btn.dataset.colorHex?.toLowerCase() === '#ffffff' ? 'inset 0 0 0 1px #ccc' : 'none');
-        btn.style.transform    = btn.dataset.colorId == colorId ? 'scale(1.15)' : 'scale(1)';
+        btn.classList.toggle('is-selected', btn.dataset.colorId == colorId);
     });
 
     // Apply tint to modal preview
@@ -764,7 +765,7 @@ function selectConfirmColor(colorId, colorHex, colorName) {
     applyColorTint(colorHex);
 
     // Update color line
-    document.getElementById('confirmColorLine').textContent = 'Color: ' + colorName;
+    document.getElementById('confirmColorLine').textContent = (window.I18N ? I18N.t('cart.item.color') : 'Color') + ': ' + colorName;
 
     // Update size availability
     updateConfirmSizeAvailability();
@@ -774,14 +775,11 @@ function selectConfirmSize(sizeId, modifier) {
     confirmModalState.selectedSizeId = sizeId;
 
     document.querySelectorAll('.cart-size-btn').forEach(btn => {
-        const sel = btn.dataset.sizeId == sizeId;
-        btn.style.borderColor = sel ? '#15130E' : '#ddd';
-        btn.style.background  = sel ? 'var(--ink)' : '#fff';
-        btn.style.color       = sel ? '#fff' : '#333';
+        btn.classList.toggle('is-selected', btn.dataset.sizeId == sizeId);
     });
 
     const sizeBtn = document.querySelector('.cart-size-btn[data-size-id="' + sizeId + '"]');
-    document.getElementById('confirmSizeLine').textContent = 'Size: ' + (sizeBtn ? sizeBtn.textContent : '');
+    document.getElementById('confirmSizeLine').textContent = (window.I18N ? I18N.t('cart.item.size') : 'Size') + ': ' + (sizeBtn ? sizeBtn.textContent : '');
 
     updateConfirmPrices(modifier);
     updateConfirmColorAvailability();
@@ -794,12 +792,11 @@ function updateConfirmSizeAvailability() {
             (!confirmModalState.selectedColorId || v.color_id == confirmModalState.selectedColorId) &&
             v.is_available
         );
-        btn.style.opacity = available ? '1' : '0.35';
-        btn.disabled      = !available;
-        btn.style.cursor  = available ? 'pointer' : 'not-allowed';
+        btn.disabled = !available;
         // Deselect if current size no longer available
         if (!available && confirmModalState.selectedSizeId == btn.dataset.sizeId) {
             confirmModalState.selectedSizeId = null;
+            btn.classList.remove('is-selected');
             document.getElementById('confirmSizeLine').textContent = '';
         }
     });
@@ -817,9 +814,7 @@ function updateConfirmColorAvailability() {
             (!confirmModalState.selectedSizeId || v.size_id == confirmModalState.selectedSizeId) &&
             v.is_available
         );
-        btn.style.opacity = available ? '1' : '0.35';
-        btn.disabled      = !available;
-        btn.style.cursor  = available ? 'pointer' : 'not-allowed';
+        btn.disabled = !available;
     });
 }
 

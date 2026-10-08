@@ -383,14 +383,10 @@ function renderSizeOptions() {
         btn.className = 'cart-size-btn';
         btn.textContent = size.name;
         btn.dataset.sizeId = size.id;
-        btn.style.cssText = 'padding:8px 16px; border:2px solid var(--border-light, rgba(255,255,255,0.2)); border-radius:8px; background:var(--bg-card-dark, rgba(255,255,255,0.05)); cursor:pointer; font-weight:500; color:var(--text-light, #fff);';
+        btn.type = 'button';   // look: .cart-size-btn in studio.css
 
         const hasAvailable = cartModalState.variants.some(v => v.size_id == size.id && v.is_available);
-        if (!hasAvailable) {
-            btn.style.opacity = '0.4';
-            btn.style.cursor = 'not-allowed';
-            btn.disabled = true;
-        }
+        if (!hasAvailable) btn.disabled = true;
 
         btn.onclick = function() {
             if (this.disabled) return;
@@ -410,14 +406,13 @@ function renderColorOptions() {
         btn.dataset.colorId = color.id;
         btn.dataset.colorHex = color.hex;
         btn.title = color.name;
-        btn.style.cssText = `width:36px; height:36px; border-radius:50%; border:3px solid var(--border-light, rgba(255,255,255,0.2)); cursor:pointer; background:${color.hex};`;
+        btn.type = 'button';   // look: .cart-color-btn in studio.css; the colour is data
+        btn.setAttribute('aria-label', color.name);
+        btn.style.backgroundColor = color.hex;
+        if (/^#?f{3}(f{3})?$/i.test(color.hex || '')) btn.classList.add('is-white');
 
         const hasAvailable = cartModalState.variants.some(v => v.color_id == color.id && v.is_available);
-        if (!hasAvailable) {
-            btn.style.opacity = '0.4';
-            btn.style.cursor = 'not-allowed';
-            btn.disabled = true;
-        }
+        if (!hasAvailable) btn.disabled = true;
 
         btn.onclick = function() {
             if (this.disabled) return;
@@ -431,13 +426,7 @@ function selectCartSize(sizeId) {
     cartModalState.selectedSize = sizeId;
 
     document.querySelectorAll('.cart-size-btn').forEach(btn => {
-        if (btn.dataset.sizeId == sizeId) {
-            btn.style.borderColor = 'var(--primary, #2d5fff)';
-            btn.style.background = 'rgba(45, 95, 255, 0.2)';
-        } else {
-            btn.style.borderColor = 'var(--border-light, rgba(255,255,255,0.2))';
-            btn.style.background = 'var(--bg-card-dark, rgba(255,255,255,0.05))';
-        }
+        btn.classList.toggle('is-selected', btn.dataset.sizeId == sizeId);
     });
 
     updateColorAvailability();
@@ -463,13 +452,7 @@ function selectCartColor(colorId, colorHex) {
     }
 
     document.querySelectorAll('.cart-color-btn').forEach(btn => {
-        if (btn.dataset.colorId == colorId) {
-            btn.style.borderColor = 'var(--primary, #2d5fff)';
-            btn.style.boxShadow = '0 0 0 2px var(--primary, #2d5fff)';
-        } else {
-            btn.style.borderColor = 'var(--border-light, rgba(255,255,255,0.2))';
-            btn.style.boxShadow = 'none';
-        }
+        btn.classList.toggle('is-selected', btn.dataset.colorId == colorId);
     });
 
     updateSizeAvailability();
@@ -486,8 +469,6 @@ function updateColorAvailability() {
             v.is_available
         );
 
-        btn.style.opacity = isAvailable ? '1' : '0.3';
-        btn.style.cursor = isAvailable ? 'pointer' : 'not-allowed';
         btn.disabled = !isAvailable;
     });
 }
@@ -503,8 +484,6 @@ function updateSizeAvailability() {
             v.is_available
         );
 
-        btn.style.opacity = isAvailable ? '1' : '0.3';
-        btn.style.cursor = isAvailable ? 'pointer' : 'not-allowed';
         btn.disabled = !isAvailable;
     });
 }
@@ -591,24 +570,11 @@ document.getElementById('confirmAddToCartBtn').addEventListener('click', functio
     });
 });
 
+// The site's shared toast (site/ui.js), with a way on to the cart.
 function showAccountCartToast() {
-    let toast = document.getElementById('accountCartToast');
-    if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'accountCartToast';
-        toast.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-80px);background:#28a745;color:#fff;padding:14px 28px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.2);z-index:99999;font-weight:600;font-size:1rem;transition:transform 0.35s cubic-bezier(.4,0,.2,1),opacity 0.35s;opacity:0;pointer-events:none;white-space:nowrap;';
-        toast.textContent = (window.I18N ? window.I18N.t('account.cart_modal.toast') : '✓ Design added to cart!');
-        document.body.appendChild(toast);
-    }
-    requestAnimationFrame(() => {
-        toast.style.transform = 'translateX(-50%) translateY(0)';
-        toast.style.opacity = '1';
+    UI.success(window.I18N.t('account.cart_modal.toast'), {
+        action: { label: window.I18N.t('view_design.modal.go_cart'), href: '/cart' }
     });
-    clearTimeout(toast._hideTimer);
-    toast._hideTimer = setTimeout(() => {
-        toast.style.transform = 'translateX(-50%) translateY(-80px)';
-        toast.style.opacity = '0';
-    }, 3000);
 }
 
 async function saveAccountCartPreview(cartItemId, designId) {

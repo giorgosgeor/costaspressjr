@@ -63,7 +63,7 @@
     background: transparent;
     border: none;
     border-left: 3px solid transparent;
-    border-radius: 0 8px 8px 0;
+    border-radius: 0;
     font-family: var(--font-body);
     font-size: 0.97rem;
     font-weight: 500;
@@ -81,11 +81,13 @@
     color: var(--ink);
 }
 
+/* The open tab: ink, like the header's current page — not red, which on
+   this site means an error or a delete. */
 .account-tab.active {
     background: var(--paper-soft);
-    border-left-color: var(--spot);
-    color: var(--spot);
-    font-weight: 600;
+    border-left-color: var(--ink);
+    color: var(--ink);
+    font-weight: 500;
 }
 
 .account-tab.active .account-tab-icon { opacity: 1; }
@@ -108,21 +110,20 @@
     padding: var(--space-4) var(--space-4);
     background: var(--paper-2);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--st-r-img, 12px);
     cursor: pointer;
     text-align: left;
-    transition: border-color .12s, transform .12s;
+    transition: border-color .12s;
 }
 
 .account-stat:hover {
-    border-color: var(--spot);
-    transform: translateY(-2px);
+    border-color: var(--ink);
 }
 
 .account-stat-value {
     font-family: var(--font-display);
     font-size: 1.7rem;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--ink);
     line-height: 1.1;
 }
@@ -154,7 +155,7 @@
     padding: 0;
     font-family: var(--font-body);
     font-size: 0.92rem;
-    color: var(--spot);
+    color: var(--ink);
     cursor: pointer;
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -345,7 +346,7 @@
     border: 1px solid var(--border);
     border-radius: 50%;
     background: #fff;
-    color: var(--spot);
+    color: var(--st-red, var(--spot));   /* a favourited heart: red, as on .fav-btn */
     cursor: pointer;
     transition: transform .12s, color .12s, border-color .12s;
 }
@@ -441,7 +442,6 @@
     text-align: center;
     text-decoration: none;
     cursor: pointer;
-    border: 1px solid var(--border);
 }
 
 /* Local button variants used here */
@@ -651,12 +651,12 @@
         flex: none;
         border-left: none;
         border-bottom: 3px solid transparent;
-        border-radius: 8px 8px 0 0;
+        border-radius: 0;
         white-space: nowrap;
     }
     .account-tab.active {
         border-left-color: transparent;
-        border-bottom-color: var(--spot);
+        border-bottom-color: var(--ink);
     }
 }
 
@@ -676,3 +676,14 @@
     }
     .order-card-body { gap: var(--space-4); }
 }
+
+/* ---- Add-to-cart pop-up: the shirt with the saved design over it --------
+   The pop-up is the shared .popup (studio.css); these stack the preview
+   layers account.js fills: composite, tinted shirt, tint, design. */
+.account-cart-preview { position: relative; width: 220px; height: 220px; margin: 0 auto; overflow: hidden; background: #fff; border-radius: var(--st-r-img, 12px); }
+.account-cart-base { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; }
+.account-cart-layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.account-cart-composite { z-index: 10; object-fit: contain; pointer-events: auto; }
+.account-cart-tint { z-index: 2; mix-blend-mode: multiply; }
+.account-cart-design { z-index: 3; object-fit: contain; }
+.account-cart-design-area { position: absolute; top: 25%; left: 27.5%; width: 45%; height: 60%; z-index: 3; pointer-events: none; }

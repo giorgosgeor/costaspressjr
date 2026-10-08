@@ -258,15 +258,11 @@ function renderSizeOptions() {
         btn.className = 'cart-size-btn';
         btn.textContent = size.name;
         btn.dataset.sizeId = size.id;
-        btn.style.cssText = 'padding:8px 16px; border:2px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; font-weight:500; transition:all 0.2s;';
+        btn.type = 'button';
 
         // Check if this size has any available variants
         const hasAvailable = cartModalState.variants.some(v => v.size_id == size.id && v.is_available);
-        if (!hasAvailable) {
-            btn.style.opacity = '0.4';
-            btn.style.cursor = 'not-allowed';
-            btn.disabled = true;
-        }
+        if (!hasAvailable) btn.disabled = true;
 
         btn.onclick = function() {
             if (this.disabled) return;
@@ -285,15 +281,14 @@ function renderColorOptions() {
         btn.className = 'cart-color-btn';
         btn.dataset.colorId = color.id;
         btn.title = color.name;
-        btn.style.cssText = `width:36px; height:36px; border-radius:50%; border:3px solid #ddd; cursor:pointer; background:${color.hex}; transition:all 0.2s;`;
+        btn.type = 'button';
+        btn.setAttribute('aria-label', color.name);
+        btn.style.backgroundColor = color.hex;
+        if (/^#?f{3}(f{3})?$/i.test(color.hex || '')) btn.classList.add('is-white');
 
         // Check if this color has any available variants
         const hasAvailable = cartModalState.variants.some(v => v.color_id == color.id && v.is_available);
-        if (!hasAvailable) {
-            btn.style.opacity = '0.4';
-            btn.style.cursor = 'not-allowed';
-            btn.disabled = true;
-        }
+        if (!hasAvailable) btn.disabled = true;
 
         btn.onclick = function() {
             if (this.disabled) return;
@@ -318,7 +313,7 @@ function renderSizeOptionsFromPage() {
         btn.className = 'cart-size-btn';
         btn.textContent = sizeName;
         btn.dataset.sizeId = radio.value;
-        btn.style.cssText = 'padding:8px 16px; border:2px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; font-weight:500;';
+        btn.type = 'button';
         btn.onclick = () => selectCartSize(radio.value);
         container.appendChild(btn);
     });
@@ -337,7 +332,8 @@ function renderColorOptionsFromPage() {
         btn.className = 'cart-color-btn';
         btn.dataset.colorId = swatch.dataset.colorId;
         btn.title = swatch.title || 'Color';
-        btn.style.cssText = `width:36px; height:36px; border-radius:50%; border:3px solid #ddd; cursor:pointer; background:${swatch.style.backgroundColor};`;
+        btn.type = 'button';
+        btn.style.backgroundColor = swatch.style.backgroundColor;
         btn.onclick = () => selectCartColor(swatch.dataset.colorId);
         container.appendChild(btn);
     });
@@ -346,15 +342,8 @@ function renderColorOptionsFromPage() {
 function selectCartSize(sizeId) {
     cartModalState.selectedSize = sizeId;
 
-    // Update button styles
     document.querySelectorAll('.cart-size-btn').forEach(btn => {
-        if (btn.dataset.sizeId == sizeId) {
-            btn.style.borderColor = '#2d5fff';
-            btn.style.background = '#e8efff';
-        } else {
-            btn.style.borderColor = '#ddd';
-            btn.style.background = '#fff';
-        }
+        btn.classList.toggle('is-selected', btn.dataset.sizeId == sizeId);
     });
 
     // Update color availability based on selected size
@@ -379,15 +368,8 @@ function selectCartColor(colorId) {
     // Update the preview color indicator
     updateCartPreviewColor(colorHex);
 
-    // Update button styles
     document.querySelectorAll('.cart-color-btn').forEach(btn => {
-        if (btn.dataset.colorId == colorId) {
-            btn.style.borderColor = '#2d5fff';
-            btn.style.boxShadow = '0 0 0 2px #2d5fff';
-        } else {
-            btn.style.borderColor = '#ddd';
-            btn.style.boxShadow = 'none';
-        }
+        btn.classList.toggle('is-selected', btn.dataset.colorId == colorId);
     });
 
     // Update size availability based on selected color
@@ -405,15 +387,7 @@ function updateColorAvailability() {
             v.is_available
         );
 
-        if (!isAvailable) {
-            btn.style.opacity = '0.3';
-            btn.style.cursor = 'not-allowed';
-            btn.disabled = true;
-        } else {
-            btn.style.opacity = '1';
-            btn.style.cursor = 'pointer';
-            btn.disabled = false;
-        }
+        btn.disabled = !isAvailable;
     });
 }
 
@@ -428,15 +402,7 @@ function updateSizeAvailability() {
             v.is_available
         );
 
-        if (!isAvailable) {
-            btn.style.opacity = '0.3';
-            btn.style.cursor = 'not-allowed';
-            btn.disabled = true;
-        } else {
-            btn.style.opacity = '1';
-            btn.style.cursor = 'pointer';
-            btn.disabled = false;
-        }
+        btn.disabled = !isAvailable;
     });
 }
 
@@ -564,30 +530,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Show success notification for cart add
+// Confirmation after a cart add: the site's shared toast (site/ui.js), the
+// same one every other page uses, with a way on to the cart.
 function showCartSuccessNotification() {
-    // Create notification element
-    let notification = document.getElementById('cartSuccessNotification');
-    if (!notification) {
-        notification = document.createElement('div');
-        notification.id = 'cartSuccessNotification';
-        notification.style.cssText = 'position:fixed; top:20px; right:20px; background:#28a745; color:#fff; padding:16px 24px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:50000; display:flex; align-items:center; gap:12px; animation:slideIn 0.3s ease;';
-        notification.innerHTML = `
-            <span style="font-size:1.5rem;">✓</span>
-            <span>
-                <strong>${window.I18N.t('studio.cart.success_title')}</strong><br>
-                <small>${window.I18N.t('studio.cart.success_note')}</small>
-            </span>
-        `;
-        document.body.appendChild(notification);
-    }
-
-    notification.style.display = 'flex';
-
-    // Auto-hide after 3 seconds
-    setTimeout(() => {
-        notification.style.display = 'none';
-    }, 3000);
+    UI.success(window.I18N.t('studio.cart.success_title'), {
+        action: { label: window.I18N.t('view_design.modal.go_cart'), href: '/cart' }
+    });
 }
 
 // "Size guide" link in the add-to-cart modal: the chart of whichever product

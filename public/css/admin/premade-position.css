@@ -259,19 +259,20 @@ body { background: var(--paper); }
 .pe-remove-btn {
     display: inline-block;
     padding: 7px 14px;
-    background: var(--bad);
-    color: var(--paper);
-    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--bad);
+    border: 1px solid var(--bad);
     cursor: pointer;
     font-family: var(--font-display);
     font-size: 0.85rem;
     margin-left: 6px;
-    transition: all .12s;
+    transition: background-color .12s, color .12s;
 }
 
+/* Destructive: a red outline that fills on hover, like .btn-danger. */
 .pe-remove-btn:hover {
-    transform: translate(-1px, -1px);
-    box-shadow: var(--stamp-sm);
+    background: var(--bad);
+    color: #fff;
 }
 
 .pe-pos-controls {

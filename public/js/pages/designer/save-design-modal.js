@@ -196,10 +196,10 @@ function renderChangeColorModalContent() {
                 html += `<span class="modal-size-item">${sz.name}</span>`;
             });
         } else {
-            html += '<span style="color:#888;">No sizes available</span>';
+            html += '<span class="studio-empty-note">' + window.I18N.t('studio.no_sizes_for_color') + '</span>';
         }
     } else {
-        html += '<span style="color:#888;">Select a color to see sizes</span>';
+        html += '<span class="studio-empty-note">' + window.I18N.t('studio.select_color_for_sizes') + '</span>';
     }
     html += '</div></div>';
 
@@ -221,16 +221,7 @@ function selectModalColor(colorId, colorHex) {
     var studioContainer = document.getElementById('studioColorSwatches');
     if (studioContainer) {
         studioContainer.querySelectorAll('.studio-color-swatch').forEach(function(s) {
-            s.classList.remove('selected');
-            s.style.border = '3px solid #ddd';
-            var hex = (s.dataset.hex || '').toLowerCase();
-            if (hex === '#ffffff' || hex === '#fff') {
-                s.style.border = '3px solid #ccc';
-            }
-            if (String(s.dataset.colorId) === String(colorId)) {
-                s.classList.add('selected');
-                s.style.border = '3px solid #4CAF50';
-            }
+            s.classList.toggle('selected', String(s.dataset.colorId) === String(colorId));
         });
     }
 

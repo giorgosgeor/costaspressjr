@@ -993,35 +993,23 @@ function renderStudioColorSwatches() {
     container.innerHTML = '';
 
     if (window.studioVariantsData.colors.length === 0) {
-        container.innerHTML = '<span style="color:#888; font-size:0.9rem;">No colors available</span>';
+        container.innerHTML = '<span class="studio-empty-note">' + window.I18N.t('studio.no_colors') + '</span>';
         return;
     }
 
     window.studioVariantsData.colors.forEach((color, index) => {
+        // Look and selected ring: .studio-color-swatch in designer.css. Only
+        // the colour itself is data, so it is the one thing set here.
         const swatch = document.createElement('div');
         swatch.className = 'studio-color-swatch' + (index === 0 ? ' selected' : '');
-        swatch.style.cssText = `
-            width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
-            background: ${color.hex || '#ccc'}; border: 3px solid #ddd;
-            transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        `;
+        swatch.style.backgroundColor = color.hex || '#ccc';
         swatch.title = color.name || 'Color';
         swatch.dataset.colorId = color.id;
         swatch.dataset.hex = color.hex || '#ffffff';
         swatch.dataset.colorName = color.name || 'Color';
 
-        // Add darker border for white/light colors
         const hex = (color.hex || '').toLowerCase();
-        if (hex === '#ffffff' || hex === '#fff' || hex === 'white') {
-            swatch.style.border = '3px solid #ccc';
-        }
-
-        swatch.addEventListener('mouseenter', () => {
-            swatch.style.transform = 'scale(1.1)';
-        });
-        swatch.addEventListener('mouseleave', () => {
-            swatch.style.transform = 'scale(1)';
-        });
+        if (hex === '#ffffff' || hex === '#fff' || hex === 'white') swatch.classList.add('is-white');
         swatch.addEventListener('click', () => selectStudioColor(swatch));
 
         container.appendChild(swatch);
@@ -1046,18 +1034,10 @@ function renderStudioColorSwatches() {
 function selectStudioColor(swatch) {
     const container = document.getElementById('studioColorSwatches');
     if (container) {
-        container.querySelectorAll('.studio-color-swatch').forEach(s => {
-            s.classList.remove('selected');
-            s.style.border = '3px solid #ddd';
-            const hex = (s.dataset.hex || '').toLowerCase();
-            if (hex === '#ffffff' || hex === '#fff') {
-                s.style.border = '3px solid #ccc';
-            }
-        });
+        container.querySelectorAll('.studio-color-swatch').forEach(s => s.classList.remove('selected'));
     }
 
     swatch.classList.add('selected');
-    swatch.style.border = '3px solid #4CAF50';
 
     window.studioSelectedColorId = swatch.dataset.colorId;
     const colorHex = swatch.dataset.hex;
@@ -1092,7 +1072,7 @@ function renderStudioSizesForColor(colorId) {
     });
 
     if (availableSizes.length === 0) {
-        container.innerHTML = '<span style="color:#888; font-size:0.9rem;">No sizes available for this color</span>';
+        container.innerHTML = '<span class="studio-empty-note">' + window.I18N.t('studio.no_sizes_for_color') + '</span>';
         return;
     }
 
@@ -1108,12 +1088,9 @@ function renderStudioSizesForColor(colorId) {
     });
 
     availableSizes.forEach(size => {
+        // A size that exists, not a control: .size-tag in studio.css.
         const badge = document.createElement('span');
-        badge.style.cssText = `
-            display: inline-block; padding: 6px 12px; background: #f5f5f5;
-            border: 1px solid #e0e0e0; border-radius: 6px; font-size: 0.85rem;
-            color: #555; font-weight: 500;
-        `;
+        badge.className = 'size-tag';
         badge.textContent = size.name;
         container.appendChild(badge);
     });

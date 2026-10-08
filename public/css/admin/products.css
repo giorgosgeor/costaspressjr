@@ -284,18 +284,19 @@
 
 .size-row .btn-remove {
     padding: 6px 10px;
-    background: var(--bad);
-    color: var(--paper);
-    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--bad);
+    border: 1px solid var(--bad);
     cursor: pointer;
     font-family: var(--font-display);
     font-size: 0.85rem;
-    transition: transform .12s, box-shadow .12s;
+    transition: background-color .12s, color .12s;
 }
 
+/* Destructive: a red outline that fills on hover, like .btn-danger. */
 .size-row .btn-remove:hover {
-    transform: translate(-1px, -1px);
-    box-shadow: var(--stamp-sm);
+    background: var(--bad);
+    color: #fff;
 }
 
 /* ── Color checkbox grid ── */
@@ -388,9 +389,9 @@
 }
 
 .paste-clear-btn {
-    background: var(--bad);
-    color: var(--paper);
-    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--bad);
+    border: 1px solid var(--bad);
     padding: 4px 10px;
     cursor: pointer;
     font-family: var(--font-display);
@@ -398,8 +399,8 @@
 }
 
 .paste-clear-btn:hover {
-    transform: translate(-1px, -1px);
-    box-shadow: var(--stamp-sm);
+    background: var(--bad);
+    color: #fff;
 }
 
 .product-form { max-width: 820px; }

@@ -190,19 +190,20 @@
     transition: all 0.2s;
 }
 
+/* The site's two buttons (studio.css): solid ink and an ink outline. */
 .btn-primary {
-    background: linear-gradient(135deg, #15130E 0%, #E63946 100%);
+    background: var(--ink);
     color: white;
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(125, 128, 218, 0.4);
+    background: var(--spot-hover);
 }
 
 .btn-secondary {
-    background: #f0f0f0;
-    color: #333;
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--ink);
 }
 
 .btn-secondary:hover {

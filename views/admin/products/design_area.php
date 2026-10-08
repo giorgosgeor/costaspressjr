@@ -9,16 +9,20 @@
     <meta name="robots" content="noindex, nofollow">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sofia+Sans:wght@400..800&family=Sofia+Sans+Extra+Condensed:wght@600..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <?php // Standalone page, outside the admin layout — base.css holds the var()
           // definitions this stylesheet is built on and must load first. ?>
     <?php // data-* behaviour (replaces inline on* handlers); before any image can fail ?>
     <?= View::script('/js/site/actions.js') ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/base.css')) ?>">
+    <?php // The admin's look (studio.css, scoped to body.theme-studio), as in
+          // layouts/admin_header.php — without it this page alone was still
+          // in the old cream-and-condensed theme. ?>
+    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/studio.css')) ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/admin/design-area.css')) ?>">
     <script src="/js/vendor/interact.min.js"></script>
 </head>
-<body>
+<body class="theme-studio admin-body">
 
 <div class="dae-header">
     <h1>📐 Design Area Editor</h1>

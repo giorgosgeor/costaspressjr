@@ -81,7 +81,7 @@ body.theme-studio .hero-link {
     font-weight: 500;
     text-decoration: none;
 }
-body.theme-studio .hero-link:hover { color: var(--st-red-txt); border-color: var(--st-red-txt); text-decoration: none; }
+body.theme-studio .hero-link:hover { color: var(--st-muted); border-color: var(--st-muted); text-decoration: none; }
 body.theme-studio .hero-link svg { transition: transform var(--dur) var(--ease); }
 body.theme-studio .hero-link:hover svg { transform: translateX(3px); }
 
@@ -178,7 +178,7 @@ body.theme-studio .bulk-link {
     text-decoration: underline;
     text-underline-offset: 4px;
 }
-body.theme-studio .bulk-link:hover { color: var(--st-red-txt); }
+body.theme-studio .bulk-link:hover { color: var(--st-muted); }
 
 body.theme-studio .products-section { background: #FFFFFF; }
 

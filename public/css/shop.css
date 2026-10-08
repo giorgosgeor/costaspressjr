@@ -435,8 +435,8 @@
     outline: none;
 }
 
-/* Sign out is destructive and rarely the intent, so it sits below a rule
-   rather than among the navigation items. */
+/* Sign out is rarely the intent, so it sits below a rule rather than
+   among the navigation items. */
 .account-menu-signout {
     margin-top: 6px;
     padding-top: 6px;
@@ -818,7 +818,9 @@
 
 .fav-btn svg { fill: none; stroke: currentColor; stroke-width: 1.8; }
 
-.fav-btn.is-favorited { color: var(--spot); border-color: var(--spot); }
+/* A favourited heart is red everywhere — one of the few places the brand
+   red is the right colour, because that is what a filled heart means. */
+.fav-btn.is-favorited { color: var(--st-red, var(--spot)); border-color: var(--st-red, var(--spot)); }
 .fav-btn.is-favorited svg { fill: currentColor; }
 
 .fav-btn[disabled] { opacity: 0.55; cursor: default; transform: none; }
@@ -1770,6 +1772,12 @@
 
 .color-options .color-option { padding: 0; border: none; background: transparent; }
 .color-option input { display: none; }
+/* The swatch is a <span> inside a <label>, and .form-group label makes the
+   label a block — which left the span inline, so its width and height were
+   ignored and every colour on the product page drew as a 2px sliver. */
+.color-options .color-swatch { display: block; }
+
+.product-design-btn { margin-top: 12px; }
 
 .color-swatch {
     width: 38px;
@@ -3042,6 +3050,11 @@
    which is half the reason for not using one.
    ============================================================ */
 
+/* One square icon button at every width. With its "Ask us anything" label
+   it was 190px wide, and at a laptop's window height it sat on top of the
+   right end of whatever button was lowest on screen — Add to Cart on the
+   product page, Proceed to Checkout in the cart. The label is still its
+   accessible name (aria-label in customer_footer.php) and its tooltip. */
 .assistant-launcher {
     position: fixed;
     right: var(--space-4);
@@ -3049,23 +3062,22 @@
     z-index: 1150;
     display: inline-flex;
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-3) var(--space-4);
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    padding: 0;
     background: var(--ink);
     color: var(--paper);
     border: 2px solid var(--ink);
     border-radius: var(--radius);
     box-shadow: var(--press-sm);
     cursor: pointer;
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caps);
     transition: background var(--dur) var(--ease);
 }
+.assistant-launcher svg { width: 22px; height: 22px; }
+.assistant-launcher-label { display: none; }
 
-.assistant-launcher:hover { background: var(--spot); border-color: var(--spot); }
+.assistant-launcher:hover { background: var(--spot-hover); border-color: var(--spot-hover); }
 .assistant-launcher:focus-visible { outline: 3px solid var(--spot); outline-offset: 3px; }
 .assistant-launcher[hidden] { display: none; }
 
@@ -3114,16 +3126,12 @@ body.studio-has-bar .assistant-panel { display: none; }
     color: var(--paper);
     font-size: 1.25rem;
     margin: 0 0 2px;
-    text-transform: uppercase;
 }
 
 .assistant-head p {
     margin: 0;
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caps);
-    color: rgba(244, 240, 230, 0.72);
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.72);
 }
 
 .assistant-close {
@@ -3141,7 +3149,7 @@ body.studio-has-bar .assistant-panel { display: none; }
     font-size: 1.1rem;
     line-height: 1;
 }
-.assistant-close:hover { background: var(--spot); border-color: var(--spot); }
+.assistant-close:hover { background: rgba(255, 255, 255, 0.14); border-color: var(--paper); }
 
 /* ---- Message log ---- */
 .assistant-log {
@@ -3200,8 +3208,8 @@ body.studio-has-bar .assistant-panel { display: none; }
     border-radius: var(--radius);
     color: var(--ink);
     font-family: var(--font-body);
-    font-size: 0.78rem;
-    font-weight: 600;
+    font-size: 0.8rem;
+    font-weight: 500;
     cursor: pointer;
     text-align: left;
     text-decoration: none;
@@ -3215,10 +3223,7 @@ body.studio-has-bar .assistant-panel { display: none; }
 
 .assistant-typing {
     align-self: flex-start;
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caps);
+    font-size: 0.8rem;
     color: var(--ink-muted);
 }
 
@@ -3248,18 +3253,17 @@ body.studio-has-bar .assistant-panel { display: none; }
     box-shadow: inset 0 0 0 2px var(--spot);
 }
 
+/* Send is a normal primary button: ink, sentence case. */
 .assistant-form button {
     flex: none;
     padding: 0 var(--space-4);
-    background: var(--spot);
+    background: var(--ink);
     color: #fff;
     border: 2px solid transparent;
     border-radius: var(--radius);
     font-family: var(--font-body);
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caps);
+    font-size: 0.9rem;
+    font-weight: 500;
     cursor: pointer;
 }
 .assistant-form button:hover { background: var(--spot-hover); }
@@ -3269,10 +3273,8 @@ body.studio-has-bar .assistant-panel { display: none; }
     padding: var(--space-2) var(--space-3);
     background: var(--paper-soft);
     border-top: 1px solid var(--border);
-    font-family: var(--font-mono);
-    font-size: 0.58rem;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-caps);
+    font-size: 0.72rem;
+    line-height: 1.4;
     color: var(--ink-muted);
     text-align: center;
 }
@@ -3282,12 +3284,7 @@ body.studio-has-bar .assistant-panel { display: none; }
     .assistant-launcher {
         right: var(--space-3);
         bottom: var(--space-3);
-        padding: var(--space-3);
-        border-radius: var(--radius);
     }
-    /* The label costs width a phone does not have; the icon carries it and
-       the accessible name still announces the control. */
-    .assistant-launcher-label { display: none; }
 
     .assistant-panel {
         left: 0;

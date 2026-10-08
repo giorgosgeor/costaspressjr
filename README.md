@@ -71,3 +71,12 @@ which loads data (models, services) and calls
 - **Includes** use `View::path()`: `require View::path('layouts/customer_header');`
 - Full-screen pop-ups go in `$overlays` (see `views/shop/designer.php`) so the
   footer prints them outside `<main>`, above the sticky header.
+- **Look and colour** come from `public/css/studio.css`; its header says what
+  each colour means. In short: black for every forward action and every
+  "selected" state, a black outline for the secondary action, red only for
+  the brand accent, errors and delete (`btn-danger`, an outline), green only
+  for success. Reuse its shared pieces rather than styling new ones: `.btn`
+  (`-secondary`, `-danger`, `-lg`), the quantity stepper (`.qty-stepper`),
+  size chips (`.cart-size-btn`) and swatches (`.cart-color-btn`) with
+  `.is-selected`, the pop-up (`.popup-overlay` > `.popup`), and `UI.success()`
+  for confirmations. Scripts toggle classes; they don't set colours inline.
