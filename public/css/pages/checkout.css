@@ -702,3 +702,18 @@
     .cc-fact-value { font-size: 1.7rem; }
     .cc-actions .btn { flex: 1 1 100%; }
 }
+
+/* Refund policy: said plainly above the terms box, on a quiet panel. */
+.co-policy {
+    margin: var(--space-5) 0 0;
+    padding: 14px 16px;
+    background: var(--paper-soft);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+}
+.co-policy-title { margin: 0 0 4px; font-weight: 500; color: var(--ink); }
+.co-policy + .co-terms { margin-top: var(--space-3); }
+
+/* Order confirmation: the refund policy under "paid with". */
+.cc-policy { margin: 12px 0 0; font-size: 0.88rem; line-height: 1.5; color: var(--ink-muted); }

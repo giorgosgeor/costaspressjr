@@ -75,6 +75,8 @@ require View::path('layouts/customer_header');
             <?php if ($paidWith !== ''): ?>
             <p class="cc-paid"><?= t('checkout.complete.paid_with') ?> <strong><?= htmlspecialchars($paidWith) ?></strong></p>
             <?php endif; ?>
+            <?php // The refund policy again, now that it applies to this order. ?>
+            <p class="cc-policy"><?= t('checkout.complete.policy') ?></p>
         </div>
 
         <div class="cc-card">

@@ -15,6 +15,8 @@ ob_start();
 <p><?= t('info.returns.p3') ?></p>
 
 <h2><?= t('info.returns.h4') ?></h2>
+<p><?= t('info.returns.p4', false) ?></p>
+<p><?= t('info.returns.p4_intro') ?></p>
 <ul>
     <li><?= t('info.returns.p4_a') ?></li>
     <li><?= t('info.returns.p4_b') ?></li>

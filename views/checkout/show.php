@@ -230,12 +230,19 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
 
                 <?php // Required before paying: pages/checkout.js stops at it, and
                       // /api/create-payment-intent refuses a payment without it. ?>
+                <?php // The refund policy, said plainly before anyone pays. ?>
+                <div class="co-policy" id="coPolicy">
+                    <p class="co-policy-title"><?= t('checkout.policy.title') ?></p>
+                    <p><?= t('checkout.policy.body') ?></p>
+                </div>
+
                 <div class="co-terms" id="coTerms">
                     <label class="co-terms-label">
                         <input type="checkbox" id="termsAccept" aria-required="true" aria-describedby="termsError">
                         <span><?= t('checkout.terms_accept', false, [
                             'terms'   => '<a href="/terms" target="_blank" rel="noopener">' . t('checkout.review.terms_link', false) . '</a>',
                             'privacy' => '<a href="/privacy" target="_blank" rel="noopener">' . t('checkout.review.privacy_link', false) . '</a>',
+                            'refunds' => '<a href="/returns" target="_blank" rel="noopener">' . t('checkout.review.refunds_link', false) . '</a>',
                         ]) ?></span>
                     </label>
                     <p class="co-terms-error" id="termsError" hidden><?= t('checkout.errors.terms') ?></p>

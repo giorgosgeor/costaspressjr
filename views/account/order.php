@@ -20,6 +20,10 @@ $statusKeys = [
     'cancelled'  => 'order.status.cancelled',
 ];
 $status      = $order['status'];
+$paidAmount  = (float)($order['payment_amount'] ?? $order['total_price']);
+$refundedAmt = $order['refunded_amount'] !== null ? (float)$order['refunded_amount'] : null;
+// A cancellation's sums, before it happens (OrderCancellation::quote, in cents).
+$q = !empty($quote) ? ['refund' => money($quote['refund'] / 100), 'paid' => money($quote['paid'] / 100), 'fee' => money($quote['fee'] / 100)] : null;
 $sc          = $statusColors[$status] ?? $statusColors['pending'];
 $statusLabel = isset($statusKeys[$status]) ? t($statusKeys[$status]) : htmlspecialchars(ucfirst($status));
 $placedOn    = date('d/m/Y', strtotime($order['created_at']));
@@ -48,7 +52,9 @@ $placedOn    = date('d/m/Y', strtotime($order['created_at']));
     ?>
 
     <?php if ($notice === 'cancelled'): ?>
-    <div class="alert alert-success od-notice" role="status"><?= I18n::t('order.cancel.done', ['amount' => money($order['total_price'])]) ?></div>
+    <div class="alert alert-success od-notice" role="status"><?= $refundedAmt !== null
+        ? I18n::t('order.cancel.done', ['refund' => money($refundedAmt), 'paid' => money($paidAmount), 'fee' => money(max(0, $paidAmount - $refundedAmt))])
+        : t('order.cancel.done_plain') ?></div>
     <?php elseif ($notice === 'not_allowed'): ?>
     <div class="alert alert-error od-notice" role="alert"><?= t('order.cancel.not_allowed') ?></div>
     <?php elseif ($notice === 'refund_failed'): ?>
@@ -211,18 +217,26 @@ $placedOn    = date('d/m/Y', strtotime($order['created_at']));
             <?php if (in_array($order['payment_status'] ?? '', ['refunded', 'partially_refunded'], true)): ?>
             <div class="od-row od-refund">
                 <span><?= t('order.info.refund') ?></span>
-                <span><?= ($order['payment_status'] === 'refunded')
-                    ? I18n::t('order.info.refunded', ['amount' => money($order['payment_amount'] ?? $order['total_price'])])
-                    : t('order.info.partially_refunded') ?></span>
+                <span>
+                <?php if ($refundedAmt !== null && $refundedAmt < $paidAmount): ?>
+                    <?= I18n::t('order.info.refunded', ['amount' => money($refundedAmt)]) ?>
+                    <small><?= I18n::t('order.info.fee_kept', ['fee' => money($paidAmount - $refundedAmt)]) ?></small>
+                <?php else: ?>
+                    <?= I18n::t('order.info.refunded', ['amount' => money($refundedAmt ?? $paidAmount)]) ?>
+                <?php endif; ?>
+                </span>
             </div>
             <?php endif; ?>
 
             <?php if (!empty($canCancel)): ?>
-            <?php // Only while the order is still pending (OrderCancellation). ?>
+            <?php // Only while the order is still pending (OrderCancellation): the
+                  // one way to get money back, minus the payment processing fee. ?>
             <div class="od-cancel">
-                <p class="od-cancel-lead"><?= t('order.cancel.lead') ?></p>
+                <p class="od-cancel-lead"><?= $q ? I18n::t('order.cancel.lead_quote', $q) : t('order.cancel.lead') ?></p>
                 <button type="button" class="btn btn-danger btn-block" data-on-click="openCancelOrder"><?= t('order.cancel.button') ?></button>
             </div>
+            <?php elseif (in_array($status, ['processing', 'in-transit', 'delivered'], true)): ?>
+            <p class="od-policy"><?= t('order.policy.final') ?> <a href="/returns"><?= t('order.policy.link') ?></a></p>
             <?php endif; ?>
             <p class="od-help"><?= t('assistant.answer.human', false) ?> <a href="/contact"><?= t('assistant.link.contact') ?></a></p>
         </aside>
@@ -236,7 +250,7 @@ ob_start(); ?>
 <div id="cancelOrderOverlay" class="confirm-overlay" data-on-click="closeCancelOrder" data-click-self role="dialog" aria-modal="true" aria-labelledby="cancelOrderTitle">
     <div class="confirm-dialog">
         <h3 id="cancelOrderTitle" class="confirm-title"><?= t('order.cancel.title') ?></h3>
-        <p class="confirm-lead"><?= I18n::t('order.cancel.confirm_lead', ['amount' => money($order['total_price'])]) ?></p>
+        <p class="confirm-lead"><?= $q ? I18n::t('order.cancel.confirm_lead', $q) : t('order.cancel.confirm_lead_plain') ?></p>
         <form method="post" action="/orders/cancel" class="confirm-actions" data-cancel-order-form>
             <?= Csrf::field() ?>
             <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
