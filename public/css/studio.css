@@ -729,6 +729,8 @@ body.theme-studio .auth-section .form-footer {
 }
 body.theme-studio .auth-section .form-footer a { color: var(--st-ink); text-decoration: underline; text-underline-offset: 3px; }
 body.theme-studio .auth-section .form-footer a:hover { color: var(--st-muted); }
+body.theme-studio .verify-result-alert { margin-top: 12px; }
+body.theme-studio .verify-result-resend { margin-top: 20px; }
 
 @media (max-width: 900px) {
     body.theme-studio .contact-grid,

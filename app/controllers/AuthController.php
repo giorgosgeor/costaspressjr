@@ -6,7 +6,9 @@ class AuthController extends Controller {
     private const MAX_ATTEMPTS_PER_USER = 5;
     private const WINDOW_SECONDS        = 900;
 
-    private const VERIFICATION_TTL_HOURS = 24;
+    // A confirmation link works for an hour, like a password-reset link.
+    // Resend issues a fresh one; earlier unexpired links keep working.
+    private const VERIFICATION_TTL_HOURS = 1;
 
     public function showLogin(): void {
         $redirect = $this->safeRedirect($_GET['redirect'] ?? '');
@@ -228,7 +230,13 @@ class AuthController extends Controller {
             $hash     = hash('sha256', $token);
             $expires  = gmdate('Y-m-d H:i:s', time() + self::VERIFICATION_TTL_HOURS * 3600);
 
-            $this->db->prepare("DELETE FROM email_verifications WHERE user_id = ? AND consumed_at IS NULL")
+            // Earlier links stay valid until they expire. Each Resend used to
+            // cancel the ones before it, so the email the customer actually
+            // opened — usually the first in their inbox — said "not
+            // recognised". Every link goes to the same address (customers
+            // cannot change theirs; if that is ever added, clear this table
+            // for the user there). Only expired rows are tidied away.
+            $this->db->prepare("DELETE FROM email_verifications WHERE user_id = ? AND consumed_at IS NULL AND expires_at < UTC_TIMESTAMP()")
                 ->execute([$userId]);
 
             $stmt = $this->db->prepare("INSERT INTO email_verifications (user_id, token_hash, expires_at) VALUES (?, ?, ?)");
@@ -242,12 +250,13 @@ class AuthController extends Controller {
             $link = $base . '/verify-email?token=' . urlencode($token);
             $safeLink = htmlspecialchars($link, ENT_QUOTES, 'UTF-8');
             $safeName = htmlspecialchars($username, ENT_QUOTES, 'UTF-8');
+            $validFor = self::VERIFICATION_TTL_HOURS === 1 ? '1 hour' : self::VERIFICATION_TTL_HOURS . ' hours';
 
             $html = "<p>Hi $safeName,</p>"
                   . "<p>Welcome to Costaspressjr! Please confirm your email address by clicking the link below:</p>"
                   . "<p><a href=\"$safeLink\">Verify my email</a></p>"
-                  . "<p>This link expires in " . self::VERIFICATION_TTL_HOURS . " hours. If you didn't create an account, you can ignore this message.</p>";
-            $text = "Hi $username,\n\nWelcome to Costaspressjr! Confirm your email by opening this link:\n$link\n\nThis link expires in " . self::VERIFICATION_TTL_HOURS . " hours.";
+                  . "<p>This link expires in " . $validFor . ". If you didn't create an account, you can ignore this message.</p>";
+            $text = "Hi $username,\n\nWelcome to Costaspressjr! Confirm your email by opening this link:\n$link\n\nThis link expires in " . $validFor . ".";
 
             Mailer::send($email, 'Confirm your Costaspressjr email', $html, $text);
         } catch (Throwable $e) {
@@ -258,7 +267,7 @@ class AuthController extends Controller {
     public function verifyEmail(): void {
         $token = (string)($_GET['token'] ?? '');
         if ($token === '' || strlen($token) !== 64 || !ctype_xdigit($token)) {
-            $this->renderVerificationResult(false, 'Invalid or missing token.');
+            $this->renderVerificationResult(false, I18n::t('auth.verify.msg_invalid'));
             return;
         }
 
@@ -268,36 +277,38 @@ class AuthController extends Controller {
         $row = $stmt->fetch();
 
         if (!$row) {
-            $this->renderVerificationResult(false, 'This verification link is not recognised.');
+            $this->renderVerificationResult(false, I18n::t('auth.verify.msg_unknown'));
             return;
         }
         if ($row['consumed_at'] !== null) {
-            $this->renderVerificationResult(true, 'Your email is already verified.');
+            $this->renderVerificationResult(true, I18n::t('auth.verify.msg_already'));
             return;
         }
         // expires_at is written with gmdate(), so it is read back as UTC. Plain
         // strtotime() would read it in PHP's zone and, on a server ahead of
         // UTC, expire the link hours early.
         if (strtotime($row['expires_at'] . ' UTC') < time()) {
-            $this->renderVerificationResult(false, 'This verification link has expired. Please request a new one from your account page.');
+            $this->renderVerificationResult(false, I18n::t('auth.verify.msg_expired'));
             return;
         }
 
         $this->db->beginTransaction();
         try {
-            $this->db->prepare("UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE id = ?")
+            $this->db->prepare("UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE id = ? AND email_verified_at IS NULL")
                 ->execute([$row['user_id']]);
-            $this->db->prepare("UPDATE email_verifications SET consumed_at = UTC_TIMESTAMP() WHERE id = ?")
-                ->execute([$row['id']]);
+            // All of the user's links are spent now, so any other email they
+            // open afterwards says "already confirmed" rather than failing.
+            $this->db->prepare("UPDATE email_verifications SET consumed_at = UTC_TIMESTAMP() WHERE user_id = ? AND consumed_at IS NULL")
+                ->execute([$row['user_id']]);
             $this->db->commit();
         } catch (PDOException $e) {
             $this->db->rollBack();
             error_log('Email verification commit failed: ' . $e->getMessage());
-            $this->renderVerificationResult(false, 'Something went wrong. Please try again in a moment.');
+            $this->renderVerificationResult(false, I18n::t('auth.verify.msg_error'));
             return;
         }
 
-        $this->renderVerificationResult(true, 'Your email is verified. Thanks!');
+        $this->renderVerificationResult(true, I18n::t('auth.verify.msg_done'));
     }
 
     public function resendVerification(): void {
@@ -322,14 +333,20 @@ class AuthController extends Controller {
             $query = parse_url($referer, PHP_URL_QUERY);
             $back  = $this->safeRedirect((string)parse_url($referer, PHP_URL_PATH) . ($query ? '?' . $query : ''));
         }
+        if (str_starts_with($back, '/verify-email')) {
+            $back = '';
+        }
         header('Location: ' . ($back !== '' ? $back : '/account'));
         exit;
     }
 
     private function renderVerificationResult(bool $success, string $message): void {
-        $title   = $success ? 'Email verified' : 'Verification failed';
+        $title   = I18n::t($success ? 'auth.verify.title_done' : 'auth.verify.title_failed');
         $status  = $success ? 'success' : 'error';
-        $this->render('auth/verify_result', ['title' => $title, 'status' => $status, 'message' => $message]);
+        // A failed link can be replaced on the spot when the visitor is signed
+        // in and still unconfirmed; otherwise they are pointed to sign in.
+        $canResend = !$success && CurrentUser::needsEmailVerification($this->db);
+        $this->render('auth/verify_result', ['title' => $title, 'status' => $status, 'message' => $message, 'canResend' => $canResend]);
     }
 
     private function validateRegistration(string $username, string $email, string $password): ?string {
