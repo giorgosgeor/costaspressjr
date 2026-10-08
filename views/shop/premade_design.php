@@ -221,7 +221,7 @@ endforeach;
 
         <?php if (!empty($previewColors[$product['id']])): ?>
         <div class="preview-color-selection">
-            <h4><?= t('view_design.preview_color') ?> <span class="preview-hint"><?= t('view_design.preview_hint_color') ?></span></h4>
+            <h4><?= t('view_design.preview_color') ?></h4>
             <div class="fixed-color-swatches" id="preview-colors-<?= $product['id'] ?>">
                 <?php $first = true; foreach ($previewColors[$product['id']] as $cid => $color):
                     $hex   = htmlspecialchars($color['hex']);
@@ -294,15 +294,6 @@ endforeach;
                             </div>
                         </div>
 
-                        <div class="quantity-row">
-                            <label for="quantity"><?= t('studio.cart.quantity') ?></label>
-                            <div class="quantity-control">
-                                <button type="button" class="qty-btn" data-on-click="changeQuantity" data-args='[-1]'>−</button>
-                                <input type="number" id="quantity" name="quantity" value="1" min="1" max="99">
-                                <button type="button" class="qty-btn" data-on-click="changeQuantity" data-args='[1]'>+</button>
-                            </div>
-                        </div>
-
                         <button type="button" class="btn btn-lg btn-block btn-add-cart" data-on-click="addToCart">
                             <?= t('studio.cart.add') ?>
                         </button>
@@ -330,34 +321,23 @@ ob_start(); ?>
             <div class="confirm-item-meta">
                 <p class="confirm-product-name" id="confirmProductName"></p>
                 <p class="confirm-meta-line" id="confirmDesignLine"></p>
-                <p class="confirm-meta-line" id="confirmColorLine"></p>
-                <p class="confirm-meta-line" id="confirmSizeLine"></p>
+                <p class="confirm-meta-line confirm-color-line" id="confirmColorLine"></p>
+                <p class="confirm-meta-note"><?= t('view_design.modal.color_locked') ?></p>
             </div>
         </div>
 
+        <?php // The colour is the one picked on the page; here each of its sizes
+              // gets its own quantity, and every size with one becomes its own
+              // cart line (a small and a medium are different items). ?>
         <div class="popup-field">
-            <p class="popup-label"><?= t('view_design.modal.color') ?></p>
-            <div id="cartColorOptions" class="popup-options"></div>
-        </div>
-
-        <div class="popup-field">
-            <p class="popup-label"><?= t('view_design.modal.size') ?></p>
-            <div id="cartSizeOptions" class="popup-options"></div>
-        </div>
-
-        <div class="popup-row">
-            <label class="popup-label" for="confirmQty"><?= t('studio.cart.quantity') ?></label>
-            <div class="confirm-qty-ctrl">
-                <button type="button" data-on-click="adjustConfirmQty" data-args='[-1]' aria-label="&minus;">&minus;</button>
-                <input type="number" id="confirmQty" value="1" min="1" max="99">
-                <button type="button" data-on-click="adjustConfirmQty" data-args='[1]' aria-label="+">+</button>
-            </div>
+            <p class="popup-label"><?= t('view_design.modal.sizes') ?></p>
+            <div id="sizeQtyGrid" class="size-qty-grid" aria-live="polite"></div>
         </div>
 
         <div class="popup-prices">
-            <div class="popup-price-row"><span><?= t('view_design.modal.base') ?></span><span id="confirmBase">-</span></div>
-            <div class="popup-price-row"><span><?= t('view_design.modal.design') ?></span><span id="confirmDesignFee">-</span></div>
-            <div class="popup-price-row popup-price-total"><span id="confirmTotalLabel"><?= t('view_design.modal.total') ?></span><span id="confirmTotal">-</span></div>
+            <div id="confirmLines" class="confirm-lines"></div>
+            <div class="popup-price-row popup-price-total"><span id="confirmTotalLabel"><?= t('view_design.modal.total') ?></span><span id="confirmTotal">€0.00</span></div>
+            <p class="confirm-fee-note"><?= I18n::t('view_design.modal.fee_note', ['fee' => '€' . number_format((float)$design['price'], 2)]) ?></p>
         </div>
 
         <div id="confirmError" class="popup-error" style="display:none;"></div>

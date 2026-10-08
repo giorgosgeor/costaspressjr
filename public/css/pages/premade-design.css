@@ -795,3 +795,47 @@
 .second-design-upload { margin-bottom: 10px; }
 .second-design-upload label { display: block; margin-bottom: 6px; font-weight: 500; }
 .second-design-preview { margin-top: 8px; }
+
+/* ---- Add-to-cart pop-up: one quantity per size ----------------------------
+   The colour is locked (picked on the page); each size of it has its own
+   stepper, and every size with a quantity becomes its own cart line. */
+.confirm-color-line { display: flex; align-items: center; gap: 6px; }
+.confirm-color-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid var(--st-field, #ccc);
+    flex-shrink: 0;
+}
+.confirm-meta-note { margin-top: 6px; color: var(--ink-muted); font-size: 0.8rem; line-height: 1.4; }
+
+.size-qty-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+    gap: 8px;
+}
+.size-qty-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 6px;
+    border: 1px solid var(--st-line, #e5e5e5);
+    background: #FFFFFF;
+}
+.size-qty-cell.has-qty { border-color: var(--st-ink, #0D0D0D); }
+.size-qty-label { font-weight: 500; font-size: 0.95rem; }
+.size-qty-cell.is-unavailable .size-qty-label { color: var(--ink-muted); text-decoration: line-through; }
+.size-qty-na { color: var(--ink-muted); font-size: 0.75rem; }
+/* Narrower than the shared stepper so three fit across the pop-up. */
+body.theme-studio .size-qty-cell .qty-stepper button { width: 34px; height: 34px; }
+body.theme-studio .size-qty-cell .qty-stepper input { width: 40px; min-width: 40px; height: 34px; }
+@media (max-width: 900px) {
+    body.theme-studio .size-qty-cell .qty-stepper button { width: 40px; height: 40px; }
+    body.theme-studio .size-qty-cell .qty-stepper input { height: 40px; }
+}
+
+.confirm-lines .popup-price-row { font-variant-numeric: tabular-nums; }
+.confirm-lines-empty { color: var(--ink-muted); font-size: 0.88rem; margin: 0 0 4px; }
+.confirm-fee-note { margin: 8px 0 0; color: var(--ink-muted); font-size: 0.8rem; }
+

@@ -595,333 +595,300 @@ function totalLabel(qty, key) {
     return qty > 1 ? I18N.t('view_design.price.total_qty', { qty: qty }) : I18N.t(key);
 }
 
-// ==================== CART ====================
-function changeQuantity(delta) {
-    const input = document.getElementById('quantity');
-    let value = parseInt(input.value) + delta;
-    if (value < 1) value = 1;
-    if (value > 99) value = 99;
-    input.value = value;
-    // Quantity drives the pricing tier — refresh the displayed price.
-    if (typeof updatePrice === 'function') updatePrice();
-}
-
-// ==================== CONFIRM CART MODAL (shop_custom style) ====================
+// ==================== ADD-TO-CART POP-UP ====================
+// The colour is chosen on the page and locked once the pop-up opens. The
+// pop-up lists that colour's sizes, each with its own quantity, and adds one
+// cart line per size — a small and a medium are different items.
 let confirmModalState = {
     productId: null,
     premadeDesignId: premadeDesignData.designId,
     designName: premadeDesignData.designName,
     designFee: premadeDesignData.designPrice,
     basePrice: 0,
-    selectedColorId: null,
-    selectedColorHex: null,
-    selectedSizeId: null,
-    quantity: 1,
+    colorId: null,
     variants: [],
     sizes: [],
-    colors: []
+    qty: {}            // size id → quantity
 };
 
+const MAX_QTY = 99;
+
+function tr(key, params, fallback) {
+    if (!window.I18N) return fallback;
+    const s = I18N.t(key, params);
+    return s && s !== key ? s : fallback;
+}
+
 function addToCart() {
-    if (!selectedProductId) { UI.error('Please select a product.'); return; }
+    if (!selectedProductId) { UI.error(tr('view_design.modal.pick_product', null, 'Please select a product.')); return; }
 
-    // Get the currently previewed color
-    const previewColorRadio = document.querySelector('input[name="preview_color_' + selectedProductId + '"]:checked');
-    const previewColorHex   = previewColorRadio ? previewColorRadio.dataset.hex  : null;
-    const previewColorId    = previewColorRadio ? previewColorRadio.value         : null;
+    const colorRadio = document.querySelector('input[name="preview_color_' + selectedProductId + '"]:checked');
+    if (!colorRadio) { UI.error(tr('view_design.modal.pick_color', null, 'Please choose a colour.')); return; }
 
-    confirmModalState.productId      = selectedProductId;
-    confirmModalState.basePrice      = selectedBasePrice;
-    confirmModalState.selectedColorId  = null;
-    confirmModalState.selectedSizeId   = null;
-    confirmModalState.selectedColorHex = null;
-    confirmModalState.quantity         = parseInt(document.getElementById('quantity').value) || 1;
+    confirmModalState.productId = selectedProductId;
+    confirmModalState.basePrice = selectedBasePrice;
+    confirmModalState.colorId   = colorRadio.value;
+    confirmModalState.variants  = [];
+    confirmModalState.sizes     = [];
+    confirmModalState.qty       = {};
 
-    // Set preview in modal
+    // Preview: the garment in the chosen colour, with the design where it sits
+    // on the page (as ratios of the mockup, so it can't drift from the CSS).
     const productImg = document.getElementById('mockupProduct');
     document.getElementById('confirmProductImg').src = productImg ? productImg.src : '';
     document.getElementById('confirmProductImg').style.filter = productImg ? productImg.style.filter : '';
-
-    // Set design overlay in modal preview
-    const designEl  = document.getElementById('designElement');
-    const designImg = document.getElementById('mockupDesign');
-    const mockup    = document.getElementById('mockupContainer');
+    const designEl   = document.getElementById('designElement');
+    const designImg  = document.getElementById('mockupDesign');
+    const mockup     = document.getElementById('mockupContainer');
     const cDesignImg = document.getElementById('confirmDesignImg');
+    cDesignImg.style.display = 'none';
     if (designEl && designImg && designImg.src && mockup) {
-        // Express the design's placement as a RATIO of the mockup, then apply
-        // those ratios to the modal's own box. The previous version scaled by a
-        // hardcoded 130px while .confirm-mockup-wrap is 110px, so the design
-        // came out ~18% too big and pushed down-right; percentages can't drift
-        // out of sync with the CSS that way. Measuring the live element (rather
-        // than the saved position) also keeps this correct for designs the
-        // shopper is allowed to drag.
         const mRect  = mockup.getBoundingClientRect();
         const elRect = designEl.getBoundingClientRect();
         if (mRect.width > 0 && mRect.height > 0) {
-            const leftPct = ((elRect.left - mRect.left) + elRect.width  / 2) / mRect.width  * 100;
-            const topPct  = ((elRect.top  - mRect.top)  + elRect.height / 2) / mRect.height * 100;
-            const widthPct = (elRect.width / mRect.width) * 100;
-
             cDesignImg.src = designImg.src;
             cDesignImg.style.display = 'block';
-            cDesignImg.style.width = widthPct + '%';
-            cDesignImg.style.left  = leftPct + '%';
-            cDesignImg.style.top   = topPct + '%';
-        } else {
-            cDesignImg.style.display = 'none';
+            cDesignImg.style.width = (elRect.width / mRect.width) * 100 + '%';
+            cDesignImg.style.left  = ((elRect.left - mRect.left) + elRect.width  / 2) / mRect.width  * 100 + '%';
+            cDesignImg.style.top   = ((elRect.top  - mRect.top)  + elRect.height / 2) / mRect.height * 100 + '%';
         }
-    } else {
-        cDesignImg.style.display = 'none';
     }
 
     const productOption = document.querySelector('.product-option.selected');
     document.getElementById('confirmProductName').textContent = productOption ? productOption.dataset.productName : '';
-    document.getElementById('confirmDesignLine').textContent  = 'Design: ' + confirmModalState.designName;
-    document.getElementById('confirmQty').value = confirmModalState.quantity;
+    document.getElementById('confirmDesignLine').textContent  = tr('view_design.modal.design_line', { name: confirmModalState.designName }, 'Design: ' + confirmModalState.designName);
+
+    // The locked colour: a swatch and its name.
+    const colorLine = document.getElementById('confirmColorLine');
+    colorLine.textContent = '';
+    const dot = document.createElement('span');
+    dot.className = 'confirm-color-dot';
+    dot.style.backgroundColor = colorRadio.dataset.hex || '#fff';
+    colorLine.appendChild(dot);
+    colorLine.appendChild(document.createTextNode((window.I18N ? I18N.t('cart.item.color') : 'Color') + ': ' + (colorRadio.dataset.name || '')));
+
     document.getElementById('confirmError').style.display = 'none';
-    document.getElementById('confirmSizeLine').textContent  = '';
-    document.getElementById('confirmColorLine').textContent = '';
-
+    document.getElementById('sizeQtyGrid').innerHTML = '';
     updateConfirmPrices();
-
-    // Fetch variants for this product
-    fetchConfirmVariants(selectedProductId, previewColorId);
+    fetchConfirmVariants(selectedProductId);
 
     document.getElementById('confirmCartModal').classList.add('active');
 }
 
-function fetchConfirmVariants(productId, preSelectColorId) {
+function fetchConfirmVariants(productId) {
     fetch('/api/product-variants/' + productId)
         .then(r => r.json())
         .then(data => {
             confirmModalState.variants = data.variants || [];
             confirmModalState.sizes    = data.sizes    || [];
-            confirmModalState.colors   = data.colors   || [];
-            renderConfirmColors(preSelectColorId);
-            renderConfirmSizes();
+            renderSizeQty();
+            updateConfirmPrices();
         })
-        .catch(() => {
-            document.getElementById('confirmError').textContent = 'Failed to load product options.';
-            document.getElementById('confirmError').style.display = 'block';
-        });
+        .catch(() => showConfirmError(tr('view_design.modal.load_failed', null, 'Failed to load product options.')));
 }
 
-function renderConfirmColors(preSelectColorId) {
-    const container = document.getElementById('cartColorOptions');
-    container.innerHTML = '';
-    confirmModalState.colors.forEach(color => {
-        const hasVariant = confirmModalState.variants.some(v => v.color_id == color.id && v.is_available);
-        const hex = color.hex || '#ccc';
-        const isWhite = hex.toLowerCase() === '#ffffff' || hex.toLowerCase() === '#fff';
-        // Look comes from .cart-color-btn in studio.css; only the colour is
-        // data, so it is the one thing set here.
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'cart-color-btn' + (isWhite ? ' is-white' : '');
-        btn.dataset.colorId = color.id;
-        btn.dataset.colorHex = hex;
-        btn.title = color.name;
-        btn.setAttribute('aria-label', color.name);
-        btn.style.backgroundColor = hex;
-        if (!hasVariant) btn.disabled = true;
-        btn.onclick = function() { if (!this.disabled) selectConfirmColor(color.id, hex, color.name); };
-        container.appendChild(btn);
-    });
-    // Pre-select preview color if available
-    if (preSelectColorId) {
-        const match = confirmModalState.colors.find(c => c.id == preSelectColorId);
-        if (match) {
-            const hasVariant = confirmModalState.variants.some(v => v.color_id == match.id && v.is_available);
-            if (hasVariant) {
-                selectConfirmColor(match.id, match.hex, match.name);
-                return;
-            }
-        }
-    }
-    // Pre-select first available color
-    const first = confirmModalState.colors.find(c => confirmModalState.variants.some(v => v.color_id == c.id && v.is_available));
-    if (first) selectConfirmColor(first.id, first.hex, first.name);
+// The variant for a size in the locked colour, if it can be ordered.
+function sizeVariant(sizeId) {
+    return confirmModalState.variants.find(v =>
+        v.size_id == sizeId && v.color_id == confirmModalState.colorId && v.is_available == 1) || null;
 }
 
-function renderConfirmSizes() {
-    const container = document.getElementById('cartSizeOptions');
-    container.innerHTML = '';
+function renderSizeQty() {
+    const grid = document.getElementById('sizeQtyGrid');
+    grid.innerHTML = '';
     confirmModalState.sizes.forEach(size => {
-        const hasVariant = confirmModalState.variants.some(v => v.size_id == size.id &&
-            (!confirmModalState.selectedColorId || v.color_id == confirmModalState.selectedColorId) && v.is_available);
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'cart-size-btn';
-        btn.textContent = size.name + (size.modifier > 0 ? ' (+€' + parseFloat(size.modifier).toFixed(2) + ')' : '');
-        btn.dataset.sizeId = size.id;
-        btn.dataset.modifier = size.modifier || 0;
-        if (!hasVariant) btn.disabled = true;
-        btn.onclick = function() { if (!this.disabled) selectConfirmSize(size.id, parseFloat(this.dataset.modifier)); };
-        container.appendChild(btn);
+        const available = !!sizeVariant(size.id);
+        const qty = confirmModalState.qty[size.id] || 0;
+        const cell = document.createElement('div');
+        cell.className = 'size-qty-cell' + (available ? '' : ' is-unavailable') + (qty > 0 ? ' has-qty' : '');
+        cell.dataset.sizeId = size.id;
+
+        const label = document.createElement('span');
+        label.className = 'size-qty-label';
+        label.textContent = size.name;
+        cell.appendChild(label);
+
+        const stepper = document.createElement('div');
+        stepper.className = 'qty-stepper';
+        const minus = document.createElement('button');
+        minus.type = 'button';
+        minus.dataset.step = '-1';
+        minus.textContent = '−';
+        minus.setAttribute('aria-label', tr('view_design.modal.fewer', { size: size.name }, 'Fewer ' + size.name));
+        minus.disabled = !available || qty <= 0;
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = '0';
+        input.max = String(MAX_QTY);
+        input.inputMode = 'numeric';
+        input.value = String(qty);
+        input.disabled = !available;
+        input.setAttribute('aria-label', tr('view_design.modal.qty_for', { size: size.name }, size.name + ' quantity'));
+        const plus = document.createElement('button');
+        plus.type = 'button';
+        plus.dataset.step = '1';
+        plus.textContent = '+';
+        plus.setAttribute('aria-label', tr('view_design.modal.more', { size: size.name }, 'More ' + size.name));
+        plus.disabled = !available || qty >= MAX_QTY;
+        stepper.append(minus, input, plus);
+        cell.appendChild(stepper);
+
+        if (!available) {
+            const na = document.createElement('span');
+            na.className = 'size-qty-na';
+            na.textContent = tr('view_design.modal.unavailable', null, 'Not available');
+            cell.appendChild(na);
+        }
+        grid.appendChild(cell);
     });
 }
 
-function selectConfirmColor(colorId, colorHex, colorName) {
-    confirmModalState.selectedColorId  = colorId;
-    confirmModalState.selectedColorHex = colorHex;
-
-    document.querySelectorAll('.cart-color-btn').forEach(btn => {
-        btn.classList.toggle('is-selected', btn.dataset.colorId == colorId);
-    });
-
-    // Apply tint to modal preview
-    document.getElementById('confirmProductImg').style.filter = buildColorFilter(colorHex);
-
-    // Apply tint to main mockup too
-    applyColorTint(colorHex);
-
-    // Update color line
-    document.getElementById('confirmColorLine').textContent = (window.I18N ? I18N.t('cart.item.color') : 'Color') + ': ' + colorName;
-
-    // Update size availability
-    updateConfirmSizeAvailability();
-    // The colour changes the price (a coloured tee costs more than white).
+function setSizeQty(sizeId, qty) {
+    qty = Math.max(0, Math.min(MAX_QTY, parseInt(qty, 10) || 0));
+    confirmModalState.qty[sizeId] = qty;
+    const cell = document.querySelector('.size-qty-cell[data-size-id="' + sizeId + '"]');
+    if (cell) {
+        cell.classList.toggle('has-qty', qty > 0);
+        const input = cell.querySelector('input');
+        if (input && document.activeElement !== input) input.value = String(qty);
+        cell.querySelector('[data-step="-1"]').disabled = qty <= 0;
+        cell.querySelector('[data-step="1"]').disabled  = qty >= MAX_QTY;
+    }
+    document.getElementById('confirmError').style.display = 'none';
     updateConfirmPrices();
 }
 
-function selectConfirmSize(sizeId, modifier) {
-    confirmModalState.selectedSizeId = sizeId;
-
-    document.querySelectorAll('.cart-size-btn').forEach(btn => {
-        btn.classList.toggle('is-selected', btn.dataset.sizeId == sizeId);
-    });
-
-    const sizeBtn = document.querySelector('.cart-size-btn[data-size-id="' + sizeId + '"]');
-    document.getElementById('confirmSizeLine').textContent = (window.I18N ? I18N.t('cart.item.size') : 'Size') + ': ' + (sizeBtn ? sizeBtn.textContent : '');
-
-    updateConfirmPrices(modifier);
-    updateConfirmColorAvailability();
+// The sizes with a quantity, in size order, each priced the way the cart
+// prices its line: the variant's cost at that line's quantity tier, plus the
+// design fee.
+function chosenLines() {
+    const selectedOpt = document.querySelector('.product-option.selected');
+    const productName = selectedOpt ? (selectedOpt.dataset.productName || '') : '';
+    const category    = window.Pricing ? Pricing.categoryFor('', productName) : 'tshirt';
+    const fee         = confirmModalState.designFee || 0;
+    return confirmModalState.sizes
+        .filter(size => (confirmModalState.qty[size.id] || 0) > 0 && sizeVariant(size.id))
+        .map(size => {
+            const qty  = confirmModalState.qty[size.id];
+            const cost = window.Pricing
+                ? Pricing.variantCost(confirmModalState.variants, size.id, confirmModalState.colorId, confirmModalState.basePrice)
+                : confirmModalState.basePrice;
+            const unit = (window.Pricing ? Pricing.unitPrice(cost, category, qty) : cost) + fee;
+            return { sizeId: size.id, name: size.name, qty: qty, unit: unit, total: unit * qty };
+        });
 }
 
-function updateConfirmSizeAvailability() {
-    document.querySelectorAll('.cart-size-btn').forEach(btn => {
-        const available = confirmModalState.variants.some(v =>
-            v.size_id == btn.dataset.sizeId &&
-            (!confirmModalState.selectedColorId || v.color_id == confirmModalState.selectedColorId) &&
-            v.is_available
-        );
-        btn.disabled = !available;
-        // Deselect if current size no longer available
-        if (!available && confirmModalState.selectedSizeId == btn.dataset.sizeId) {
-            confirmModalState.selectedSizeId = null;
-            btn.classList.remove('is-selected');
-            document.getElementById('confirmSizeLine').textContent = '';
-        }
-    });
-    // Auto-select first available size
-    if (!confirmModalState.selectedSizeId) {
-        const firstAvail = document.querySelector('.cart-size-btn:not([disabled])');
-        if (firstAvail) selectConfirmSize(firstAvail.dataset.sizeId, parseFloat(firstAvail.dataset.modifier) || 0);
+function updateConfirmPrices() {
+    const lines = chosenLines();
+    const box = document.getElementById('confirmLines');
+    box.innerHTML = '';
+    if (!lines.length) {
+        const empty = document.createElement('p');
+        empty.className = 'confirm-lines-empty';
+        empty.textContent = tr('view_design.modal.pick_sizes', null, 'Choose how many of each size you want.');
+        box.appendChild(empty);
     }
+    lines.forEach(line => {
+        const row = document.createElement('div');
+        row.className = 'popup-price-row';
+        const left = document.createElement('span');
+        left.textContent = tr('view_design.modal.line', { size: line.name, qty: line.qty, price: '€' + line.unit.toFixed(2) },
+            line.name + ' × ' + line.qty + ' · €' + line.unit.toFixed(2) + ' each');
+        const right = document.createElement('span');
+        right.textContent = '€' + line.total.toFixed(2);
+        row.append(left, right);
+        box.appendChild(row);
+    });
+    const items = lines.reduce((n, l) => n + l.qty, 0);
+    const total = lines.reduce((sum, l) => sum + l.total, 0);
+    document.getElementById('confirmTotalLabel').textContent = totalLabel(items, 'view_design.modal.total');
+    document.getElementById('confirmTotal').textContent = '€' + total.toFixed(2);
+    document.getElementById('doAddToCartBtn').disabled = items === 0;
 }
 
-function updateConfirmColorAvailability() {
-    document.querySelectorAll('.cart-color-btn').forEach(btn => {
-        const available = confirmModalState.variants.some(v =>
-            v.color_id == btn.dataset.colorId &&
-            (!confirmModalState.selectedSizeId || v.size_id == confirmModalState.selectedSizeId) &&
-            v.is_available
-        );
-        btn.disabled = !available;
-    });
+function showConfirmError(msg) {
+    const el = document.getElementById('confirmError');
+    el.textContent = msg;
+    el.style.display = 'block';
 }
 
 function closeConfirmCart() {
     document.getElementById('confirmCartModal').classList.remove('active');
 }
 
-function adjustConfirmQty(delta) {
-    const input = document.getElementById('confirmQty');
-    let v = parseInt(input.value) + delta;
-    if (v < 1) v = 1;
-    if (v > 99) v = 99;
-    input.value = v;
-    confirmModalState.quantity = v;
-    updateConfirmPrices();
-}
+// One cart line per size. They go one after another so a failure is
+// reported against its size; sizes already added are cleared from the grid,
+// so pressing the button again only retries what didn't go in.
+async function doAddToCart() {
+    const lines = chosenLines();
+    if (!lines.length) { showConfirmError(tr('view_design.modal.pick_sizes', null, 'Choose how many of each size you want.')); return; }
 
-function updateConfirmPrices(sizeModifier) {
-    const mod       = sizeModifier !== undefined ? sizeModifier : 0;
-    const qty       = parseInt(document.getElementById('confirmQty').value) || 1;
-    // The chosen variant's SUPPLIER cost (a black or 3XL tee costs more than
-    // the white base price); apply the quantity-tiered margin to match the
-    // server. The premade design fee is added per unit.
-    const selectedOpt = document.querySelector('.product-option.selected');
-    const productName = selectedOpt ? (selectedOpt.dataset.productName || '') : '';
-    const category  = window.Pricing ? Pricing.categoryFor('', productName) : 'tshirt';
-    const fallback  = (confirmModalState.basePrice || 0) + mod;
-    const supplier  = window.Pricing
-        ? Pricing.variantCost(confirmModalState.variants, confirmModalState.selectedSizeId, confirmModalState.selectedColorId, fallback)
-        : fallback;
-    const unitPrice = window.Pricing ? Pricing.unitPrice(supplier, category, qty) : supplier;
-    const designFee = confirmModalState.designFee || 0;
-    const total     = (unitPrice + designFee) * qty;
-    // Per item, like the page's price box; the total covers the quantity.
-    // (The base line used to be for the whole quantity and the design fee for
-    // one item, so the two lines didn't add up to the total.)
-    document.getElementById('confirmBase').textContent       = priceEach(unitPrice, qty);
-    document.getElementById('confirmDesignFee').textContent  = '+' + priceEach(designFee, qty);
-    document.getElementById('confirmTotalLabel').textContent = totalLabel(qty, 'view_design.modal.total');
-    document.getElementById('confirmTotal').textContent      = '€' + total.toFixed(2);
-}
-
-function doAddToCart() {
-    const errorEl = document.getElementById('confirmError');
-    errorEl.style.display = 'none';
-
-    if (!confirmModalState.selectedColorId) {
-        errorEl.textContent = 'Please select a color.';
-        errorEl.style.display = 'block';
-        return;
-    }
-    if (!confirmModalState.selectedSizeId) {
-        errorEl.textContent = 'Please select a size.';
-        errorEl.style.display = 'block';
-        return;
-    }
-
-    // Spinner rather than swapping the label to "Adding…": the text change
-    // resized the button mid-click and shifted the dialog under the cursor.
+    // Spinner rather than swapping the label: the text change resized the
+    // button mid-click and shifted the dialog under the cursor.
     const btn = document.getElementById('doAddToCartBtn');
     UI.loading(btn, true);
 
-    const cartData = {
-        premade_design_id: confirmModalState.premadeDesignId,
-        product_id:  confirmModalState.productId,
-        size_id:     confirmModalState.selectedSizeId,
-        color_id:    confirmModalState.selectedColorId,
-        quantity:    parseInt(document.getElementById('confirmQty').value) || 1,
-        design_positions: designPositions
-    };
-
-    fetch('/cart/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify(cartData)
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.requireLogin) { redirectToLoginWithPendingCart(cartData); return; }
-        UI.loading(btn, false);
-        if (data.success || data.cart_item_id) {
-            closeConfirmCart();
-            showCartSuccessNotification();
-        } else {
-            throw new Error(data.error || window.I18N.t('studio.cart.error_generic'));
+    const failed = [];
+    for (const line of lines) {
+        const payload = {
+            premade_design_id: confirmModalState.premadeDesignId,
+            product_id:  confirmModalState.productId,
+            size_id:     line.sizeId,
+            color_id:    confirmModalState.colorId,
+            quantity:    line.qty,
+            design_positions: designPositions
+        };
+        try {
+            const r = await fetch('/cart/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify(payload)
+            });
+            const data = await r.json().catch(() => ({}));
+            if (data.requireLogin) { redirectToLoginWithPendingCart(payload); return; }
+            if (r.ok && (data.success || data.cart_item_id)) {
+                confirmModalState.qty[line.sizeId] = 0;
+            } else {
+                failed.push(line.name + ': ' + (data.error || tr('studio.cart.error_generic', null, 'Failed to add to cart.')));
+            }
+        } catch (e) {
+            failed.push(line.name + ': ' + tr('studio.cart.error_generic', null, 'Failed to add to cart.'));
         }
-    })
-    .catch(err => {
-        UI.loading(btn, false);
-        errorEl.textContent = err.message;
-        errorEl.style.display = 'block';
-    });
+    }
+
+    UI.loading(btn, false);
+    if (!failed.length) {
+        closeConfirmCart();
+        showCartSuccessNotification();
+        return;
+    }
+    renderSizeQty();
+    updateConfirmPrices();
+    const addedSome = failed.length < lines.length;
+    showConfirmError((addedSome ? tr('view_design.modal.partial', null, 'The other sizes were added. Not added:') + ' ' : '') + failed.join(' · '));
 }
+
+// Steppers and typed quantities in the size grid (bound once the page has
+// loaded: the pop-up is printed after this script, see $overlays).
+document.addEventListener('DOMContentLoaded', function () {
+    const grid = document.getElementById('sizeQtyGrid');
+    grid.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-step]');
+        if (!btn || btn.disabled) return;
+        const sizeId = btn.closest('.size-qty-cell').dataset.sizeId;
+        setSizeQty(sizeId, (confirmModalState.qty[sizeId] || 0) + parseInt(btn.dataset.step, 10));
+    });
+    grid.addEventListener('input', function (e) {
+        if (e.target.tagName !== 'INPUT') return;
+        setSizeQty(e.target.closest('.size-qty-cell').dataset.sizeId, e.target.value);
+    });
+    grid.addEventListener('change', function (e) {
+        if (e.target.tagName !== 'INPUT') return;
+        const sizeId = e.target.closest('.size-qty-cell').dataset.sizeId;
+        e.target.value = String(confirmModalState.qty[sizeId] || 0);
+    });
+});
 
 // Was a hand-rolled div with inline styles and its own timer; the shared toast
 // keeps the "go to cart" follow-up and matches every other message on the site.
@@ -1045,16 +1012,5 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             preview.innerHTML = '';
         }
-    });
-});
-
-// Typing a quantity re-prices, the same as the −/+ buttons. It used to leave
-// the one-item price on show until a button was pressed. (Bound once the page
-// has loaded: the add-to-cart pop-up is printed after this script, see $overlays.)
-document.addEventListener('DOMContentLoaded', function () {
-    document.getElementById('quantity').addEventListener('input', updatePrice);
-    document.getElementById('confirmQty').addEventListener('input', function () {
-        confirmModalState.quantity = Math.min(99, Math.max(1, parseInt(this.value) || 1));
-        updateConfirmPrices();
     });
 });
