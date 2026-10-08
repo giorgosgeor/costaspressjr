@@ -158,12 +158,16 @@ class Stripe {
      *
      * $why goes in metadata: Stripe's own `reason` only offers duplicate,
      * fraudulent and requested_by_customer, and none of them describes a
-     * checkout that couldn't become an order.
+     * checkout that couldn't become an order. Pass $stripeReason when one
+     * of them does (a customer cancelling: 'requested_by_customer').
      */
-    public static function refundPaymentIntent(string $id, string $why = ''): array {
+    public static function refundPaymentIntent(string $id, string $why = '', string $stripeReason = ''): array {
         $params = ['payment_intent' => $id];
         if ($why !== '') {
             $params['metadata[reason]'] = mb_substr($why, 0, 500);
+        }
+        if ($stripeReason !== '') {
+            $params['reason'] = $stripeReason;
         }
         return self::request('POST', '/refunds', $params);
     }

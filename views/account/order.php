@@ -1,5 +1,6 @@
 <?php $title = I18n::t('order.title', ['id' => (int)$order['id']]); $verifyBannerAlways = true; ?>
 <?php $pageCss[] = '/css/pages/order.css'; require View::path('layouts/customer_header'); ?>
+<?= View::script('/js/pages/order.js') ?>
 
 
 <?php
@@ -45,6 +46,14 @@ $placedOn    = date('d/m/Y', strtotime($order['created_at']));
         $lead    = I18n::t('order.placed_on', ['date' => $placedOn]);
         require View::path('partials/page_head');
     ?>
+
+    <?php if ($notice === 'cancelled'): ?>
+    <div class="alert alert-success od-notice" role="status"><?= I18n::t('order.cancel.done', ['amount' => money($order['total_price'])]) ?></div>
+    <?php elseif ($notice === 'not_allowed'): ?>
+    <div class="alert alert-error od-notice" role="alert"><?= t('order.cancel.not_allowed') ?></div>
+    <?php elseif ($notice === 'refund_failed'): ?>
+    <div class="alert alert-error od-notice" role="alert"><?= t('order.cancel.failed') ?></div>
+    <?php endif; ?>
 
     <div class="od-progress" aria-label="<?= t('order.timeline.title') ?>">
         <?php if ($status === 'cancelled'): ?>
@@ -199,11 +208,44 @@ $placedOn    = date('d/m/Y', strtotime($order['created_at']));
                 <span><?= t('cart.summary.total') ?></span>
                 <span>€<?= number_format((float)$order['total_price'], 2) ?></span>
             </div>
+            <?php if (in_array($order['payment_status'] ?? '', ['refunded', 'partially_refunded'], true)): ?>
+            <div class="od-row od-refund">
+                <span><?= t('order.info.refund') ?></span>
+                <span><?= ($order['payment_status'] === 'refunded')
+                    ? I18n::t('order.info.refunded', ['amount' => money($order['payment_amount'] ?? $order['total_price'])])
+                    : t('order.info.partially_refunded') ?></span>
+            </div>
+            <?php endif; ?>
+
+            <?php if (!empty($canCancel)): ?>
+            <?php // Only while the order is still pending (OrderCancellation). ?>
+            <div class="od-cancel">
+                <p class="od-cancel-lead"><?= t('order.cancel.lead') ?></p>
+                <button type="button" class="btn btn-danger btn-block" data-on-click="openCancelOrder"><?= t('order.cancel.button') ?></button>
+            </div>
+            <?php endif; ?>
             <p class="od-help"><?= t('assistant.answer.human', false) ?> <a href="/contact"><?= t('assistant.link.contact') ?></a></p>
         </aside>
     </div>
 
 </div>
 </section>
+
+<?php if (!empty($canCancel)):
+ob_start(); ?>
+<div id="cancelOrderOverlay" class="confirm-overlay" data-on-click="closeCancelOrder" data-click-self role="dialog" aria-modal="true" aria-labelledby="cancelOrderTitle">
+    <div class="confirm-dialog">
+        <h3 id="cancelOrderTitle" class="confirm-title"><?= t('order.cancel.title') ?></h3>
+        <p class="confirm-lead"><?= I18n::t('order.cancel.confirm_lead', ['amount' => money($order['total_price'])]) ?></p>
+        <form method="post" action="/orders/cancel" class="confirm-actions" data-cancel-order-form>
+            <?= Csrf::field() ?>
+            <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
+            <button type="button" class="confirm-btn confirm-btn-secondary" data-on-click="closeCancelOrder"><?= t('order.cancel.keep') ?></button>
+            <button type="submit" class="confirm-btn confirm-btn-danger"><?= t('order.cancel.confirm') ?></button>
+        </form>
+    </div>
+</div>
+<?php $overlays = ($overlays ?? '') . ob_get_clean();
+endif; ?>
 
 <?php require View::path('layouts/customer_footer'); ?>

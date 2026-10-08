@@ -134,7 +134,8 @@ class AccountController extends Controller {
 
         $stmt = $this->db->prepare("
             SELECT o.*, op.payment_method, op.card_brand, op.card_last4, op.card_exp_month,
-                   op.card_exp_year, op.amount as payment_amount, op.status as payment_status
+                   op.card_exp_year, op.amount as payment_amount, op.status as payment_status,
+                   op.payment_intent_id
             FROM orders o
             LEFT JOIN order_payments op ON op.order_id = o.id
             WHERE o.id = ? AND o.user_id = ?
@@ -172,7 +173,35 @@ class AccountController extends Controller {
         }
         unset($item);
 
-        $this->render('account/order', ['order' => $order, 'orderItems' => $orderItems]);
+        // The outcome of a cancellation, shown once after its redirect.
+        $notice = null;
+        if (($_SESSION['order_notice']['order'] ?? null) === $orderId) {
+            $notice = $_SESSION['order_notice']['result'];
+            unset($_SESSION['order_notice']);
+        }
+
+        $this->render('account/order', [
+            'order'      => $order,
+            'orderItems' => $orderItems,
+            'canCancel'  => OrderCancellation::canCancel($order),
+            'notice'     => $notice,
+        ]);
+    }
+
+    /**
+     * POST /orders/cancel — the customer cancels a pending order for a full
+     * refund (OrderCancellation has the rules), then lands back on the order
+     * with the outcome.
+     */
+    public function cancelOrder(): void {
+        Auth::requireLogin();
+        $orderId = (int)($_POST['order_id'] ?? 0);
+        $result  = $orderId > 0
+            ? (new OrderCancellation($this->db))->cancel($orderId, (int)Auth::userId())
+            : 'not_allowed';
+        $_SESSION['order_notice'] = ['order' => $orderId, 'result' => $result];
+        header('Location: /orders/view?id=' . $orderId);
+        exit;
     }
 
     /**

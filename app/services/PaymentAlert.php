@@ -8,6 +8,8 @@
  *   reconcileReport()  the reconcile job had to place orders the webhook never
  *                      delivered (so the webhook may be broken), or found
  *                      payments it still can't settle.
+ *   orderCancelled()   a customer cancelled a pending order on the website
+ *                      and was refunded — so nobody prints it.
  *
  * Each payment is alerted about at most once per kind (payment_alerts table):
  * the webhook retries for days and the job runs every half hour.
@@ -40,6 +42,38 @@ class PaymentAlert
             );
         } catch (Throwable $e) {
             Log::error('payment alert failed', ['pi' => $piId, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * A customer cancelled their order from the website and was refunded
+     * (OrderCancellation). It was still 'pending', but someone may already
+     * have it on the bench — this tells them to stop.
+     */
+    public static function orderCancelled(PDO $db, int $orderId, string $piId, float $amount): void
+    {
+        try {
+            if (!self::firstTime($db, $piId, 'customer_cancelled')) {
+                return;
+            }
+            $stmt = $db->prepare("SELECT shipping_address FROM orders WHERE id = ?");
+            $stmt->execute([$orderId]);
+            // shipping_address is the order's contact block: where, then name, phone, email.
+            $contact = trim(implode(' · ', array_slice(array_filter(array_map('trim', explode("\n", (string)$stmt->fetchColumn()))), 1)));
+            self::send(
+                $db,
+                'Order #' . $orderId . ' cancelled by the customer — refunded',
+                'The customer cancelled order #' . $orderId . ' on the website before it went into processing, '
+                . 'and the payment was refunded in full automatically. Please don\'t start or print it.',
+                [[
+                    'Order'    => '#' . $orderId,
+                    'Refunded' => '€' . number_format($amount, 2),
+                    'Payment'  => $piId,
+                    'Customer' => $contact !== '' ? $contact : 'see the order',
+                ]]
+            );
+        } catch (Throwable $e) {
+            Log::error('cancellation alert failed', ['order' => $orderId, 'error' => $e->getMessage()]);
         }
     }
 

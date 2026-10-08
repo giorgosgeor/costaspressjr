@@ -181,6 +181,17 @@ class AdminOrderController extends AdminController {
             return;
         }
 
+        // A refunded order stays cancelled: moving it back into the workflow
+        // would mean printing something the customer already has their
+        // money back for. (Customers cancel and get refunded from their order
+        // page while it is pending — see OrderCancellation.)
+        $stmt = $this->db->prepare("SELECT status FROM order_payments WHERE order_id = ? LIMIT 1");
+        $stmt->execute([$orderId]);
+        if ($stmt->fetchColumn() === 'refunded' && $newStatus !== 'cancelled') {
+            header('Location: /admin/orders/' . $orderId);
+            return;
+        }
+
         $stmt = $this->db->prepare("UPDATE orders SET status = ? WHERE id = ?");
         $stmt->execute([$newStatus, $orderId]);
 

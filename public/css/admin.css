@@ -815,3 +815,6 @@
     .prod-upload { min-width: 0; flex-basis: 100%; }
     .prod-text-table { display: block; overflow-x: auto; }
 }
+
+/* Order page: a refunded order can't be moved on (AdminOrderController::updateStatus). */
+.order-locked { margin: 0; padding: 10px 12px; background: var(--paper-soft); font-size: 0.9rem; color: var(--ink); }

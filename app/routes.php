@@ -94,6 +94,7 @@ $router->post('/stripe/webhook', [$stripe, 'handle']);
 $router->get('/account', [$account, 'index']);
 $router->get('/orders', [$account, 'orders']);
 $router->get('/orders/view', [$account, 'order']);
+$router->post('/orders/cancel', [$account, 'cancelOrder']);
 $router->post('/account/favorites/toggle', [$account, 'toggleFavorite']);
 $router->post('/account/cookie-consent', [$account, 'cookieConsent']);
 
