@@ -312,8 +312,17 @@ class AuthController extends Controller {
             && !$this->isMailRateLimited('resend', (string)$user['email'])) {
             $this->sendVerificationEmail((int)$userId, (string)$user['email'], (string)$user['username']);
         }
+        CurrentUser::snoozeVerifyBanner();
 
-        header('Location: /account?verify=sent');
+        // Back to the page the banner was clicked on (it is on every page),
+        // not always to /account. Only a path on this site is trusted.
+        $back = '';
+        $referer = (string)($_SERVER['HTTP_REFERER'] ?? '');
+        if ($referer !== '' && parse_url($referer, PHP_URL_HOST) === parse_url('//' . ($_SERVER['HTTP_HOST'] ?? ''), PHP_URL_HOST)) {
+            $query = parse_url($referer, PHP_URL_QUERY);
+            $back  = $this->safeRedirect((string)parse_url($referer, PHP_URL_PATH) . ($query ? '?' . $query : ''));
+        }
+        header('Location: ' . ($back !== '' ? $back : '/account'));
         exit;
     }
 

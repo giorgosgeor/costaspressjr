@@ -210,12 +210,14 @@ $currentLocale   = I18n::locale();
         </div>
     </header>
     <?php
-    $showVerifyBanner = CurrentUser::needsEmailVerification($db ?? null);
+    // 'sent' once after Resend, then hidden for a while, then 'unverified'
+    // again if the address still isn't confirmed (CurrentUser::verifyBanner).
+    $verifyBanner = CurrentUser::verifyBanner($db ?? null);
     ?>
-    <?php if ($showVerifyBanner): ?>
+    <?php if ($verifyBanner !== null): ?>
     <div class="verify-banner" role="status">
         <div class="container verify-banner-inner">
-            <?php if (!empty($_GET['verify']) && $_GET['verify'] === 'sent'): ?>
+            <?php if ($verifyBanner === 'sent'): ?>
             <span><?= t('verify.banner.sent') ?></span>
             <?php else: ?>
             <span><?= t('verify.banner.unverified') ?></span>

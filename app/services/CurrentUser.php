@@ -23,6 +23,36 @@ class CurrentUser {
         }
     }
 
+    /** How long the "confirm your email" banner stays away after Resend. */
+    private const VERIFY_BANNER_SNOOZE = 600;
+
+    /**
+     * What the "confirm your email" banner says on this page, or null for no
+     * banner. Right after the customer asks for a new link it says 'sent',
+     * once; then it stays away for ten minutes so it doesn't nag while the
+     * email is on its way, and comes back ('unverified', with the Resend
+     * button) only if the address still isn't confirmed by then.
+     */
+    public static function verifyBanner(?PDO $db): ?string {
+        if (!self::needsEmailVerification($db)) {
+            return null;
+        }
+        if (!empty($_SESSION['verify_banner_sent'])) {
+            unset($_SESSION['verify_banner_sent']);
+            return 'sent';
+        }
+        if ((int)($_SESSION['verify_banner_hidden_until'] ?? 0) > time()) {
+            return null;
+        }
+        return 'unverified';
+    }
+
+    /** Called when a new verification link is requested (see verifyBanner). */
+    public static function snoozeVerifyBanner(): void {
+        $_SESSION['verify_banner_sent'] = true;
+        $_SESSION['verify_banner_hidden_until'] = time() + self::VERIFY_BANNER_SNOOZE;
+    }
+
     /**
      * Whether the cookie notice was already accepted. Guests keep the answer
      * in a cookie the browser checks; signed-in customers keep it on their
