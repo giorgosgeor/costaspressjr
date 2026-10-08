@@ -6,12 +6,6 @@ $title    = $state === 'placed' ? t('checkout.success.title', false) : t('checko
 $extraCss = ['/css/pages/checkout.css'];
 require View::path('layouts/customer_header');
 
-$money   = static fn($v) => '€' . number_format((float)$v, 2);
-$webPath = static function (?string $p): string {
-    $p = (string)$p;
-    if (strpos($p, 'public/') === 0) $p = substr($p, 7);
-    return ($p !== '' && $p[0] !== '/') ? '/' . $p : $p;
-};
 ?>
 
 <section class="cc-page">
@@ -88,7 +82,7 @@ $webPath = static function (?string $p): string {
             <ul class="co-lines">
                 <?php foreach ($order['items'] as $item):
                     $previews = !empty($item['preview_images']) ? json_decode($item['preview_images'], true) : null;
-                    $image    = !empty($previews['front']) ? $webPath($previews['front']) : ($webPath($item['product_image'] ?? '') ?: '/images/placeholder.png');
+                    $image    = !empty($previews['front']) ? web_path($previews['front']) : (web_path($item['product_image'] ?? '') ?: '/images/placeholder.png');
                     $meta     = array_filter([$item['size_name'] ?? null, $item['color_name'] ?? null]);
                     $qty      = (int)$item['quantity'];
                     $line     = ((float)$item['unit_price'] + (float)($item['custom_design_fee'] ?? 0)) * $qty;
@@ -104,14 +98,14 @@ $webPath = static function (?string $p): string {
                         <p class="co-line-name"><?= htmlspecialchars((string)($item['product_name'] ?? '')) ?></p>
                         <?php if ($meta): ?><p class="co-line-meta"><?= htmlspecialchars(implode(' · ', $meta)) ?></p><?php endif; ?>
                     </div>
-                    <p class="co-line-price"><?= $money($line) ?></p>
+                    <p class="co-line-price"><?= money($line) ?></p>
                 </li>
                 <?php endforeach; ?>
             </ul>
             <dl class="co-totals">
-                <div><dt><?= t('checkout.review.subtotal') ?></dt><dd><?= $money((float)$order['total_price'] - $fee) ?></dd></div>
-                <div><dt><?= t('checkout.pickup.summary_label') ?></dt><dd class="<?= $fee > 0 ? '' : 'is-free' ?>"><?= $fee > 0 ? $money($fee) : t('checkout.pickup.free') ?></dd></div>
-                <div class="co-total"><dt><?= t('checkout.review.total') ?></dt><dd><?= $money($order['total_price']) ?></dd></div>
+                <div><dt><?= t('checkout.review.subtotal') ?></dt><dd><?= money((float)$order['total_price'] - $fee) ?></dd></div>
+                <div><dt><?= t('checkout.pickup.summary_label') ?></dt><dd class="<?= $fee > 0 ? '' : 'is-free' ?>"><?= $fee > 0 ? money($fee) : t('checkout.pickup.free') ?></dd></div>
+                <div class="co-total"><dt><?= t('checkout.review.total') ?></dt><dd><?= money($order['total_price']) ?></dd></div>
             </dl>
         </div>
     </div>

@@ -30,3 +30,20 @@ function public_path(string $path = ''): string
     $root = dirname(__DIR__) . '/public';
     return $path === '' ? $root : $root . '/' . ltrim($path, '/');
 }
+
+/** A price as the shop shows it: money(12.5) → "€12.50" */
+function money(mixed $amount): string
+{
+    return '€' . number_format((float)$amount, 2);
+}
+
+/**
+ * A stored image path as a URL path. Paths are saved as "public/…",
+ * "images/…" or "/images/…"; all three come back as "/images/…".
+ */
+function web_path(?string $path): string
+{
+    $path = (string)$path;
+    if (strpos($path, 'public/') === 0) $path = substr($path, 7);
+    return ($path !== '' && $path[0] !== '/') ? '/' . $path : $path;
+}

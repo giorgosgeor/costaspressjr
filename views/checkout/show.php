@@ -14,13 +14,6 @@ if ($appUrl === '') {
     $appUrl = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
 }
 $isGuest = !Auth::check();
-$money   = static fn($v) => '€' . number_format((float)$v, 2);
-// Stored paths come as "public/…", "uploads/…" or "/…".
-$webPath = static function (?string $p): string {
-    $p = (string)$p;
-    if (strpos($p, 'public/') === 0) $p = substr($p, 7);
-    return ($p !== '' && $p[0] !== '/') ? '/' . $p : $p;
-};
 $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
 ?>
 
@@ -34,7 +27,7 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
             <span data-when="open" hidden><?= t('checkout.summary.hide') ?></span>
             <svg class="co-summary-toggle-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </span>
-        <strong data-co-total><?= $money($cartTotal) ?></strong>
+        <strong data-co-total><?= money($cartTotal) ?></strong>
     </button>
 
     <div class="co-grid">
@@ -49,8 +42,8 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                 <ul class="co-lines">
                     <?php foreach ($cartItems as $item):
                         $name     = (string)($item['product_name'] ?? ('#' . $item['product_id']));
-                        $preview  = !empty($item['front_preview']) ? $webPath($item['front_preview']) : '';
-                        $image    = $preview !== '' ? $preview : ($webPath($item['product_image'] ?? '') ?: '/images/placeholder.png');
+                        $preview  = !empty($item['front_preview']) ? web_path($item['front_preview']) : '';
+                        $image    = $preview !== '' ? $preview : (web_path($item['product_image'] ?? '') ?: '/images/placeholder.png');
                         $tint     = ($preview === '' && !empty($item['color_hex'])) ? Tint::filterFor($item['color_hex']) : '';
                         $meta     = array_filter([
                             $item['size_name'] ?? null,
@@ -71,7 +64,7 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                                     $posX = (float)($item['premade_pos_x'] ?? 0);
                                     $posY = (float)($item['premade_pos_y'] ?? 0);
                                     $size = (float)($item['premade_pos_size'] ?? 55); ?>
-                                <img class="co-thumb-overlay" src="<?= htmlspecialchars($webPath($item['premade_design_image'])) ?>" alt=""
+                                <img class="co-thumb-overlay" src="<?= htmlspecialchars(web_path($item['premade_design_image'])) ?>" alt=""
                                      style="left:<?= 50 + $posX * 0.25 ?>%;top:<?= 55 + $posY * 0.375 ?>%;width:<?= $size * 0.5 ?>%;">
                                 <?php endif; ?>
                             </div>
@@ -83,7 +76,7 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                             <p class="co-line-meta"><?= htmlspecialchars(implode(' · ', $meta)) ?></p>
                             <?php endif; ?>
                         </div>
-                        <p class="co-line-price"><?= $money($item['line_total'] ?? 0) ?></p>
+                        <p class="co-line-price"><?= money($item['line_total'] ?? 0) ?></p>
                     </li>
                     <?php endforeach; ?>
                 </ul>
@@ -91,7 +84,7 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                 <dl class="co-totals">
                     <div>
                         <dt><?= I18n::t('checkout.summary.subtotal', ['count' => $totalQty]) ?></dt>
-                        <dd data-co-subtotal><?= $money($cartTotal) ?></dd>
+                        <dd data-co-subtotal><?= money($cartTotal) ?></dd>
                     </div>
                     <div>
                         <dt><?= t('checkout.pickup.summary_label') ?></dt>
@@ -99,7 +92,7 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                     </div>
                     <div class="co-total">
                         <dt><?= t('checkout.review.total') ?></dt>
-                        <dd data-co-total><?= $money($cartTotal) ?></dd>
+                        <dd data-co-total><?= money($cartTotal) ?></dd>
                     </div>
                 </dl>
 
@@ -189,7 +182,7 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                             <span class="co-option-body">
                                 <span class="co-option-head">
                                     <span class="co-option-title"><?= t('checkout.pickup.acs') ?></span>
-                                    <span class="co-option-price"><?= $money($acsFee) ?></span>
+                                    <span class="co-option-price"><?= money($acsFee) ?></span>
                                 </span>
                                 <span class="co-option-note"><?= t('checkout.pickup.acs_note') ?></span>
                             </span>
@@ -245,7 +238,7 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                         <span class="co-pay-icon" aria-hidden="true">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="1"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                         </span>
-                        <span class="co-pay-label" id="payLabel"><?= t('checkout.pay') ?> <span data-co-total><?= $money($cartTotal) ?></span></span>
+                        <span class="co-pay-label" id="payLabel"><?= t('checkout.pay') ?> <span data-co-total><?= money($cartTotal) ?></span></span>
                     </button>
                 </div>
 
