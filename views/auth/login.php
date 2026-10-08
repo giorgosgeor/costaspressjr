@@ -10,6 +10,10 @@
     <?php if (isset($error)): ?>
         <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
+    <?php // After a password reset (AuthController::resetPassword). ?>
+    <?php if (isset($success)): ?>
+        <div class="alert alert-success" role="status"><?= htmlspecialchars($success) ?></div>
+    <?php endif; ?>
 
     <form method="post" action="/login">
         <?= Csrf::field() ?>
