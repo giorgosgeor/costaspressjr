@@ -971,7 +971,6 @@
     "size_qty.title": "Sizes and quantities",
     "size_qty.color": "Color",
     "size_qty.color_locked": "To change the colour, close this and pick another on the page.",
-    "size_qty.line": "{size} × {qty} · {price} each",
     "size_qty.total": "Total",
     "size_qty.total_qty": "Total ({qty} items)",
     "size_qty.design_note": "Each item includes the design ({fee}).",
@@ -982,5 +981,8 @@
     "size_qty.more": "More {size}",
     "size_qty.qty_for": "Quantity of {size}",
     "size_qty.partial": "The other sizes were added. Not added:",
-    "size_qty.load_failed": "Failed to load product options."
+    "size_qty.load_failed": "Failed to load product options.",
+    "size_qty.per_item": "Price per item",
+    "size_qty.each": "{price} each",
+    "size_qty.from": "from {price}"
 }

@@ -124,41 +124,78 @@
 
         // The sizes with a quantity, in size order, priced as the cart prices
         // each line.
-        function lines() {
+        // A size's price per item at a quantity: the variant's cost at that
+        // quantity's tier (as the cart prices each line), plus the extras.
+        function unitFor(sizeId, qty) {
             var category = global.Pricing ? global.Pricing.categoryFor('', state.productName) : 'tshirt';
+            var cost = global.Pricing
+                ? global.Pricing.variantCost(state.variants, sizeId, state.colorId, state.basePrice)
+                : state.basePrice;
+            return (global.Pricing ? global.Pricing.unitPrice(cost, category, qty, state.extra) : cost + state.extra) + state.fee;
+        }
+
+        // The sizes with a quantity, in size order, priced as the cart prices
+        // each line.
+        function lines() {
             return state.sizes
                 .filter(function (size) { return (state.qty[size.id] || 0) > 0 && variantFor(size.id); })
                 .map(function (size) {
                     var qty = state.qty[size.id];
-                    var cost = global.Pricing
-                        ? global.Pricing.variantCost(state.variants, size.id, state.colorId, state.basePrice)
-                        : state.basePrice;
-                    var unit = (global.Pricing ? global.Pricing.unitPrice(cost, category, qty, state.extra) : cost + state.extra) + state.fee;
+                    var unit = unitFor(size.id, qty);
                     return { sizeId: size.id, name: size.name, qty: qty, unit: unit, total: unit * qty };
                 });
         }
 
+        // Sizes grouped by price per item, in size order.
+        function byPrice(items) {
+            var groups = [];
+            items.forEach(function (it) {
+                var key = it.unit.toFixed(2);
+                var g = groups.find(function (x) { return x.key === key; });
+                if (!g) { g = { key: key, unit: it.unit, names: [] }; groups.push(g); }
+                g.names.push(it.name);
+            });
+            return groups;
+        }
+
+        function priceRow(left, right) {
+            var row = document.createElement('div');
+            row.className = 'popup-price-row';
+            var l = document.createElement('span');
+            l.textContent = left;
+            var r = document.createElement('span');
+            r.textContent = right;
+            row.appendChild(l);
+            row.appendChild(r);
+            linesEl.appendChild(row);
+        }
+
+        // The price per item, once. The grid above already shows what was
+        // picked, so sizes are named only when they cost different amounts
+        // (a 3XL costing more, or a bigger quantity of one size reaching a
+        // cheaper tier).
         function update() {
             var ls = lines();
             linesEl.innerHTML = '';
-            if (!ls.length) {
-                var empty = document.createElement('p');
-                empty.className = 'size-qty-empty';
-                empty.textContent = tr('size_qty.pick_sizes', null, 'Choose how many of each size you want.');
-                linesEl.appendChild(empty);
+            var perItem = tr('size_qty.per_item', null, 'Price per item');
+            if (ls.length) {
+                var groups = byPrice(ls);
+                if (groups.length === 1) {
+                    priceRow(perItem, money(groups[0].unit));
+                } else {
+                    groups.forEach(function (g) {
+                        priceRow(g.names.join(', '), tr('size_qty.each', { price: money(g.unit) }, money(g.unit) + ' each'));
+                    });
+                }
+            } else {
+                // Nothing picked yet: the price of one, from the cheapest size.
+                var offered = state.sizes.filter(function (size) { return variantFor(size.id); })
+                    .map(function (size) { return unitFor(size.id, 1); });
+                if (offered.length) {
+                    var lo = Math.min.apply(null, offered), hi = Math.max.apply(null, offered);
+                    priceRow(perItem, hi - lo > 0.005 ? tr('size_qty.from', { price: money(lo) }, 'from ' + money(lo)) : money(lo));
+                }
             }
-            ls.forEach(function (line) {
-                var row = document.createElement('div');
-                row.className = 'popup-price-row';
-                var left = document.createElement('span');
-                left.textContent = tr('size_qty.line', { size: line.name, qty: line.qty, price: money(line.unit) },
-                    line.name + ' × ' + line.qty + ' · ' + money(line.unit) + ' each');
-                var right = document.createElement('span');
-                right.textContent = money(line.total);
-                row.appendChild(left);
-                row.appendChild(right);
-                linesEl.appendChild(row);
-            });
             var items = ls.reduce(function (n, l) { return n + l.qty; }, 0);
             var total = ls.reduce(function (sum, l) { return sum + l.total; }, 0);
             labelEl.textContent = items > 1

@@ -1231,7 +1231,6 @@ body.theme-studio .size-qty-cell .qty-stepper input { width: 40px; min-width: 40
     body.theme-studio .size-qty-cell .qty-stepper input { height: 40px; }
 }
 body.theme-studio .size-qty-lines .popup-price-row { font-variant-numeric: tabular-nums; }
-body.theme-studio .size-qty-empty { color: var(--st-muted); font-size: 0.88rem; margin: 0 0 4px; }
 body.theme-studio .size-qty-note { margin: 8px 0 0; color: var(--st-muted); font-size: 0.8rem; }
 
 /* Wide add-to-cart pop-ups (.popup-wide): on a desktop every size sits on

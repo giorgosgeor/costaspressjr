@@ -971,7 +971,6 @@
     "size_qty.title": "Μεγέθη και ποσότητες",
     "size_qty.color": "Χρώμα",
     "size_qty.color_locked": "Για να αλλάξετε χρώμα, κλείστε αυτό το παράθυρο και διαλέξτε άλλο στη σελίδα.",
-    "size_qty.line": "{size} × {qty} · {price} το τεμάχιο",
     "size_qty.total": "Σύνολο",
     "size_qty.total_qty": "Σύνολο ({qty} τεμάχια)",
     "size_qty.design_note": "Κάθε τεμάχιο περιλαμβάνει το σχέδιο ({fee}).",
@@ -982,5 +981,8 @@
     "size_qty.more": "Περισσότερα {size}",
     "size_qty.qty_for": "Ποσότητα για {size}",
     "size_qty.partial": "Τα υπόλοιπα μεγέθη προστέθηκαν. Δεν προστέθηκαν:",
-    "size_qty.load_failed": "Δεν ήταν δυνατή η φόρτωση των επιλογών του προϊόντος."
+    "size_qty.load_failed": "Δεν ήταν δυνατή η φόρτωση των επιλογών του προϊόντος.",
+    "size_qty.per_item": "Τιμή ανά τεμάχιο",
+    "size_qty.each": "{price} το τεμάχιο",
+    "size_qty.from": "από {price}"
 }
