@@ -308,7 +308,7 @@ endforeach;
 ob_start(); ?>
 <!-- Confirm Add to Cart Modal -->
 <div id="confirmCartModal" class="confirm-cart-overlay popup-overlay" data-on-click="closeConfirmCart" data-click-self>
-    <div class="confirm-cart-box popup" role="dialog" aria-modal="true" aria-labelledby="confirmCartTitle">
+    <div class="confirm-cart-box popup popup-wide" role="dialog" aria-modal="true" aria-labelledby="confirmCartTitle">
         <button type="button" class="popup-close" data-on-click="closeConfirmCart" aria-label="<?= t('common.close') ?>">&times;</button>
         <h2 class="popup-title" id="confirmCartTitle"><?= t('view_design.modal.title') ?></h2>
 

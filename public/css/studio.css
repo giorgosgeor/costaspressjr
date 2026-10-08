@@ -1233,3 +1233,16 @@ body.theme-studio .size-qty-cell .qty-stepper input { width: 40px; min-width: 40
 body.theme-studio .size-qty-lines .popup-price-row { font-variant-numeric: tabular-nums; }
 body.theme-studio .size-qty-empty { color: var(--st-muted); font-size: 0.88rem; margin: 0 0 4px; }
 body.theme-studio .size-qty-note { margin: 8px 0 0; color: var(--st-muted); font-size: 0.8rem; }
+
+/* Wide add-to-cart pop-ups (.popup-wide): on a desktop every size sits on
+   one row (--sq-cols, set by size-qty.js), with a compact stepper, and the
+   two buttons share a row. Phones keep the narrow stacked layout. */
+@media (min-width: 900px) {
+    body.theme-studio .popup-wide { max-width: min(980px, calc(100vw - 48px)); }
+    body.theme-studio .popup-wide .size-qty-grid { grid-template-columns: repeat(var(--sq-cols, 6), minmax(0, 1fr)); gap: 6px; }
+    body.theme-studio .popup-wide .size-qty-cell { padding: 10px 4px; }
+    body.theme-studio .popup-wide .size-qty-cell .qty-stepper button { width: 28px; height: 32px; }
+    body.theme-studio .popup-wide .size-qty-cell .qty-stepper input { width: 34px; min-width: 34px; height: 32px; }
+    body.theme-studio .popup-wide .popup-actions { flex-direction: row; }
+    body.theme-studio .popup-wide .popup-actions .btn { flex: 1 1 0; }
+}

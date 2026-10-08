@@ -55,6 +55,8 @@
 
         function render() {
             grid.innerHTML = '';
+            // One column per size: the wide pop-up puts them all on one row.
+            grid.style.setProperty('--sq-cols', String(Math.max(1, state.sizes.length)));
             state.sizes.forEach(function (size) {
                 var available = !!variantFor(size.id);
                 var qty = state.qty[size.id] || 0;

@@ -332,7 +332,7 @@ ob_start(); ?>
       // like the premade design page's and the designer's; it was the last
       // piece of an old dark theme (navy box, white text, a red button). ?>
 <div id="addToCartModal" class="popup-overlay" style="display:none;" data-on-click="closeAddToCartModal" data-click-self>
-    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="accountCartTitle" data-stop-click>
+    <div class="popup popup-wide" role="dialog" aria-modal="true" aria-labelledby="accountCartTitle" data-stop-click>
         <button type="button" class="popup-close" data-on-click="closeAddToCartModal" aria-label="<?= t('common.close') ?>">&times;</button>
         <h2 class="popup-title" id="accountCartTitle"><?= t('account.cart_modal.title') ?></h2>
 
