@@ -147,38 +147,50 @@ function captureDesignPreview() {
     // Clear previous design elements
     designArea.innerHTML = '';
 
-    // Compute editor design area dimensions from the product image (same approach as generateAndSavePreviews)
-    // This is robust when the #designArea element has no offsetWidth (shop_custom.css not loaded on this page)
+    // Place the design area where the editor has it: the product's own print
+    // area for this view (da_* — percentages of the product image, as
+    // applyDesignArea() and the saved previews use), on the image as it is
+    // drawn in the preview box (object-fit: contain). It used to be a fixed
+    // box (centred, 25% from the top), so on a product whose print area sits
+    // elsewhere the design came out shifted.
     const editorMockupImg = document.getElementById('mockupProduct');
     const editorImgW = editorMockupImg ? editorMockupImg.offsetWidth : 0;
     const editorImgH = editorMockupImg ? editorMockupImg.offsetHeight : 0;
 
-    // Get design area percentages for current view (same defaults as generateAndSavePreviews)
     const p = window.currentProduct;
     const _daDefaults = {
-        'front': { w: 45, h: 60 }, 'back': { w: 45, h: 60 },
-        'left-sleeve': { w: 13, h: 16 }, 'right-sleeve': { w: 13, h: 16 }
+        'front':        { x: 27.5, y: 25, w: 45, h: 60 }, 'back':         { x: 27.5, y: 25, w: 45, h: 60 },
+        'left-sleeve':  { x: 46,   y: 27, w: 13, h: 16 }, 'right-sleeve': { x: 46,   y: 27, w: 13, h: 16 }
     };
     const _daMap = {
-        'front':        { w: p && p.da_front_w   != null ? p.da_front_w   : null, h: p && p.da_front_h   != null ? p.da_front_h   : null },
-        'back':         { w: p && p.da_back_w    != null ? p.da_back_w    : null, h: p && p.da_back_h    != null ? p.da_back_h    : null },
-        'left-sleeve':  { w: p && p.da_lsleeve_w != null ? p.da_lsleeve_w : null, h: p && p.da_lsleeve_h != null ? p.da_lsleeve_h : null },
-        'right-sleeve': { w: p && p.da_rsleeve_w != null ? p.da_rsleeve_w : null, h: p && p.da_rsleeve_h != null ? p.da_rsleeve_h : null }
+        'front':        { x: p && p.da_front_x,   y: p && p.da_front_y,   w: p && p.da_front_w,   h: p && p.da_front_h   },
+        'back':         { x: p && p.da_back_x,    y: p && p.da_back_y,    w: p && p.da_back_w,    h: p && p.da_back_h    },
+        'left-sleeve':  { x: p && p.da_lsleeve_x, y: p && p.da_lsleeve_y, w: p && p.da_lsleeve_w, h: p && p.da_lsleeve_h },
+        'right-sleeve': { x: p && p.da_rsleeve_x, y: p && p.da_rsleeve_y, w: p && p.da_rsleeve_w, h: p && p.da_rsleeve_h }
     };
     const _def = _daDefaults[currentView] || _daDefaults['front'];
     const _dm  = _daMap[currentView] || {};
-    const _daW = _dm.w != null ? _dm.w : _def.w;
-    const _daH = _dm.h != null ? _dm.h : _def.h;
+    const pct = k => (_dm[k] != null ? parseFloat(_dm[k]) : _def[k]);
 
-    const editorDAWidth  = (editorImgW > 0) ? (_daW / 100) * editorImgW : 225;
-    const editorDAHeight = (editorImgH > 0) ? (_daH / 100) * editorImgH : 300;
+    // The preview image's drawn rectangle inside its box.
+    const box  = document.getElementById('cartPreviewContainer');
+    const boxW = (box && box.clientWidth)  || 200;
+    const boxH = (box && box.clientHeight) || 200;
+    const natW = (editorMockupImg && editorMockupImg.naturalWidth)  || editorImgW || boxW;
+    const natH = (editorMockupImg && editorMockupImg.naturalHeight) || editorImgH || boxH;
+    const fit  = Math.min(boxW / natW, boxH / natH);
+    const imgW = natW * fit, imgH = natH * fit;
+    const imgX = (boxW - imgW) / 2, imgY = (boxH - imgH) / 2;
 
-    // Cart preview design area is 45% of 200px = 90px wide, 60% of 200px = 120px tall
-    const previewDAWidth = designArea.offsetWidth || 90;
-    const previewDAHeight = designArea.offsetHeight || 120;
+    designArea.style.transform = 'none';
+    designArea.style.left   = (imgX + pct('x') / 100 * imgW) + 'px';
+    designArea.style.top    = (imgY + pct('y') / 100 * imgH) + 'px';
+    designArea.style.width  = (pct('w') / 100 * imgW) + 'px';
+    designArea.style.height = (pct('h') / 100 * imgH) + 'px';
 
-    const scaleX = editorDAWidth > 0 ? previewDAWidth / editorDAWidth : 1;
-    const scaleY = editorDAHeight > 0 ? previewDAHeight / editorDAHeight : 1;
+    // Elements are stored in editor pixels; scale them by preview image / editor image.
+    const scaleX = editorImgW > 0 ? imgW / editorImgW : 1;
+    const scaleY = editorImgH > 0 ? imgH / editorImgH : 1;
 
     // Get all design elements for current view
     const currentElements = elements[currentView] || [];
