@@ -204,6 +204,9 @@ body.theme-studio .size-chart th, body.theme-studio .size-chart td,
 body.theme-studio .variants-table th, body.theme-studio .variants-table td,
 body.theme-studio .pricing-table th, body.theme-studio .pricing-table td { border: 1px solid var(--st-line); }
 body.theme-studio table th { font-weight: 500; text-transform: none; letter-spacing: 0; background: var(--st-tile); }
+/* shop.css/base.css give these headers a black band with white text; the
+   band is a light tile here, so the text has to turn dark with it. */
+body.theme-studio :is(.size-chart, .variants-table) th { color: var(--st-ink); }
 
 /* ---- Header ---------------------------------------------------------- */
 body.theme-studio .site-header { background: #FFFFFF; border-bottom: 1px solid var(--st-line); }
