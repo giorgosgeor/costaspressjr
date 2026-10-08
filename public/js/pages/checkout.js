@@ -466,11 +466,9 @@
         // Accordion: Stripe's recommendation above four payment methods.
         state.paymentEl = state.elements.create('payment', {
             layout: { type: 'accordion', defaultCollapsed: false, radios: 'always', spacedAccordionItems: true },
-            // No Link. With the customer's email filled in, Stripe recognised
-            // a Link account and put a one-time-code prompt over the card
-            // form, with "pay without Link" hidden behind a ⋯ menu. The card
-            // form now shows straight away; Apple Pay / Google Pay unaffected.
-            wallets: { link: 'never' },
+            // Link stays on: a customer with a Link account gets a one-time
+            // code and their saved card, with "pay without Link" in Stripe's ⋯
+            // menu. (Switching it off for a plain card form was tried and undone.)
             business: { name: cfg.business },
             defaultValues: { billingDetails: { name: c.name, email: c.email || cfg.accountEmail || '', phone: c.phone } },
             fields: { billingDetails: { address: 'if_required' } }
