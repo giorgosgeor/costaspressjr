@@ -380,6 +380,8 @@ ob_start(); ?>
                         <button id="addToCartDirectBtn" class="studio-action studio-action-primary"><?= t('studio.saved.add_to_cart') ?></button>
                         <button id="saveDesignBtn" class="studio-action studio-action-secondary" data-on-click="openSaveDesignModal"><?= t('studio.save_design') ?></button>
                     </div>
+<?php // Change-colour pop-up: printed by the footer after </main> (see $overlays).
+ob_start(); ?>
                     <!-- Change Color Modal -->
                     <div id="changeColorModal" class="change-color-modal" style="display:none;" data-on-click="closeChangeColorModal" data-click-self>
                         <div class="change-color-modal-content" data-stop-click>
@@ -388,6 +390,7 @@ ob_start(); ?>
                             <div id="changeColorOptions"></div>
                         </div>
                     </div>
+<?php $overlays = ($overlays ?? '') . ob_get_clean(); ?>
                     
                     <?= View::script('/js/pages/designer/save-design-modal.js') ?>
                 </div>

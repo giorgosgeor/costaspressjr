@@ -307,6 +307,8 @@ endforeach;
     </div>
 </section>
 
+<?php // Add-to-cart confirmation: printed by the footer after </main> (see $overlays).
+ob_start(); ?>
 <!-- Confirm Add to Cart Modal -->
 <div id="confirmCartModal" class="confirm-cart-overlay" data-on-click="closeConfirmCart" data-click-self>
     <div class="confirm-cart-box">
@@ -366,6 +368,7 @@ endforeach;
         </button>
     </div>
 </div>
+<?php $overlays = ($overlays ?? '') . ob_get_clean(); ?>
 
 
 <?= View::json('premade-design-data', [

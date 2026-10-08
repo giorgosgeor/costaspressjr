@@ -304,6 +304,8 @@
     </div><!-- /.account-main -->
 </div>
 
+<?php // Delete-design confirmation: printed by the footer after </main> (see $overlays).
+ob_start(); ?>
 <!-- Delete Confirmation Modal -->
 <div id="deleteConfirmModal" class="confirm-overlay" style="z-index:40000;" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
     <div class="confirm-dialog">
@@ -322,7 +324,10 @@
         </div>
     </div>
 </div>
+<?php $overlays = ($overlays ?? '') . ob_get_clean(); ?>
 
+<?php // Add-to-cart pop-up: printed by the footer after </main> (see $overlays).
+ob_start(); ?>
 <!-- Include the Add to Cart Modal from shop_custom -->
 <div id="addToCartModal" style="display:none; position:fixed; z-index:35000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
     <div style="background:var(--bg-dark-secondary, #16213e); border-radius:18px; max-width:520px; width:95vw; margin:auto; box-shadow:0 2px 24px rgba(0,0,0,0.3); padding:2rem; position:relative; max-height:90vh; overflow-y:auto; border:1px solid var(--border-light, rgba(255,255,255,0.1));">
@@ -380,6 +385,7 @@
         <button id="confirmAddToCartBtn" class="btn-primary-gradient" style="width:100%; font-weight:600; font-size:1.1rem; padding:12px 0; border:none; border-radius:8px; cursor:pointer;"><?= t('account.cart_modal.cta') ?></button>
     </div>
 </div>
+<?php $overlays = ($overlays ?? '') . ob_get_clean(); ?>
 
 <script src="<?= htmlspecialchars(Asset::url('/js/pages/account.js')) ?>" defer></script>
 </section>

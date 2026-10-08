@@ -163,6 +163,8 @@ require View::path('layouts/customer_header');
 </section>
 
 
+<?php // Remove-item confirmation: printed by the footer after </main> (see $overlays).
+ob_start(); ?>
 <!-- Remove Item Confirmation Modal -->
 <div id="removeConfirmOverlay" class="confirm-overlay" data-on-click="closeRemoveConfirm" data-click-self role="dialog" aria-modal="true" aria-labelledby="removeConfirmTitle">
     <div class="confirm-dialog">
@@ -177,6 +179,7 @@ require View::path('layouts/customer_header');
         </div>
     </div>
 </div>
+<?php $overlays = ($overlays ?? '') . ob_get_clean(); ?>
 
 <?= View::script('/js/pages/cart.js') ?>
 

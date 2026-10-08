@@ -8,6 +8,8 @@
  * above the cart modal which uses 50000).
  */
 ?>
+<?php // Size guide pop-up: printed by the footer after </main> (see $overlays).
+ob_start(); ?>
 <div id="sizeGuideOverlay"
      style="display:none; position:fixed; inset:0; z-index:51000;
             background:rgba(15,23,42,0.6); backdrop-filter:blur(4px);
@@ -44,5 +46,6 @@
     </div>
   </div>
 </div>
+<?php $overlays = ($overlays ?? '') . ob_get_clean(); ?>
 
 <?= View::script('/js/lib/size-guide.js') ?>
