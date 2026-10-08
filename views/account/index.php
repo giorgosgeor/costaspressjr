@@ -352,40 +352,21 @@ ob_start(); ?>
             <div id="cartDesignName" class="popup-stage-meta"></div>
         </div>
 
+        <?php // No colour picker on this page, so the colour is the pop-up's first
+              // step; then a quantity per size of it (lib/size-qty.js, shared
+              // with the premade design page and the designer). ?>
         <div class="popup-field">
-            <p class="popup-label"><?= t('account.cart_modal.select_size') ?></p>
-            <div id="cartSizeOptions" class="popup-options"></div>
-        </div>
-
-        <div class="popup-field">
-            <p class="popup-label"><?= t('account.cart_modal.select_color') ?></p>
+            <p class="popup-label"><?= t('size_qty.color') ?></p>
             <div id="cartColorOptions" class="popup-options"></div>
         </div>
 
-        <div class="popup-row">
-            <label class="popup-label" for="cartQuantity"><?= t('account.cart_modal.quantity') ?></label>
-            <div class="qty-stepper">
-                <button type="button" data-on-click="adjustCartQuantity" data-args='[-1]' aria-label="&minus;">&minus;</button>
-                <input id="cartQuantity" type="number" value="1" min="1" max="100">
-                <button type="button" data-on-click="adjustCartQuantity" data-args='[1]' aria-label="+">+</button>
-            </div>
-        </div>
-
-        <div id="cartPriceSummary" class="popup-prices">
-            <div class="popup-price-row">
-                <span><?= t('account.cart_modal.base_price') ?></span>
-                <span id="cartBasePrice">€0.00</span>
-            </div>
-            <div class="popup-price-row popup-price-total">
-                <span><?= t('account.cart_modal.total') ?></span>
-                <span id="cartTotalPrice">€0.00</span>
-            </div>
-        </div>
+        <?php require View::path('partials/size_qty_fields'); ?>
 
         <div id="cartError" class="popup-error" style="display:none;"></div>
 
         <div class="popup-actions">
             <button type="button" id="confirmAddToCartBtn" class="btn btn-lg"><?= t('account.cart_modal.cta') ?></button>
+            <button type="button" class="btn btn-lg btn-secondary" data-href="/cart"><?= t('view_design.modal.go_cart') ?></button>
         </div>
     </div>
 </div>

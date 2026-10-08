@@ -596,22 +596,10 @@ function totalLabel(qty, key) {
 }
 
 // ==================== ADD-TO-CART POP-UP ====================
-// The colour is chosen on the page and locked once the pop-up opens. The
-// pop-up lists that colour's sizes, each with its own quantity, and adds one
-// cart line per size — a small and a medium are different items.
-let confirmModalState = {
-    productId: null,
-    premadeDesignId: premadeDesignData.designId,
-    designName: premadeDesignData.designName,
-    designFee: premadeDesignData.designPrice,
-    basePrice: 0,
-    colorId: null,
-    variants: [],
-    sizes: [],
-    qty: {}            // size id → quantity
-};
-
-const MAX_QTY = 99;
+// The colour is chosen on the page and locked once the pop-up opens; the
+// shared size × quantity picker (lib/size-qty.js) adds one cart line per size.
+let sizePicker = null;
+let confirmOrder = { productId: null, colorId: null };
 
 function tr(key, params, fallback) {
     if (!window.I18N) return fallback;
@@ -621,16 +609,9 @@ function tr(key, params, fallback) {
 
 function addToCart() {
     if (!selectedProductId) { UI.error(tr('view_design.modal.pick_product', null, 'Please select a product.')); return; }
-
     const colorRadio = document.querySelector('input[name="preview_color_' + selectedProductId + '"]:checked');
     if (!colorRadio) { UI.error(tr('view_design.modal.pick_color', null, 'Please choose a colour.')); return; }
-
-    confirmModalState.productId = selectedProductId;
-    confirmModalState.basePrice = selectedBasePrice;
-    confirmModalState.colorId   = colorRadio.value;
-    confirmModalState.variants  = [];
-    confirmModalState.sizes     = [];
-    confirmModalState.qty       = {};
+    confirmOrder = { productId: selectedProductId, colorId: colorRadio.value };
 
     // Preview: the garment in the chosen colour, with the design where it sits
     // on the page (as ratios of the mockup, so it can't drift from the CSS).
@@ -655,240 +636,50 @@ function addToCart() {
     }
 
     const productOption = document.querySelector('.product-option.selected');
-    document.getElementById('confirmProductName').textContent = productOption ? productOption.dataset.productName : '';
-    document.getElementById('confirmDesignLine').textContent  = tr('view_design.modal.design_line', { name: confirmModalState.designName }, 'Design: ' + confirmModalState.designName);
+    const productName = productOption ? productOption.dataset.productName : '';
+    document.getElementById('confirmProductName').textContent = productName;
+    document.getElementById('confirmDesignLine').textContent = tr('view_design.modal.design_line', { name: premadeDesignData.designName }, 'Design: ' + premadeDesignData.designName);
+    SizeQty.colorLine(document.getElementById('confirmColorLine'), colorRadio.dataset.hex, colorRadio.dataset.name);
 
-    // The locked colour: a swatch and its name.
-    const colorLine = document.getElementById('confirmColorLine');
-    colorLine.textContent = '';
-    const dot = document.createElement('span');
-    dot.className = 'confirm-color-dot';
-    dot.style.backgroundColor = colorRadio.dataset.hex || '#fff';
-    colorLine.appendChild(dot);
-    colorLine.appendChild(document.createTextNode((window.I18N ? I18N.t('cart.item.color') : 'Color') + ': ' + (colorRadio.dataset.name || '')));
-
-    document.getElementById('confirmError').style.display = 'none';
-    document.getElementById('sizeQtyGrid').innerHTML = '';
-    updateConfirmPrices();
-    fetchConfirmVariants(selectedProductId);
+    if (!sizePicker) {
+        sizePicker = SizeQty.create(document.getElementById('confirmCartModal'), {
+            button: document.getElementById('doAddToCartBtn'),
+            error:  document.getElementById('confirmError')
+        });
+    }
+    sizePicker.configure({
+        productName: productName,
+        basePrice: selectedBasePrice,
+        fee: designPrice,
+        note: tr('size_qty.design_note', { fee: '€' + designPrice.toFixed(2) }, '')
+    });
+    sizePicker.setColor(confirmOrder.colorId);
+    fetch('/api/product-variants/' + confirmOrder.productId)
+        .then(r => r.json())
+        .then(data => sizePicker.setData(data))
+        .catch(() => sizePicker.showError(tr('size_qty.load_failed', null, 'Failed to load product options.')));
 
     document.getElementById('confirmCartModal').classList.add('active');
-}
-
-function fetchConfirmVariants(productId) {
-    fetch('/api/product-variants/' + productId)
-        .then(r => r.json())
-        .then(data => {
-            confirmModalState.variants = data.variants || [];
-            confirmModalState.sizes    = data.sizes    || [];
-            renderSizeQty();
-            updateConfirmPrices();
-        })
-        .catch(() => showConfirmError(tr('view_design.modal.load_failed', null, 'Failed to load product options.')));
-}
-
-// The variant for a size in the locked colour, if it can be ordered.
-function sizeVariant(sizeId) {
-    return confirmModalState.variants.find(v =>
-        v.size_id == sizeId && v.color_id == confirmModalState.colorId && v.is_available == 1) || null;
-}
-
-function renderSizeQty() {
-    const grid = document.getElementById('sizeQtyGrid');
-    grid.innerHTML = '';
-    confirmModalState.sizes.forEach(size => {
-        const available = !!sizeVariant(size.id);
-        const qty = confirmModalState.qty[size.id] || 0;
-        const cell = document.createElement('div');
-        cell.className = 'size-qty-cell' + (available ? '' : ' is-unavailable') + (qty > 0 ? ' has-qty' : '');
-        cell.dataset.sizeId = size.id;
-
-        const label = document.createElement('span');
-        label.className = 'size-qty-label';
-        label.textContent = size.name;
-        cell.appendChild(label);
-
-        const stepper = document.createElement('div');
-        stepper.className = 'qty-stepper';
-        const minus = document.createElement('button');
-        minus.type = 'button';
-        minus.dataset.step = '-1';
-        minus.textContent = '−';
-        minus.setAttribute('aria-label', tr('view_design.modal.fewer', { size: size.name }, 'Fewer ' + size.name));
-        minus.disabled = !available || qty <= 0;
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.min = '0';
-        input.max = String(MAX_QTY);
-        input.inputMode = 'numeric';
-        input.value = String(qty);
-        input.disabled = !available;
-        input.setAttribute('aria-label', tr('view_design.modal.qty_for', { size: size.name }, size.name + ' quantity'));
-        const plus = document.createElement('button');
-        plus.type = 'button';
-        plus.dataset.step = '1';
-        plus.textContent = '+';
-        plus.setAttribute('aria-label', tr('view_design.modal.more', { size: size.name }, 'More ' + size.name));
-        plus.disabled = !available || qty >= MAX_QTY;
-        stepper.append(minus, input, plus);
-        cell.appendChild(stepper);
-
-        if (!available) {
-            const na = document.createElement('span');
-            na.className = 'size-qty-na';
-            na.textContent = tr('view_design.modal.unavailable', null, 'Not available');
-            cell.appendChild(na);
-        }
-        grid.appendChild(cell);
-    });
-}
-
-function setSizeQty(sizeId, qty) {
-    qty = Math.max(0, Math.min(MAX_QTY, parseInt(qty, 10) || 0));
-    confirmModalState.qty[sizeId] = qty;
-    const cell = document.querySelector('.size-qty-cell[data-size-id="' + sizeId + '"]');
-    if (cell) {
-        cell.classList.toggle('has-qty', qty > 0);
-        const input = cell.querySelector('input');
-        if (input && document.activeElement !== input) input.value = String(qty);
-        cell.querySelector('[data-step="-1"]').disabled = qty <= 0;
-        cell.querySelector('[data-step="1"]').disabled  = qty >= MAX_QTY;
-    }
-    document.getElementById('confirmError').style.display = 'none';
-    updateConfirmPrices();
-}
-
-// The sizes with a quantity, in size order, each priced the way the cart
-// prices its line: the variant's cost at that line's quantity tier, plus the
-// design fee.
-function chosenLines() {
-    const selectedOpt = document.querySelector('.product-option.selected');
-    const productName = selectedOpt ? (selectedOpt.dataset.productName || '') : '';
-    const category    = window.Pricing ? Pricing.categoryFor('', productName) : 'tshirt';
-    const fee         = confirmModalState.designFee || 0;
-    return confirmModalState.sizes
-        .filter(size => (confirmModalState.qty[size.id] || 0) > 0 && sizeVariant(size.id))
-        .map(size => {
-            const qty  = confirmModalState.qty[size.id];
-            const cost = window.Pricing
-                ? Pricing.variantCost(confirmModalState.variants, size.id, confirmModalState.colorId, confirmModalState.basePrice)
-                : confirmModalState.basePrice;
-            const unit = (window.Pricing ? Pricing.unitPrice(cost, category, qty) : cost) + fee;
-            return { sizeId: size.id, name: size.name, qty: qty, unit: unit, total: unit * qty };
-        });
-}
-
-function updateConfirmPrices() {
-    const lines = chosenLines();
-    const box = document.getElementById('confirmLines');
-    box.innerHTML = '';
-    if (!lines.length) {
-        const empty = document.createElement('p');
-        empty.className = 'confirm-lines-empty';
-        empty.textContent = tr('view_design.modal.pick_sizes', null, 'Choose how many of each size you want.');
-        box.appendChild(empty);
-    }
-    lines.forEach(line => {
-        const row = document.createElement('div');
-        row.className = 'popup-price-row';
-        const left = document.createElement('span');
-        left.textContent = tr('view_design.modal.line', { size: line.name, qty: line.qty, price: '€' + line.unit.toFixed(2) },
-            line.name + ' × ' + line.qty + ' · €' + line.unit.toFixed(2) + ' each');
-        const right = document.createElement('span');
-        right.textContent = '€' + line.total.toFixed(2);
-        row.append(left, right);
-        box.appendChild(row);
-    });
-    const items = lines.reduce((n, l) => n + l.qty, 0);
-    const total = lines.reduce((sum, l) => sum + l.total, 0);
-    document.getElementById('confirmTotalLabel').textContent = totalLabel(items, 'view_design.modal.total');
-    document.getElementById('confirmTotal').textContent = '€' + total.toFixed(2);
-    document.getElementById('doAddToCartBtn').disabled = items === 0;
-}
-
-function showConfirmError(msg) {
-    const el = document.getElementById('confirmError');
-    el.textContent = msg;
-    el.style.display = 'block';
 }
 
 function closeConfirmCart() {
     document.getElementById('confirmCartModal').classList.remove('active');
 }
 
-// One cart line per size. They go one after another so a failure is
-// reported against its size; sizes already added are cleared from the grid,
-// so pressing the button again only retries what didn't go in.
 async function doAddToCart() {
-    const lines = chosenLines();
-    if (!lines.length) { showConfirmError(tr('view_design.modal.pick_sizes', null, 'Choose how many of each size you want.')); return; }
-
-    // Spinner rather than swapping the label: the text change resized the
-    // button mid-click and shifted the dialog under the cursor.
-    const btn = document.getElementById('doAddToCartBtn');
-    UI.loading(btn, true);
-
-    const failed = [];
-    for (const line of lines) {
-        const payload = {
-            premade_design_id: confirmModalState.premadeDesignId,
-            product_id:  confirmModalState.productId,
-            size_id:     line.sizeId,
-            color_id:    confirmModalState.colorId,
-            quantity:    line.qty,
-            design_positions: designPositions
-        };
-        try {
-            const r = await fetch('/cart/add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'same-origin',
-                body: JSON.stringify(payload)
-            });
-            const data = await r.json().catch(() => ({}));
-            if (data.requireLogin) { redirectToLoginWithPendingCart(payload); return; }
-            if (r.ok && (data.success || data.cart_item_id)) {
-                confirmModalState.qty[line.sizeId] = 0;
-            } else {
-                failed.push(line.name + ': ' + (data.error || tr('studio.cart.error_generic', null, 'Failed to add to cart.')));
-            }
-        } catch (e) {
-            failed.push(line.name + ': ' + tr('studio.cart.error_generic', null, 'Failed to add to cart.'));
-        }
-    }
-
-    UI.loading(btn, false);
-    if (!failed.length) {
+    const ok = await sizePicker.addToCart(line => ({
+        premade_design_id: premadeDesignData.designId,
+        product_id:  confirmOrder.productId,
+        size_id:     line.sizeId,
+        color_id:    confirmOrder.colorId,
+        quantity:    line.qty,
+        design_positions: designPositions
+    }));
+    if (ok) {
         closeConfirmCart();
         showCartSuccessNotification();
-        return;
     }
-    renderSizeQty();
-    updateConfirmPrices();
-    const addedSome = failed.length < lines.length;
-    showConfirmError((addedSome ? tr('view_design.modal.partial', null, 'The other sizes were added. Not added:') + ' ' : '') + failed.join(' · '));
 }
-
-// Steppers and typed quantities in the size grid (bound once the page has
-// loaded: the pop-up is printed after this script, see $overlays).
-document.addEventListener('DOMContentLoaded', function () {
-    const grid = document.getElementById('sizeQtyGrid');
-    grid.addEventListener('click', function (e) {
-        const btn = e.target.closest('[data-step]');
-        if (!btn || btn.disabled) return;
-        const sizeId = btn.closest('.size-qty-cell').dataset.sizeId;
-        setSizeQty(sizeId, (confirmModalState.qty[sizeId] || 0) + parseInt(btn.dataset.step, 10));
-    });
-    grid.addEventListener('input', function (e) {
-        if (e.target.tagName !== 'INPUT') return;
-        setSizeQty(e.target.closest('.size-qty-cell').dataset.sizeId, e.target.value);
-    });
-    grid.addEventListener('change', function (e) {
-        if (e.target.tagName !== 'INPUT') return;
-        const sizeId = e.target.closest('.size-qty-cell').dataset.sizeId;
-        e.target.value = String(confirmModalState.qty[sizeId] || 0);
-    });
-});
 
 // Was a hand-rolled div with inline styles and its own timer; the shared toast
 // keeps the "go to cart" follow-up and matches every other message on the site.

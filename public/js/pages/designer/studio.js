@@ -281,6 +281,7 @@ function loadExistingDesign(designData) {
         id: product.id,
         name: product.name,
         basePrice: parseFloat(product.base_price),
+        sizeChartImage: product.size_chart_image || '',
         imagePath: product.image_path,
         backImagePath: product.back_image_path || '',
         leftSleeveImagePath: product.left_sleeve_image_path || '',
@@ -294,6 +295,13 @@ function loadExistingDesign(designData) {
         da_rsleeve_x: product.da_rsleeve_x, da_rsleeve_y: product.da_rsleeve_y,
         da_rsleeve_w: product.da_rsleeve_w, da_rsleeve_h: product.da_rsleeve_h,
     };
+
+    // The colour panel (the colour that is ordered — the add-to-cart pop-up
+    // locks it), starting on the design's own colour. It was never set up for
+    // a loaded design, which left the studio with no colour to order in.
+    if (designData.color_id) window.pendingColorId = designData.color_id;
+    window.pendingColorHex = designData.saved_color_hex || designData.color_hex || null;
+    try { initStudioColorPanel(product.id); } catch (e) { console.error('initStudioColorPanel failed', e); }
 
     // Store the design ID, name, and email for saving updates
     window.loadedDesignId = designData.id;
@@ -339,8 +347,12 @@ function loadExistingDesign(designData) {
             }
         }, 100);
     } else {
-        // No options panel - apply color directly if we have one saved
+        // No options panel - apply color directly if we have one saved. Not
+        // when the studio colour panel is there: it tints with the colour that
+        // gets ordered (the saved one, or the first the product comes in when
+        // the saved one isn't offered), and this would paint over it.
         setTimeout(() => {
+            if (window.studioSelectedColorId || document.getElementById('studioColorSwatches')) return;
             // Use saved_color_hex from joined query or color_hex from design
             const colorHex = designData.saved_color_hex || designData.color_hex;
             if (colorHex) {
@@ -1022,6 +1034,12 @@ function renderStudioColorSwatches() {
             targetSwatch = container.querySelector(`.studio-color-swatch[data-color-id='${window.pendingColorId}']`);
             window.pendingColorId = null;
         }
+        if (!targetSwatch && window.pendingColorHex) {
+            const hex = String(window.pendingColorHex).toLowerCase();
+            targetSwatch = [...container.querySelectorAll('.studio-color-swatch')]
+                .find(s => (s.dataset.hex || '').toLowerCase() === hex) || null;
+        }
+        window.pendingColorHex = null;
         if (!targetSwatch) {
             targetSwatch = container.querySelector('.studio-color-swatch');
         }

@@ -321,24 +321,15 @@ ob_start(); ?>
             <div class="confirm-item-meta">
                 <p class="confirm-product-name" id="confirmProductName"></p>
                 <p class="confirm-meta-line" id="confirmDesignLine"></p>
-                <p class="confirm-meta-line confirm-color-line" id="confirmColorLine"></p>
-                <p class="confirm-meta-note"><?= t('view_design.modal.color_locked') ?></p>
+                <p class="confirm-meta-line popup-color-line" id="confirmColorLine"></p>
+                <p class="popup-note"><?= t('size_qty.color_locked') ?></p>
             </div>
         </div>
 
-        <?php // The colour is the one picked on the page; here each of its sizes
-              // gets its own quantity, and every size with one becomes its own
-              // cart line (a small and a medium are different items). ?>
-        <div class="popup-field">
-            <p class="popup-label"><?= t('view_design.modal.sizes') ?></p>
-            <div id="sizeQtyGrid" class="size-qty-grid" aria-live="polite"></div>
-        </div>
-
-        <div class="popup-prices">
-            <div id="confirmLines" class="confirm-lines"></div>
-            <div class="popup-price-row popup-price-total"><span id="confirmTotalLabel"><?= t('view_design.modal.total') ?></span><span id="confirmTotal">€0.00</span></div>
-            <p class="confirm-fee-note"><?= I18n::t('view_design.modal.fee_note', ['fee' => '€' . number_format((float)$design['price'], 2)]) ?></p>
-        </div>
+        <?php // The colour is the one picked on the page; each of its sizes gets
+              // its own quantity (lib/size-qty.js, shared with the designer and
+              // the account page). ?>
+        <?php require View::path('partials/size_qty_fields'); ?>
 
         <div id="confirmError" class="popup-error" style="display:none;"></div>
 

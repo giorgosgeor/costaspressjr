@@ -1187,3 +1187,49 @@ body.theme-studio .popup-check { display: flex; align-items: flex-start; gap: 10
 body.theme-studio .popup-check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--st-ink); }
 body.theme-studio .popup-check a { color: var(--st-ink); text-decoration: underline; text-underline-offset: 3px; }
 body.theme-studio .popup-notice .btn { margin-top: 12px; }
+
+/* ---- Add-to-cart pop-ups: one quantity per size ---------------------------
+   Premade designs, the designer and saved designs (lib/size-qty.js,
+   views/partials/size_qty_fields.php). One colour at a time — locked to the
+   one picked on the page where the page has a picker — and each size of it
+   has its own stepper; every size with a quantity becomes its own cart line. */
+body.theme-studio .popup-color-line { display: flex; align-items: center; gap: 6px; }
+body.theme-studio .popup-stage .popup-color-line { justify-content: center; margin-top: 6px; }
+body.theme-studio .popup-color-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid var(--st-field);
+    flex-shrink: 0;
+}
+body.theme-studio .popup-note { margin-top: 6px; color: var(--st-muted); font-size: 0.8rem; line-height: 1.4; }
+
+body.theme-studio .size-qty-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+body.theme-studio .size-qty-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+    gap: 8px;
+}
+body.theme-studio .size-qty-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 6px;
+    border: 1px solid var(--st-line);
+    background: #FFFFFF;
+}
+body.theme-studio .size-qty-cell.has-qty { border-color: var(--st-ink); }
+body.theme-studio .size-qty-label { font-weight: 500; font-size: 0.95rem; color: var(--st-ink); }
+body.theme-studio .size-qty-cell.is-unavailable .size-qty-label { color: var(--st-muted); text-decoration: line-through; }
+body.theme-studio .size-qty-na { color: var(--st-muted); font-size: 0.75rem; }
+/* Narrower than the shared stepper so three fit across the pop-up. */
+body.theme-studio .size-qty-cell .qty-stepper button { width: 34px; height: 34px; }
+body.theme-studio .size-qty-cell .qty-stepper input { width: 40px; min-width: 40px; height: 34px; }
+@media (max-width: 900px) {
+    body.theme-studio .size-qty-cell .qty-stepper button { width: 40px; height: 40px; }
+    body.theme-studio .size-qty-cell .qty-stepper input { height: 40px; }
+}
+body.theme-studio .size-qty-lines .popup-price-row { font-variant-numeric: tabular-nums; }
+body.theme-studio .size-qty-empty { color: var(--st-muted); font-size: 0.88rem; margin: 0 0 4px; }
+body.theme-studio .size-qty-note { margin: 8px 0 0; color: var(--st-muted); font-size: 0.8rem; }

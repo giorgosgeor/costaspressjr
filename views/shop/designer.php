@@ -26,53 +26,22 @@ ob_start(); ?>
             </div>
             <div id="cartProductName" class="popup-stage-name"></div>
             <div id="cartDesignName" class="popup-stage-meta"></div>
+            <?php // The colour picked in the studio, locked here. ?>
+            <div id="cartColorLine" class="popup-stage-meta popup-color-line"></div>
+            <p class="popup-note"><?= t('size_qty.color_locked') ?></p>
         </div>
 
-        <div class="popup-field">
-            <div class="popup-label">
-                <span><?= t('studio.cart.size') ?></span>
-                <a id="studioSizeGuideLink" href="#" class="size-guide-link" style="display:none;"
-                   data-on-click="openCurrentProductSizeGuide" data-prevent-default>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12h20"/><path d="M6 9v6M10 7v10M14 9v6M18 7v10"/></svg><?= t('footer.size_guide') ?>
-                </a>
-            </div>
-            <div id="cartSizeOptions" class="popup-options"></div>
-        </div>
-
-        <div class="popup-field">
-            <p class="popup-label"><?= t('studio.cart.color') ?></p>
-            <div id="cartColorOptions" class="popup-options"></div>
-        </div>
-
-        <div class="popup-row">
-            <label class="popup-label" for="cartQuantity"><?= t('studio.cart.quantity') ?></label>
-            <div class="qty-stepper">
-                <button type="button" data-on-click="adjustCartQuantity" data-args='[-1]' aria-label="&minus;">&minus;</button>
-                <input id="cartQuantity" type="number" value="1" min="1" max="100">
-                <button type="button" data-on-click="adjustCartQuantity" data-args='[1]' aria-label="+">+</button>
-            </div>
-        </div>
-
-        <div id="cartPriceSummary" class="popup-prices">
-            <div class="popup-price-row">
-                <span><?= t('studio.cart.base_price') ?></span>
-                <span id="cartBasePrice">€0.00</span>
-            </div>
-            <div class="popup-price-row">
-                <span><?= t('studio.cart.design_fee') ?></span>
-                <span id="cartDesignFee">€0.00</span>
-            </div>
-            <div class="popup-price-row popup-price-total">
-                <span><?= t('studio.cart.total') ?></span>
-                <span id="cartTotalPrice">€0.00</span>
-            </div>
-        </div>
+        <?php $sizeQtyLabelExtra = '<a id="studioSizeGuideLink" href="#" class="size-guide-link" style="display:none;" data-on-click="openCurrentProductSizeGuide" data-prevent-default>'
+            . '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12h20"/><path d="M6 9v6M10 7v10M14 9v6M18 7v10"/></svg>'
+            . t('footer.size_guide') . '</a>';
+        require View::path('partials/size_qty_fields');
+        unset($sizeQtyLabelExtra); ?>
 
         <div id="cartError" class="popup-error" style="display:none;"></div>
 
         <div class="popup-actions">
             <button type="button" id="confirmAddToCartBtn" class="btn btn-lg"><?= t('studio.cart.add') ?></button>
-            <button type="button" id="goToCheckoutFromCartBtn" class="btn btn-lg btn-secondary" data-href="/cart"><?= t('studio.cart.checkout') ?></button>
+            <button type="button" id="goToCheckoutFromCartBtn" class="btn btn-lg btn-secondary" data-href="/cart"><?= t('view_design.modal.go_cart') ?></button>
         </div>
     </div>
 </div>

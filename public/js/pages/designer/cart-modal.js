@@ -1,47 +1,60 @@
 /* cart-modal.js — from views/shop/designer.php, loaded where the inline script used to run. */
 
-// Cart Modal State
+// The add-to-cart pop-up. The colour is the one picked in the studio, locked
+// here; the shared size × quantity picker (lib/size-qty.js) adds one cart
+// line per size — the same pop-up as premade designs and the account page.
 let cartModalState = {
     designId: null,
     productId: null,
     productName: '',
     designName: '',
-    basePrice: 0,
-    designFee: 0,
-    selectedSize: null,
-    selectedColor: null,
-    quantity: 1,
-    variants: [],
-    sizes: [],
-    colors: []
+    designFee: 0,        // print extras (front+back, sleeves), flat euros
+    colorId: null,
+    currentColorHex: '#ffffff'
 };
+let studioSizePicker = null;
 
 function openAddToCartModal(designId, productId, productName, designName, basePrice, designFee) {
+    const colorId = window.studioSelectedColorId;
+    const color = (window.studioVariantsData.colors || []).find(c => c.id == colorId);
+    if (!colorId || !color) {
+        UI.error(window.I18N.t('view_design.modal.pick_color'));
+        return;
+    }
     cartModalState.designId = designId;
     cartModalState.productId = productId;
     cartModalState.productName = productName || 'Custom Product';
     cartModalState.designName = designName || 'Your Design';
-    cartModalState.basePrice = parseFloat(basePrice) || 0;
     cartModalState.designFee = parseFloat(designFee) || 0;
-    cartModalState.selectedSize = null;
-    cartModalState.selectedColor = null;
-    cartModalState.quantity = 1;
-    cartModalState.currentColorHex = currentColorHex || '#ffffff';
+    cartModalState.colorId = colorId;
+    cartModalState.currentColorHex = color.hex || currentColorHex || '#ffffff';
 
-    // Update UI
     document.getElementById('cartProductName').textContent = cartModalState.productName;
     document.getElementById('cartDesignName').textContent = cartModalState.designName;
-    document.getElementById('cartQuantity').value = 1;
-    document.getElementById('cartError').style.display = 'none';
+    SizeQty.colorLine(document.getElementById('cartColorLine'), color.hex, color.name);
+    const guide = document.getElementById('studioSizeGuideLink');
+    if (guide) guide.style.display = (window.currentProduct && window.currentProduct.sizeChartImage) ? '' : 'none';
 
-    // Capture the design preview from the mockup container
     captureDesignPreview();
 
-    // Fetch available variants for this product
-    fetchProductVariants(productId);
-
-    // Update prices
-    updateCartPrices();
+    if (!studioSizePicker) {
+        studioSizePicker = SizeQty.create(document.getElementById('addToCartModal'), {
+            button: document.getElementById('confirmAddToCartBtn'),
+            error:  document.getElementById('cartError')
+        });
+    }
+    const fee = cartModalState.designFee;
+    studioSizePicker.configure({
+        productName: cartModalState.productName,
+        basePrice: basePrice,
+        extra: fee,
+        note: fee > 0 ? window.I18N.t('size_qty.print_note', { fee: '€' + fee.toFixed(2) }) : ''
+    });
+    studioSizePicker.setColor(colorId);
+    fetch('/api/product-variants/' + productId)
+        .then(r => r.json())
+        .then(data => studioSizePicker.setData(data))
+        .catch(() => studioSizePicker.showError(window.I18N.t('size_qty.load_failed')));
 
     document.getElementById('addToCartModal').style.display = 'flex';
 }
@@ -221,320 +234,38 @@ function captureDesignPreview() {
     });
 }
 
-// Update cart preview when color changes
-function updateCartPreviewColor(hex) {
-    cartModalState.currentColorHex = hex;
-    applyCartProductColorFilter(hex);
-}
-
 function closeAddToCartModal() {
     document.getElementById('addToCartModal').style.display = 'none';
 }
 
-function fetchProductVariants(productId) {
-    fetch('/api/product-variants/' + productId)
-        .then(response => response.json())
-        .then(data => {
-            cartModalState.variants = data.variants || [];
-            cartModalState.sizes = data.sizes || [];
-            cartModalState.colors = data.colors || [];
-            renderSizeOptions();
-            renderColorOptions();
-        })
-        .catch(err => {
-            console.error('Failed to fetch variants:', err);
-            // Fallback: use product options from the page
-            renderSizeOptionsFromPage();
-            renderColorOptionsFromPage();
-        });
-}
-
-function renderSizeOptions() {
-    const container = document.getElementById('cartSizeOptions');
-    container.innerHTML = '';
-
-    cartModalState.sizes.forEach(size => {
-        const btn = document.createElement('button');
-        btn.className = 'cart-size-btn';
-        btn.textContent = size.name;
-        btn.dataset.sizeId = size.id;
-        btn.type = 'button';
-
-        // Check if this size has any available variants
-        const hasAvailable = cartModalState.variants.some(v => v.size_id == size.id && v.is_available);
-        if (!hasAvailable) btn.disabled = true;
-
-        btn.onclick = function() {
-            if (this.disabled) return;
-            selectCartSize(size.id);
-        };
-        container.appendChild(btn);
-    });
-}
-
-function renderColorOptions() {
-    const container = document.getElementById('cartColorOptions');
-    container.innerHTML = '';
-
-    cartModalState.colors.forEach(color => {
-        const btn = document.createElement('button');
-        btn.className = 'cart-color-btn';
-        btn.dataset.colorId = color.id;
-        btn.title = color.name;
-        btn.type = 'button';
-        btn.setAttribute('aria-label', color.name);
-        btn.style.backgroundColor = color.hex;
-        if (/^#?f{3}(f{3})?$/i.test(color.hex || '')) btn.classList.add('is-white');
-
-        // Check if this color has any available variants
-        const hasAvailable = cartModalState.variants.some(v => v.color_id == color.id && v.is_available);
-        if (!hasAvailable) btn.disabled = true;
-
-        btn.onclick = function() {
-            if (this.disabled) return;
-            selectCartColor(color.id);
-        };
-        container.appendChild(btn);
-    });
-}
-
-function renderSizeOptionsFromPage() {
-    // Fallback: render from existing product options on page
-    const container = document.getElementById('cartSizeOptions');
-    container.innerHTML = '';
-
-    if (!window.currentProduct) return;
-
-    const sizeRadios = document.querySelectorAll(`input[name="size_${window.currentProduct.id}"]`);
-    sizeRadios.forEach(radio => {
-        const label = radio.parentElement;
-        const sizeName = label ? label.textContent.trim() : radio.value;
-        const btn = document.createElement('button');
-        btn.className = 'cart-size-btn';
-        btn.textContent = sizeName;
-        btn.dataset.sizeId = radio.value;
-        btn.type = 'button';
-        btn.onclick = () => selectCartSize(radio.value);
-        container.appendChild(btn);
-    });
-}
-
-function renderColorOptionsFromPage() {
-    // Fallback: render from existing color swatches on page
-    const container = document.getElementById('cartColorOptions');
-    container.innerHTML = '';
-
-    if (!window.currentProduct) return;
-
-    const swatches = document.querySelectorAll(`#colors-${window.currentProduct.id} .color-swatch`);
-    swatches.forEach(swatch => {
-        const btn = document.createElement('button');
-        btn.className = 'cart-color-btn';
-        btn.dataset.colorId = swatch.dataset.colorId;
-        btn.title = swatch.title || 'Color';
-        btn.type = 'button';
-        btn.style.backgroundColor = swatch.style.backgroundColor;
-        btn.onclick = () => selectCartColor(swatch.dataset.colorId);
-        container.appendChild(btn);
-    });
-}
-
-function selectCartSize(sizeId) {
-    cartModalState.selectedSize = sizeId;
-
-    document.querySelectorAll('.cart-size-btn').forEach(btn => {
-        btn.classList.toggle('is-selected', btn.dataset.sizeId == sizeId);
-    });
-
-    // Update color availability based on selected size
-    updateColorAvailability();
-    updateCartPrices();
-}
-
-function selectCartColor(colorId) {
-    cartModalState.selectedColor = colorId;
-
-    // Find the color hex from the button or from cartModalState.colors
-    let colorHex = '#ffffff';
-    const colorBtn = document.querySelector(`.cart-color-btn[data-color-id="${colorId}"]`);
-    if (colorBtn) {
-        colorHex = colorBtn.style.backgroundColor || '#ffffff';
-    }
-    // Also check in colors array
-    const colorObj = cartModalState.colors.find(c => c.id == colorId);
-    if (colorObj && colorObj.hex) {
-        colorHex = colorObj.hex;
-    }
-
-    // Update the preview color indicator
-    updateCartPreviewColor(colorHex);
-
-    document.querySelectorAll('.cart-color-btn').forEach(btn => {
-        btn.classList.toggle('is-selected', btn.dataset.colorId == colorId);
-    });
-
-    // Update size availability based on selected color
-    updateSizeAvailability();
-    updateCartPrices();
-}
-
-function updateColorAvailability() {
-    if (!cartModalState.selectedSize) return;
-
-    document.querySelectorAll('.cart-color-btn').forEach(btn => {
-        const colorId = btn.dataset.colorId;
-        const isAvailable = cartModalState.variants.some(v => 
-            v.size_id == cartModalState.selectedSize && 
-            v.color_id == colorId && 
-            v.is_available
-        );
-
-        btn.disabled = !isAvailable;
-    });
-}
-
-function updateSizeAvailability() {
-    if (!cartModalState.selectedColor) return;
-
-    document.querySelectorAll('.cart-size-btn').forEach(btn => {
-        const sizeId = btn.dataset.sizeId;
-        const isAvailable = cartModalState.variants.some(v => 
-            v.color_id == cartModalState.selectedColor && 
-            v.size_id == sizeId && 
-            v.is_available
-        );
-
-        btn.disabled = !isAvailable;
-    });
-}
-
-function adjustCartQuantity(delta) {
-    const input = document.getElementById('cartQuantity');
-    let qty = parseInt(input.value) || 1;
-    qty = Math.max(1, Math.min(100, qty + delta));
-    input.value = qty;
-    cartModalState.quantity = qty;
-    updateCartPrices();
-}
-
-function updateCartPrices() {
-    const qty = parseInt(document.getElementById('cartQuantity').value) || 1;
-    cartModalState.quantity = qty;
-
-    // basePrice holds the SUPPLIER cost; print add-ons (designFee) are the raw
-    // pre-margin cost. Both are marked up through the quantity-tiered margin so
-    // the preview matches what the server charges.
-    // The chosen size + colour's cost, not the base price: a black or 3XL tee
-    // costs more than the white one, and the cart charges the variant's cost.
-    const category = window.Pricing ? Pricing.categoryFor('', cartModalState.productName) : 'tshirt';
-    const rawExtra = cartModalState.designFee || 0;
-    const supplier = window.Pricing
-        ? Pricing.variantCost(cartModalState.variants, cartModalState.selectedSize, cartModalState.selectedColor, cartModalState.basePrice)
-        : cartModalState.basePrice;
-    const unitBase = window.Pricing
-        ? Pricing.unitPrice(supplier, category, qty)
-        : supplier;
-    const unitAll = window.Pricing
-        ? Pricing.unitPrice(supplier, category, qty, rawExtra)
-        : (supplier + rawExtra);
-
-    const baseTotal = unitBase * qty;
-    const designFee = (unitAll - unitBase) * qty; // marked-up print add-ons
-    const total = unitAll * qty;
-
-    document.getElementById('cartBasePrice').textContent = '€' + baseTotal.toFixed(2);
-    document.getElementById('cartDesignFee').textContent = '€' + designFee.toFixed(2);
-    document.getElementById('cartTotalPrice').textContent = '€' + total.toFixed(2);
-}
-
-// Quantity input change handler
+// One cart line per size. Each line gets its own preview image in the
+// chosen colour, made one after another (they share the studio canvas).
 document.addEventListener('DOMContentLoaded', function() {
-    const qtyInput = document.getElementById('cartQuantity');
-    if (qtyInput) {
-        qtyInput.addEventListener('change', function() {
-            let qty = parseInt(this.value) || 1;
-            qty = Math.max(1, Math.min(100, qty));
-            this.value = qty;
-            updateCartPrices();
-        });
-    }
-
-    // Confirm add to cart button
     const confirmBtn = document.getElementById('confirmAddToCartBtn');
-    if (confirmBtn) {
-        confirmBtn.addEventListener('click', function() {
-            const errorEl = document.getElementById('cartError');
-
-            if (!cartModalState.selectedSize) {
-                errorEl.textContent = window.I18N.t('studio.cart.error_size');
-                errorEl.style.display = 'block';
-                return;
-            }
-            if (!cartModalState.selectedColor) {
-                errorEl.textContent = window.I18N.t('studio.cart.error_color');
-                errorEl.style.display = 'block';
-                return;
-            }
-
-            errorEl.style.display = 'none';
-
-            // Send add to cart request
-            const cartData = {
-                custom: true,
-                design_id: cartModalState.designId,
-                product_id: cartModalState.productId,
-                size_id: cartModalState.selectedSize,
-                color_id: cartModalState.selectedColor,
-                quantity: cartModalState.quantity,
-                custom_design_fee: cartModalState.designFee
-            };
-
-            // Show loading state
-            const btn = document.getElementById('confirmAddToCartBtn');
-            const originalText = btn.textContent;
-            btn.textContent = window.I18N.t('studio.cart.adding');
-            btn.disabled = true;
-
-            fetch('/cart/add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(cartData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(text || window.I18N.t('studio.cart.error_generic'));
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                btn.textContent = originalText;
-                btn.disabled = false;
-
-                if (data.success) {
-                    // Generate previews with the cart-selected color for this cart item
-                    generateAndSavePreviews(cartModalState.designId, {
-                        colorHex: cartModalState.currentColorHex,
-                        cartItemId: data.cart_item_id
-                    });
-                    // Show success notification
-                    showCartSuccessNotification();
-                    closeAddToCartModal();
-                    // Stay on design saved modal so user can add more or checkout
-                } else {
-                    throw new Error(data.error || window.I18N.t('studio.cart.error_generic'));
-                }
-            })
-            .catch(err => {
-                btn.textContent = originalText;
-                btn.disabled = false;
-                console.error('Cart error:', err);
-                errorEl.textContent = err.message || window.I18N.t('studio.cart.error_generic');
-                errorEl.style.display = 'block';
-            });
+    if (!confirmBtn) return;
+    confirmBtn.addEventListener('click', async function() {
+        const state = Object.assign({}, cartModalState);
+        let previews = Promise.resolve();
+        const ok = await studioSizePicker.addToCart(line => ({
+            custom: true,
+            design_id: state.designId,
+            product_id: state.productId,
+            size_id: line.sizeId,
+            color_id: state.colorId,
+            quantity: line.qty,
+            custom_design_fee: state.designFee
+        }), (line, data) => {
+            if (!data.cart_item_id) return;
+            previews = previews.then(() => generateAndSavePreviews(state.designId, {
+                colorHex: state.currentColorHex,
+                cartItemId: data.cart_item_id
+            })).catch(() => {});
         });
-    }
+        if (ok) {
+            showCartSuccessNotification();
+            closeAddToCartModal();
+        }
+    });
 });
 
 // Confirmation after a cart add: the site's shared toast (site/ui.js), the

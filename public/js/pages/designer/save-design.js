@@ -589,7 +589,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Shared: open the size/color/quantity modal for an already-saved design.
     function openCartModalForDesign(designId, designName) {
         // Raw pre-margin print add-ons (front+back = €3, each sleeve = €1). These
-        // are marked up through the margin in updateCartPrices().
+        // are priced per line by lib/size-qty.js.
         const frontCount = (typeof elements !== 'undefined' && elements['front']) ? elements['front'].length : 0;
         const backCount = (typeof elements !== 'undefined' && elements['back']) ? elements['back'].length : 0;
         const leftSleeveCount = (typeof elements !== 'undefined' && elements['left-sleeve']) ? elements['left-sleeve'].length : 0;

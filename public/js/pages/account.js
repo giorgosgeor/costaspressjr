@@ -104,13 +104,12 @@ let cartModalState = {
     productName: '',
     designName: '',
     basePrice: 0,
-    selectedSize: null,
     selectedColor: null,
-    quantity: 1,
     variants: [],
-    sizes: [],
     colors: []
 };
+// The shared size × quantity picker (lib/size-qty.js).
+let accountSizePicker = null;
 
 let pendingDeleteDesignId = null;
 
@@ -178,9 +177,7 @@ function addDesignToCart(designData) {
     cartModalState.productName = designData.productName;
     cartModalState.designName = designData.designName;
     cartModalState.basePrice = parseFloat(designData.basePrice) || 0;
-    cartModalState.selectedSize = null;
     cartModalState.selectedColor = null;
-    cartModalState.quantity = 1;
     cartModalState.colorHex = designData.colorHex || '#000000';
     cartModalState.elementsJson = designData.elementsJson || '{}';
     cartModalState.productImage = designData.productImage || '';
@@ -193,12 +190,26 @@ function addDesignToCart(designData) {
 
     document.getElementById('cartProductName').textContent = designData.productName;
     document.getElementById('cartDesignName').textContent = designData.designName;
-    document.getElementById('cartQuantity').value = 1;
-    document.getElementById('cartError').style.display = 'none';
+    document.getElementById('cartColorOptions').innerHTML = '';
+
+    if (!accountSizePicker) {
+        accountSizePicker = SizeQty.create(document.getElementById('addToCartModal'), {
+            button: document.getElementById('confirmAddToCartBtn'),
+            error:  document.getElementById('cartError')
+        });
+    }
+    // The cart also charges the design's print add-ons (front+back, sleeves —
+    // CartPricing::printExtraCostFor), so the prices include them.
+    const extra = window.Pricing ? Pricing.printExtraFor(cartModalState.elementsJson) : 0;
+    accountSizePicker.configure({
+        productName: designData.productName,
+        basePrice: cartModalState.basePrice,
+        extra: extra,
+        note: extra > 0 ? window.I18N.t('size_qty.print_note', { fee: '€' + extra.toFixed(2) }) : ''
+    });
 
     renderCartPreview();
     fetchProductVariants(designData.productId);
-    updateCartPrices();
 
     document.getElementById('addToCartModal').style.display = 'flex';
 }
@@ -366,40 +377,19 @@ function fetchProductVariants(productId) {
         .then(response => response.json())
         .then(data => {
             cartModalState.variants = data.variants || [];
-            cartModalState.sizes = data.sizes || [];
             cartModalState.colors = data.colors || [];
-            renderSizeOptions();
+            accountSizePicker.setData(data);
             renderColorOptions();
         })
-        .catch(() => {});
+        .catch(() => accountSizePicker.showError(window.I18N.t('size_qty.load_failed')));
 }
 
-function renderSizeOptions() {
-    const container = document.getElementById('cartSizeOptions');
-    container.innerHTML = '';
-
-    cartModalState.sizes.forEach(size => {
-        const btn = document.createElement('button');
-        btn.className = 'cart-size-btn';
-        btn.textContent = size.name;
-        btn.dataset.sizeId = size.id;
-        btn.type = 'button';   // look: .cart-size-btn in studio.css
-
-        const hasAvailable = cartModalState.variants.some(v => v.size_id == size.id && v.is_available);
-        if (!hasAvailable) btn.disabled = true;
-
-        btn.onclick = function() {
-            if (this.disabled) return;
-            selectCartSize(size.id);
-        };
-        container.appendChild(btn);
-    });
-}
-
+// Colours first (there is no picker on this page); the design's own colour is
+// chosen to start with when the product comes in it.
 function renderColorOptions() {
     const container = document.getElementById('cartColorOptions');
     container.innerHTML = '';
-
+    const available = color => cartModalState.variants.some(v => v.color_id == color.id && v.is_available);
     cartModalState.colors.forEach(color => {
         const btn = document.createElement('button');
         btn.className = 'cart-color-btn';
@@ -411,8 +401,7 @@ function renderColorOptions() {
         btn.style.backgroundColor = color.hex;
         if (/^#?f{3}(f{3})?$/i.test(color.hex || '')) btn.classList.add('is-white');
 
-        const hasAvailable = cartModalState.variants.some(v => v.color_id == color.id && v.is_available);
-        if (!hasAvailable) btn.disabled = true;
+        if (!available(color)) btn.disabled = true;
 
         btn.onclick = function() {
             if (this.disabled) return;
@@ -420,19 +409,13 @@ function renderColorOptions() {
         };
         container.appendChild(btn);
     });
+    const offered = cartModalState.colors.filter(available);
+    const savedHex = (cartModalState.colorHex || '').toLowerCase();
+    const start = offered.find(color => (color.hex || '').toLowerCase() === savedHex) || offered[0];
+    if (start) selectCartColor(start.id, start.hex);
 }
 
-function selectCartSize(sizeId) {
-    cartModalState.selectedSize = sizeId;
-
-    document.querySelectorAll('.cart-size-btn').forEach(btn => {
-        btn.classList.toggle('is-selected', btn.dataset.sizeId == sizeId);
-    });
-
-    updateColorAvailability();
-    updateCartPrices();
-}
-
+// A new colour starts the quantities again: they belong to one colour.
 function selectCartColor(colorId, colorHex) {
     cartModalState.selectedColor = colorId;
     cartModalState.colorHex = colorHex || '#000000';
@@ -456,127 +439,34 @@ function selectCartColor(colorId, colorHex) {
         btn.classList.toggle('is-selected', btn.dataset.colorId == colorId);
     });
 
-    updateSizeAvailability();
-    updateCartPrices();
+    accountSizePicker.setColor(colorId);
 }
 
-function updateColorAvailability() {
-    if (!cartModalState.selectedSize) return;
-
-    document.querySelectorAll('.cart-color-btn').forEach(btn => {
-        const colorId = btn.dataset.colorId;
-        const isAvailable = cartModalState.variants.some(v =>
-            v.size_id == cartModalState.selectedSize &&
-            v.color_id == colorId &&
-            v.is_available
-        );
-
-        btn.disabled = !isAvailable;
-    });
-}
-
-function updateSizeAvailability() {
-    if (!cartModalState.selectedColor) return;
-
-    document.querySelectorAll('.cart-size-btn').forEach(btn => {
-        const sizeId = btn.dataset.sizeId;
-        const isAvailable = cartModalState.variants.some(v =>
-            v.color_id == cartModalState.selectedColor &&
-            v.size_id == sizeId &&
-            v.is_available
-        );
-
-        btn.disabled = !isAvailable;
-    });
-}
-
-function adjustCartQuantity(delta) {
-    const input = document.getElementById('cartQuantity');
-    let qty = parseInt(input.value) || 1;
-    qty = Math.max(1, Math.min(100, qty + delta));
-    input.value = qty;
-    cartModalState.quantity = qty;
-    updateCartPrices();
-}
-
-function updateCartPrices() {
-    const qty = parseInt(document.getElementById('cartQuantity').value) || 1;
-    cartModalState.quantity = qty;
-
-    // The chosen size + colour's SUPPLIER cost (a black or 3XL tee costs more
-    // than the white base price); apply the quantity-tiered margin so the
-    // preview matches what the server charges.
-    const category = window.Pricing ? Pricing.categoryFor('', cartModalState.productName) : 'tshirt';
-    const supplier = window.Pricing
-        ? Pricing.variantCost(cartModalState.variants, cartModalState.selectedSize, cartModalState.selectedColor, cartModalState.basePrice)
-        : cartModalState.basePrice;
-    // The cart also charges the design's print add-ons (front+back, sleeves —
-    // CartPricing::printExtraCostFor), so the price shown here includes them.
-    const extra = window.Pricing ? Pricing.printExtraFor(cartModalState.elementsJson) : 0;
-    const unitRetail = window.Pricing
-        ? Pricing.unitPrice(supplier, category, qty, extra)
-        : supplier + extra;
-    const total = unitRetail * qty;
-
-    document.getElementById('cartBasePrice').textContent = '€' + total.toFixed(2);
-    document.getElementById('cartTotalPrice').textContent = '€' + total.toFixed(2);
-}
-
-document.getElementById('cartQuantity').addEventListener('change', function() {
-    let qty = parseInt(this.value) || 1;
-    qty = Math.max(1, Math.min(100, qty));
-    this.value = qty;
-    updateCartPrices();
-});
-
-document.getElementById('confirmAddToCartBtn').addEventListener('click', function() {
-    const errorEl = document.getElementById('cartError');
-
-    if (!cartModalState.selectedSize) {
-        errorEl.textContent = (window.I18N ? window.I18N.t('account.cart_modal.size_required') : 'Please select a size.');
-        errorEl.style.display = 'block';
+// One cart line per size, each with its own preview image in the colour.
+document.getElementById('confirmAddToCartBtn').addEventListener('click', async function() {
+    const designId = cartModalState.designId;
+    const colorId  = cartModalState.selectedColor;
+    if (!colorId) {
+        accountSizePicker.showError(window.I18N.t('view_design.modal.pick_color'));
         return;
     }
-    if (!cartModalState.selectedColor) {
-        errorEl.textContent = (window.I18N ? window.I18N.t('account.cart_modal.color_required') : 'Please select a color.');
-        errorEl.style.display = 'block';
-        return;
-    }
-
-    errorEl.style.display = 'none';
-
-    const cartData = {
+    let previews = Promise.resolve();
+    const ok = await accountSizePicker.addToCart(line => ({
         custom: true,
-        design_id: cartModalState.designId,
+        design_id: designId,
         product_id: cartModalState.productId,
-        size_id: cartModalState.selectedSize,
-        color_id: cartModalState.selectedColor,
-        quantity: cartModalState.quantity,
+        size_id: line.sizeId,
+        color_id: colorId,
+        quantity: line.qty,
         custom_design_fee: 0
-    };
-
-    fetch('/cart/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cartData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.requireLogin) {
-            redirectToLoginWithPendingCart(cartData);
-            return;
-        }
-        if (!data.success) throw new Error(data.error || 'Failed to add to cart');
+    }), (line, data) => {
+        if (!data.cart_item_id) return;
+        previews = previews.then(() => saveAccountCartPreview(data.cart_item_id, designId)).catch(() => {});
+    });
+    if (ok) {
         closeAddToCartModal();
         showAccountCartToast();
-        if (data.cart_item_id) {
-            saveAccountCartPreview(data.cart_item_id, cartModalState.designId);
-        }
-    })
-    .catch(() => {
-        errorEl.textContent = (window.I18N ? window.I18N.t('account.cart_modal.failed') : 'Failed to add to cart. Please try again.');
-        errorEl.style.display = 'block';
-    });
+    }
 });
 
 // The site's shared toast (site/ui.js), with a way on to the cart.

@@ -55,6 +55,7 @@ $currentLocale   = I18n::locale();
     <?php endforeach; endif; ?>
     <!-- Client-side pricing mirror (previews only; server is authoritative) -->
     <script src="<?= htmlspecialchars(Asset::url('/js/lib/pricing.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(Asset::url('/js/lib/size-qty.js')) ?>" defer></script>
     <!-- Exact mockup tint chains for colours the generic filter formula renders badly -->
     <script src="<?= htmlspecialchars(Asset::url('/js/lib/color-tint.js')) ?>" defer></script>
     <!-- Placement switcher: dots + swipe (studio and premade design pages) -->
