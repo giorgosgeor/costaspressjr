@@ -96,15 +96,15 @@ class PageController extends Controller {
         }
         $bulkSavingPct = (int)(floor($bulkSaving * 20) * 5);
 
-        $this->render('pages/home', get_defined_vars());
+        $this->render('pages/home', ['user' => $user, 'featuredProducts' => $featuredProducts, 'bulkSavingPct' => $bulkSavingPct]);
     }
 
     public function about(): void {
-        $this->render('pages/about', get_defined_vars());
+        $this->render('pages/about');
     }
 
     public function contact(): void {
-        $this->render('pages/contact', get_defined_vars());
+        $this->render('pages/contact');
     }
 
     public function sendContact(): void {
@@ -205,7 +205,7 @@ class PageController extends Controller {
             return;
         }
 
-        $this->render('pages/info/' . basename($allowed[$slug], '.php'), get_defined_vars());
+        $this->render('pages/info/' . basename($allowed[$slug], '.php'));
     }
 
     /**
@@ -247,6 +247,6 @@ class PageController extends Controller {
             $trackResult = ['query' => $trackQuery, 'order' => $order];
         }
 
-        $this->render('pages/info/track_order', get_defined_vars());
+        $this->render('pages/info/track_order', ['trackResult' => $trackResult]);
     }
 }

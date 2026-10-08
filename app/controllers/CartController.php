@@ -10,7 +10,7 @@ class CartController extends Controller {
         // /cart constantly. No session user of either kind = empty cart.
         $userId = $this->effectiveUserId(false);
         [$cartItems, $cartTotal] = $userId ? (new Cart($this->db))->contents($userId) : [[], 0];
-        $this->render('cart/show', get_defined_vars());
+        $this->render('cart/show', ['cartItems' => $cartItems, 'cartTotal' => $cartTotal]);
     }
 
     public function add(): void {

@@ -8,11 +8,11 @@ class AdminToolController extends AdminController {
 
     public function backgroundRemover(): void {
         $this->requireAdmin();
-        $this->render('admin/tools/background_remover', get_defined_vars());
+        $this->render('admin/tools/background_remover');
     }
 
     public function imageCropper(): void {
         $this->requireAdmin();
-        $this->render('admin/tools/image_cropper', get_defined_vars());
+        $this->render('admin/tools/image_cropper');
     }
 }

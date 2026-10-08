@@ -12,7 +12,7 @@ class AdminDashboardController extends AdminController {
         $productCount = $this->db->query("SELECT COUNT(*) FROM products")->fetchColumn();
         $orderCount = $this->db->query("SELECT COUNT(*) FROM orders")->fetchColumn();
 
-        $this->render('admin/dashboard', get_defined_vars());
+        $this->render('admin/dashboard', ['userCount' => $userCount, 'productCount' => $productCount, 'orderCount' => $orderCount]);
     }
 
     public function users(): void {
@@ -23,6 +23,6 @@ class AdminDashboardController extends AdminController {
         // admin actually needs them.
         $users = $this->db->query("SELECT id, username, email, phone, role, created_at FROM users WHERE role <> 'guest' ORDER BY id DESC")->fetchAll();
 
-        $this->render('admin/users', get_defined_vars());
+        $this->render('admin/users', ['users' => $users]);
     }
 }

@@ -22,7 +22,7 @@ class AdminPickupPointController extends AdminController {
         $flash = $_SESSION['admin_flash'] ?? null;
         unset($_SESSION['admin_flash']);
 
-        $this->render('admin/pickup_points', get_defined_vars());
+        $this->render('admin/pickup_points', ['points' => $points, 'migrated' => $migrated, 'acsFee' => $acsFee, 'storeAddress' => $storeAddress, 'acsConfigured' => $acsConfigured, 'flash' => $flash]);
     }
 
     public function store(): void {

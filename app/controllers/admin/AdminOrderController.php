@@ -19,7 +19,7 @@ class AdminOrderController extends AdminController {
             ORDER BY o.id DESC
         ")->fetchAll();
 
-        $this->render('admin/orders/index', get_defined_vars());
+        $this->render('admin/orders/index', ['orders' => $orders]);
     }
 
     public function show(): void {
@@ -167,7 +167,7 @@ class AdminOrderController extends AdminController {
         }
         unset($item);
 
-        $this->render('admin/orders/show', get_defined_vars());
+        $this->render('admin/orders/show', ['order' => $order, 'payment' => $payment, 'orderItems' => $orderItems]);
     }
 
     public function updateStatus(): void {

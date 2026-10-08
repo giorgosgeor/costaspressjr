@@ -10,7 +10,7 @@ class AuthController extends Controller {
 
     public function showLogin(): void {
         $redirect = $this->safeRedirect($_GET['redirect'] ?? '');
-        $this->render('auth/login', get_defined_vars());
+        $this->render('auth/login', ['redirect' => $redirect]);
     }
 
     public function login(): void {
@@ -20,13 +20,13 @@ class AuthController extends Controller {
 
         if ($identifier === '' || $password === '') {
             $error = 'Invalid credentials';
-            $this->render('auth/login', get_defined_vars());
+            $this->render('auth/login', ['redirect' => $redirect, 'error' => $error]);
             return;
         }
 
         if ($this->isRateLimited($identifier)) {
             $error = 'Too many attempts. Please try again in a few minutes.';
-            $this->render('auth/login', get_defined_vars());
+            $this->render('auth/login', ['redirect' => $redirect, 'error' => $error]);
             return;
         }
 
@@ -37,7 +37,7 @@ class AuthController extends Controller {
         if (!$user || !password_verify($password, $user['password_hash'])) {
             $this->recordFailedAttempt($identifier);
             $error = 'Invalid credentials';
-            $this->render('auth/login', get_defined_vars());
+            $this->render('auth/login', ['redirect' => $redirect, 'error' => $error]);
             return;
         }
 
@@ -179,7 +179,7 @@ class AuthController extends Controller {
     }
 
     public function showRegister(): void {
-        $this->render('auth/register', get_defined_vars());
+        $this->render('auth/register');
     }
 
     public function register(): void {
@@ -190,7 +190,7 @@ class AuthController extends Controller {
 
         $error = $this->validateRegistration($username, $email, $password);
         if ($error !== null) {
-            $this->render('auth/register', get_defined_vars());
+            $this->render('auth/register', ['username' => $username, 'email' => $email, 'phone' => $phone, 'error' => $error]);
             return;
         }
 
@@ -200,7 +200,7 @@ class AuthController extends Controller {
             $stmt->execute([$username, $email, $phone, $hash]);
         } catch (PDOException $e) {
             $error = 'Email, username, or phone already registered';
-            $this->render('auth/register', get_defined_vars());
+            $this->render('auth/register', ['username' => $username, 'email' => $email, 'phone' => $phone, 'error' => $error]);
             return;
         }
 
@@ -320,7 +320,7 @@ class AuthController extends Controller {
     private function renderVerificationResult(bool $success, string $message): void {
         $title   = $success ? 'Email verified' : 'Verification failed';
         $status  = $success ? 'success' : 'error';
-        $this->render('auth/verify_result', get_defined_vars());
+        $this->render('auth/verify_result', ['title' => $title, 'status' => $status, 'message' => $message]);
     }
 
     private function validateRegistration(string $username, string $email, string $password): ?string {
@@ -370,7 +370,7 @@ class AuthController extends Controller {
     }
 
     public function showForgotPassword(): void {
-        $this->render('auth/forgot_password', get_defined_vars());
+        $this->render('auth/forgot_password');
     }
 
     public function forgotPassword(): void {
@@ -378,7 +378,7 @@ class AuthController extends Controller {
 
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $error = 'Please enter a valid email address.';
-            $this->render('auth/forgot_password', get_defined_vars());
+            $this->render('auth/forgot_password', ['error' => $error]);
             return;
         }
 
@@ -393,7 +393,7 @@ class AuthController extends Controller {
         // mail cannon (bombing a victim's inbox / burning SMTP quota). The
         // response stays identical either way, so nothing is leaked.
         if ($this->isMailRateLimited('forgot', $email)) {
-            $this->render('auth/forgot_password', get_defined_vars());
+            $this->render('auth/forgot_password', ['success' => $success]);
             return;
         }
 
@@ -430,7 +430,7 @@ class AuthController extends Controller {
             }
         }
 
-        $this->render('auth/forgot_password', get_defined_vars());
+        $this->render('auth/forgot_password', ['success' => $success]);
     }
 
     public function showResetPassword(): void {
@@ -438,7 +438,7 @@ class AuthController extends Controller {
         if ($token === '' || strlen($token) !== 64 || !ctype_xdigit($token)) {
             $error = 'Invalid or missing reset token.';
         }
-        $this->render('auth/reset_password', get_defined_vars());
+        $this->render('auth/reset_password', ['token' => $token, 'error' => $error ?? null]);
     }
 
     public function resetPassword(): void {
@@ -448,20 +448,20 @@ class AuthController extends Controller {
 
         if ($token === '' || strlen($token) !== 64 || !ctype_xdigit($token)) {
             $error = 'Invalid reset token.';
-            $this->render('auth/reset_password', get_defined_vars());
+            $this->render('auth/reset_password', ['token' => $token, 'error' => $error]);
             return;
         }
 
         if ($password !== $confirm) {
             $error = 'Passwords do not match.';
-            $this->render('auth/reset_password', get_defined_vars());
+            $this->render('auth/reset_password', ['token' => $token, 'error' => $error]);
             return;
         }
 
         $pwError = $this->validatePasswordStrength($password);
         if ($pwError !== null) {
             $error = $pwError;
-            $this->render('auth/reset_password', get_defined_vars());
+            $this->render('auth/reset_password', ['token' => $token, 'error' => $error]);
             return;
         }
 
@@ -474,7 +474,7 @@ class AuthController extends Controller {
         // one-hour reset link was already expired on a UTC+2 server.
         if (!$row || $row['consumed_at'] !== null || strtotime($row['expires_at'] . ' UTC') < time()) {
             $error = 'This reset link is invalid or has expired. Please request a new one.';
-            $this->render('auth/reset_password', get_defined_vars());
+            $this->render('auth/reset_password', ['token' => $token, 'error' => $error]);
             return;
         }
 
@@ -488,12 +488,12 @@ class AuthController extends Controller {
             $this->db->rollBack();
             error_log('Password reset commit failed: ' . $e->getMessage());
             $error = 'Something went wrong. Please try again.';
-            $this->render('auth/reset_password', get_defined_vars());
+            $this->render('auth/reset_password', ['token' => $token, 'error' => $error]);
             return;
         }
 
         $success = 'Your password has been reset. You can now log in.';
-        $this->render('auth/login', get_defined_vars());
+        $this->render('auth/login', ['success' => $success]);
     }
 
     public function logout(): void {

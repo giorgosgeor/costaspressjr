@@ -11,7 +11,7 @@ class AdminColorController extends AdminController {
 
         $colors = $this->db->query("SELECT * FROM available_colors ORDER BY color_name")->fetchAll();
 
-        $this->render('admin/colors', get_defined_vars());
+        $this->render('admin/colors', ['colors' => $colors]);
     }
 
     public function store(): void {

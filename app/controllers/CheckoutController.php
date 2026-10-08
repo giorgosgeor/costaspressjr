@@ -26,7 +26,7 @@ class CheckoutController extends Controller {
             $stmt->execute([Auth::userId()]);
             $accountPhone = ((string)$stmt->fetchColumn()) ?: null;
         }
-        $this->render('checkout/show', get_defined_vars());
+        $this->render('checkout/show', ['cartItems' => $cartItems, 'cartTotal' => $cartTotal, 'checkout' => $checkout, 'accountEmail' => $accountEmail, 'accountPhone' => $accountPhone]);
     }
 
     /**
@@ -149,7 +149,7 @@ class CheckoutController extends Controller {
             error_log('checkout complete: retrieve failed: ' . $e->getMessage());
             $state   = 'failed';
             $message = I18n::t('checkout.errors.verify');
-            $this->render('checkout/complete', get_defined_vars());
+            $this->render('checkout/complete', ['state' => $state, 'message' => $message, 'result' => $result]);
             return;
         }
 
@@ -181,7 +181,7 @@ class CheckoutController extends Controller {
             $state = 'not_paid';
         }
 
-        $this->render('checkout/complete', get_defined_vars());
+        $this->render('checkout/complete', ['state' => $state, 'message' => $message ?? null, 'result' => $result, 'placed' => $placed ?? null]);
     }
 
     /** GET /api/pickup-points — the ACS points for the checkout map. */
