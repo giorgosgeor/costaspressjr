@@ -16,6 +16,15 @@
 // The session carries the answer now, and is filled from the users table on
 // the first page that needs it, so this costs at most one query per session.
 $cookieAccepted = CurrentUser::cookieAccepted($db ?? null, $user ?? null);
+
+// Who is selling (Business, from .env): the legal name and, where there are
+// any, the company registration and VAT numbers, under the copyright line.
+$trader     = Business::details();
+$traderLine = $trader['name'] === '' ? '' : implode(' · ', array_filter([
+    $trader['name'],
+    $trader['registration'] !== '' ? I18n::t('footer.reg_no', ['no' => $trader['registration']]) : '',
+    $trader['vat'] !== '' ? I18n::t('footer.vat_no', ['no' => $trader['vat']]) : '',
+]));
 ?>
 
     <?php if (!empty($checkoutMode)): ?>
@@ -28,6 +37,7 @@ $cookieAccepted = CurrentUser::cookieAccepted($db ?? null, $user ?? null);
                 <a href="/contact" target="_blank" rel="noopener"><?= t('footer.contact') ?></a>
             </nav>
             <p><?= I18n::t('footer.copyright', ['year' => date('Y')]) ?></p>
+            <?php if ($traderLine !== ''): ?><p class="footer-legal"><?= e($traderLine) ?></p><?php endif; ?>
         </div>
     </footer>
     <?php else: ?>
@@ -86,6 +96,7 @@ $cookieAccepted = CurrentUser::cookieAccepted($db ?? null, $user ?? null);
             </div>
             <div class="footer-bottom">
                 <p><?= I18n::t('footer.copyright', ['year' => date('Y')]) ?></p>
+                <?php if ($traderLine !== ''): ?><p class="footer-legal"><?= e($traderLine) ?></p><?php endif; ?>
             </div>
         </div>
     </footer>

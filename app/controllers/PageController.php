@@ -104,7 +104,8 @@ class PageController extends Controller {
     }
 
     public function contact(): void {
-        $this->render('pages/contact');
+        // Who to reach, from .env (Business); empty details are left out.
+        $this->render('pages/contact', ['business' => Business::details()]);
     }
 
     public function sendContact(): void {
@@ -205,7 +206,36 @@ class PageController extends Controller {
             return;
         }
 
-        $this->render('pages/info/' . basename($allowed[$slug], '.php'));
+        // The Terms and Privacy Policy name the trader (Business); the size
+        // guide shows each garment's chart from its supplier.
+        $vars = ['business' => Business::details()];
+        if ($slug === 'sizing') {
+            $vars['sizeCharts'] = $this->sizeCharts();
+        }
+        $this->render('pages/info/' . basename($allowed[$slug], '.php'), $vars);
+    }
+
+    /**
+     * The size charts of the active garments, one entry per chart (garments
+     * cut the same share one), with the names of the garments it covers.
+     * @return array<int, array{image:string, products:string[]}>
+     */
+    private function sizeCharts(): array {
+        $rows = $this->db->query("
+            SELECT name, size_chart_image FROM products
+            WHERE active = 1 AND size_chart_image IS NOT NULL AND size_chart_image <> ''
+            ORDER BY name
+        ")->fetchAll(PDO::FETCH_ASSOC);
+        $charts = [];
+        foreach ($rows as $row) {
+            $image = $row['size_chart_image'];
+            if (!is_file(public_path(ltrim($image, '/')))) {
+                continue;
+            }
+            $charts[$image] ??= ['image' => $image, 'products' => []];
+            $charts[$image]['products'][] = $row['name'];
+        }
+        return array_values($charts);
     }
 
     /**

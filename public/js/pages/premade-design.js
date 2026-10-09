@@ -569,16 +569,7 @@ function updatePrice() {
     // cart charges it (it used to show one item's price as the total).
     document.getElementById('basePrice').textContent = priceEach(unitRetail, qty);
     document.getElementById('designPriceValue').textContent = '+' + priceEach(designPrice, qty);
-    // Second design cost (front + back print)
-    let secondDesignCost = 0;
-    if (document.getElementById('addSecondDesign').checked) {
-        secondDesignCost = designPrice;
-        document.getElementById('secondDesignCost').textContent = '+' + priceEach(designPrice, qty);
-        document.getElementById('secondDesignRow').style.display = 'flex';
-    } else {
-        document.getElementById('secondDesignRow').style.display = 'none';
-    }
-    const total = (unitRetail + designPrice + secondDesignCost) * qty;
+    const total = (unitRetail + designPrice) * qty;
     document.getElementById('totalLabel').textContent = totalLabel(qty, 'view_design.price.total');
     document.getElementById('totalPrice').textContent = '€' + total.toFixed(2);
 }
@@ -751,57 +742,6 @@ document.addEventListener('DOMContentLoaded', function() {
             !e.target.closest('.design-controls') && 
             !e.target.closest('.side-toggle')) {
             designArea.classList.add('inactive');
-        }
-    });
-
-    // --- Second design logic ---
-    const addSecondDesign = document.getElementById('addSecondDesign');
-    const secondDesignUpload = document.getElementById('secondDesignUpload');
-    const oppositeSideLabel = document.getElementById('oppositeSideLabel');
-    const secondSideUploadLabel = document.getElementById('secondSideUploadLabel');
-    let mainSide = 'front';
-    function updateOppositeLabel() {
-        if (mainSide === 'front') {
-            oppositeSideLabel.textContent = window.I18N.t('view_design.side.back');
-            secondSideUploadLabel.textContent = window.I18N.t('view_design.side.back_cap');
-        } else {
-            oppositeSideLabel.textContent = window.I18N.t('view_design.side.front');
-            secondSideUploadLabel.textContent = window.I18N.t('view_design.side.front_cap');
-        }
-    }
-    document.getElementById('chooseFrontBtn').addEventListener('click', function() {
-        mainSide = 'front';
-        this.classList.add('active');
-        document.getElementById('chooseBackBtn').classList.remove('active');
-        updateOppositeLabel();
-    });
-    document.getElementById('chooseBackBtn').addEventListener('click', function() {
-        mainSide = 'back';
-        this.classList.add('active');
-        document.getElementById('chooseFrontBtn').classList.remove('active');
-        updateOppositeLabel();
-    });
-    addSecondDesign.addEventListener('change', function() {
-        if (this.checked) {
-            secondDesignUpload.style.display = '';
-        } else {
-            secondDesignUpload.style.display = 'none';
-            document.getElementById('secondDesignFile').value = '';
-            document.getElementById('secondDesignPreview').innerHTML = '';
-        }
-        updatePrice();
-    });
-    document.getElementById('secondDesignFile').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        const preview = document.getElementById('secondDesignPreview');
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                preview.innerHTML = '<img src="' + evt.target.result + '" style="max-width:120px;max-height:120px;border:1px solid #ccc;border-radius:6px;">';
-            };
-            reader.readAsDataURL(file);
-        } else {
-            preview.innerHTML = '';
         }
     });
 });

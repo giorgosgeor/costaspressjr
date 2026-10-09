@@ -33,6 +33,7 @@ $adminTools     = new AdminToolController($db);
 
 // ---- Site ---------------------------------------------------------------
 $router->get('/sitemap.xml', [$site, 'sitemap']);
+$router->get('/robots.txt', [$site, 'robots']);
 $router->get('/health', [$site, 'health']);
 
 // Language switcher — sets a cookie and redirects back to the referring page.

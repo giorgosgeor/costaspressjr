@@ -425,6 +425,7 @@ body.theme-studio .footer-section ul a:hover { color: var(--st-ink); }
 body.theme-studio .social-links a { background: transparent; border-color: #D6D4CE; color: var(--st-ink); }
 body.theme-studio .social-links a:hover { background: var(--st-ink); border-color: var(--st-ink); color: #FFFFFF; box-shadow: none; }
 body.theme-studio .footer-bottom { border-top: 1px solid var(--st-line); color: var(--st-muted); }
+body.theme-studio :is(.footer-bottom, .co-footer) .footer-legal { margin-top: 4px; font-size: 0.78rem; color: var(--st-muted); }
 
 /* ---- Assistant ------------------------------------------------------- */
 body.theme-studio .assistant-launcher { border-radius: 0; border-color: var(--st-ink); box-shadow: none; }

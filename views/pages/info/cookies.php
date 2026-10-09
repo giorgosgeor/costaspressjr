@@ -2,7 +2,7 @@
 $title        = t('info.cookies.title', false);
 $infoTitle    = t('info.cookies.title', false);
 $infoSubtitle = t('info.cookies.subtitle', false);
-$infoUpdated  = date('F Y');
+$infoUpdated  = '08/10/2026';
 ob_start();
 ?>
 <p><?= t('info.cookies.intro') ?></p>

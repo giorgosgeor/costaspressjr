@@ -68,7 +68,6 @@ document.querySelector('.product-list-grid').addEventListener('click', function(
   const card = e.target.closest('.product-list-card');
   if (card) {
     const prodId = card.getAttribute('data-product-id');
-    console.log('Card clicked:', card, 'Product ID:', prodId);
     if (prodId) {
       // Send product ID to backend via POST, then redirect
       fetch('/shop/set_selected_product', {
@@ -85,7 +84,5 @@ document.querySelector('.product-list-grid').addEventListener('click', function(
     } else {
       console.warn('No product ID found on card:', card);
     }
-  } else {
-    console.log('Click not on a product card:', e.target);
   }
 });

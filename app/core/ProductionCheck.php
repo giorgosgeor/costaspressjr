@@ -6,7 +6,8 @@
  * A half-configured production site fails in ways nobody sees until a
  * customer does: emails silently logged instead of sent, reset links
  * built from the request's Host header, or — worst — Stripe test keys,
- * which let anyone "pay" with card 4242 for real goods. public/index.php
+ * which let anyone "pay" with card 4242 for real goods — or a shop that
+ * doesn't say who is selling. public/index.php
  * refuses to serve while problems() isn't empty; the log names what is
  * missing, and /health returns 500 so an uptime monitor notices.
  */
@@ -41,6 +42,13 @@ class ProductionCheck {
             $problems[] = 'MAIL_TRANSPORT must be smtp (or mail), not "' . $mailTransport . '"';
         } elseif ($mailTransport === 'smtp' && (string)Env::get('SMTP_HOST', '') === '') {
             $problems[] = 'SMTP_HOST is empty';
+        }
+        // The trader's legal name, address and email must be on the site
+        // (contact page, Terms, Privacy Policy) — see Business.
+        foreach (Business::missing() as $key) {
+            $problems[] = $key === 'BUSINESS_EMAIL'
+                ? 'BUSINESS_EMAIL (or CONTACT_EMAIL) is empty or not an email address'
+                : "$key is empty";
         }
 
         return $problems;

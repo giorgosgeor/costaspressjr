@@ -2,10 +2,20 @@
 $title        = t('info.privacy.title', false);
 $infoTitle    = t('info.privacy.title', false);
 $infoSubtitle = t('info.privacy.subtitle', false);
-$infoUpdated  = date('F Y');
+$infoUpdated  = '08/10/2026';
 ob_start();
 ?>
 <p><?= t('info.privacy.intro') ?></p>
+
+<?php // The controller, from .env (Business) — the GDPR requires it here. ?>
+<?php if ($business['name'] !== ''): ?>
+<h2><?= t('info.privacy.who_h') ?></h2>
+<p><?= t('info.privacy.who', false, [
+    'name'    => e($business['name']),
+    'address' => e(implode(', ', $business['address'])),
+    'email'   => '<a href="mailto:' . e($business['email']) . '">' . e($business['email']) . '</a>',
+]) ?></p>
+<?php endif; ?>
 
 <h2><?= t('info.privacy.h1') ?></h2>
 <ul>
@@ -20,6 +30,12 @@ ob_start();
 
 <h2><?= t('info.privacy.h3') ?></h2>
 <p><?= t('info.privacy.p3') ?></p>
+<ul>
+    <li><?= t('info.privacy.share_stripe', false) ?></li>
+    <li><?= t('info.privacy.share_acs', false) ?></li>
+    <li><?= t('info.privacy.share_email', false) ?></li>
+    <li><?= t('info.privacy.share_hosting', false) ?></li>
+</ul>
 
 <h2><?= t('info.privacy.h4') ?></h2>
 <p><?= t('info.privacy.p4', false) ?></p>

@@ -11,7 +11,8 @@
 
 Configuration lives in `.env` — start from `.env.example`. Database setup is
 in `database/README.md`; a fresh production database comes from
-`php database/export_for_production.php`.
+`php database/export_for_production.php`. Putting the shop on a server, step
+by step: `DEPLOY.md`.
 
 ## How the code is organised
 

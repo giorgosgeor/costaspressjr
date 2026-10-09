@@ -139,8 +139,6 @@ function afterElementAdded() {
 
     // Update image color for the selected image
 
-
-
 // Convert hex color to HSL values
 function hexToHSL(hex) {
     hex = hex.replace('#', '');
@@ -230,8 +228,6 @@ function applyColorTint(hex) {
 // Load an existing design for editing
 function loadExistingDesign(designData) {
     if (!designData) return;
-
-    console.log('[DEBUG] Loading design:', designData);
 
     // Prefer the live catalogue entry, but fall back to the product data the
     // design itself carries. productsData only lists ACTIVE products that have
@@ -366,7 +362,6 @@ function loadExistingDesign(designData) {
 
     // Load image uploads
     if (designData.uploads && Array.isArray(designData.uploads)) {
-        console.log('[DEBUG] Loading uploads:', designData.uploads);
         designData.uploads.forEach(upload => {
             const view = upload.view_placement || 'front';
             if (!elements[view]) elements[view] = [];
@@ -384,8 +379,6 @@ function loadExistingDesign(designData) {
                     imageSrc = '/' + imageSrc;
                 }
             }
-
-            console.log('[DEBUG] Image src after processing:', imageSrc);
 
             const el = {
                 id: 'element-' + (++elementIdCounter),
@@ -407,7 +400,6 @@ function loadExistingDesign(designData) {
 
     // Load text elements
     if (designData.texts && Array.isArray(designData.texts)) {
-        console.log('[DEBUG] Loading texts:', designData.texts);
         designData.texts.forEach(text => {
             const view = text.view_placement || 'front';
             if (!elements[view]) elements[view] = [];
@@ -441,8 +433,6 @@ function loadExistingDesign(designData) {
                 const parsedElements = typeof elementsData === 'string' 
                     ? JSON.parse(elementsData) 
                     : elementsData;
-
-                console.log('[DEBUG] Fallback - Parsed elements_json:', parsedElements);
 
                 // Helper function to process an element
                 const processElement = (el, view) => {
@@ -510,14 +500,11 @@ function loadExistingDesign(designData) {
     renderElements();
     updateLayerList();
 
-    console.log('[DEBUG] Design elements loaded:', elements);
-
     // Update mockup, design area, and summary
     updateMockupImage();
     applyDesignArea();
     updateSummary();
 
-    console.log('[DEBUG] Design loaded successfully');
 }
 
 // Initialize on page load
@@ -634,7 +621,6 @@ document.addEventListener('mousedown', function(e) {
     if (prodId) {
         // Find product in productsData
         const product = productsData.find(p => String(p.id) === String(prodId));
-        console.log('[DEBUG] Matched product:', product);
         if (product) {
             window.currentProduct = {
                 id: product.id,
@@ -685,7 +671,6 @@ document.addEventListener('mousedown', function(e) {
 
     // Load existing design if editing
     if (loadDesignData) {
-        console.log('[DEBUG] Loading existing design:', loadDesignData);
         loadExistingDesign(loadDesignData);
     }
 

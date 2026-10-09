@@ -5,6 +5,15 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # HTTPS only. Production's session cookie is Secure, so over plain http
+    # nobody could sign in or keep a cart; send http:// visitors to https://.
+    # X-Forwarded-Proto covers hosts that end TLS at a proxy (Cloudflare, some
+    # shared hosts), where HTTPS looks "off" here. Local servers are exempt.
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !^https$ [NC]
+    RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:[0-9]+)?$ [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
     # Never execute PHP inside upload directories.
     RewriteRule ^images/designs/uploads/.*\.(php|phtml|phar)$ - [F,L,NC]
     RewriteRule ^images/designs/previews/.*\.(php|phtml|phar)$ - [F,L,NC]

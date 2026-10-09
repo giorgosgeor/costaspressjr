@@ -2,7 +2,7 @@
 $title        = t('info.shipping.title', false);
 $infoTitle    = t('info.shipping.title', false);
 $infoSubtitle = t('info.shipping.subtitle', false);
-$infoUpdated  = date('F Y');
+$infoUpdated  = '08/10/2026';
 ob_start();
 ?>
 <h2><?= t('info.shipping.h1') ?></h2>
@@ -26,9 +26,6 @@ ob_start();
       // Cyprus-only delivery: there is no destination country for duty to be
       // charged in, so the section could only confuse. ?>
 
-<?php if (Env::get('APP_ENV', 'production') !== 'production'): ?>
-<p class="info-disclaimer"><?= t('info.shipping.placeholder', false) ?></p>
-<?php endif; ?>
 <?php
 $infoBody = ob_get_clean();
 require View::path('pages/info/_layout');

@@ -2,7 +2,7 @@
 $title        = t('info.faq.title', false);
 $infoTitle    = t('info.faq.h1', false);
 $infoSubtitle = t('info.faq.subtitle', false);
-$infoUpdated  = date('F Y');
+$infoUpdated  = '08/10/2026';
 ob_start();
 ?>
 <h2><?= t('info.faq.q1') ?></h2>

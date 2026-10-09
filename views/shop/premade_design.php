@@ -34,25 +34,6 @@
                     </div>
                     <span class="side-current-label" id="sideCurrentLabel" aria-live="polite"><?= t('studio.view.front') ?></span>
                 </div>
-                <?php if (empty($design['is_fixed'])): ?>
-                <div class="second-design-option">
-                    <input type="checkbox" id="addSecondDesign" />
-                    <label for="addSecondDesign"><?= t('view_design.second_design', false, ['side' => '<span id="oppositeSideLabel">' . t('view_design.side.back', false) . '</span>', 'price' => '<span id="secondDesignPrice">' . number_format($design['price'], 2) . '</span>']) ?></label>
-                </div>
-                <div id="secondDesignUpload" class="second-design-upload" style="display:none;">
-                    <label for="secondDesignFile"><?= t('view_design.second_upload', false, ['side' => '<span id="secondSideUploadLabel">' . t('view_design.side.back_cap', false) . '</span>']) ?></label>
-                    <input type="file" id="secondDesignFile" accept="image/*">
-                    <div id="secondDesignPreview" class="second-design-preview"></div>
-                </div>
-                <?php else: ?>
-                <!-- Hidden placeholders so JS doesn't error on fixed designs -->
-                <input type="checkbox" id="addSecondDesign" style="display:none;" disabled />
-                <input type="file" id="secondDesignFile" style="display:none;" disabled>
-                <span id="oppositeSideLabel" style="display:none;"><?= t('view_design.side.back', false) ?></span>
-                <span id="secondDesignPrice" style="display:none;"><?= number_format($design['price'], 2) ?></span>
-                <span id="secondSideUploadLabel" style="display:none;"><?= t('view_design.side.back_cap', false) ?></span>
-                <div id="secondDesignUpload" style="display:none;"></div>
-                <?php endif; ?>
                 
                 <div class="mockup-container" id="mockupContainer">
                     <!-- Color overlay layer -->
@@ -283,10 +264,6 @@ endforeach;
                             <div class="price-row">
                                 <span><?= t('view_design.price.design') ?></span>
                                 <span id="designPriceValue">+€<?= number_format($design['price'], 2) ?></span>
-                            </div>
-<div class="price-row" id="secondDesignRow" style="display:none;">
-                                <span><?= t('view_design.price.second_side') ?></span>
-                                <span id="secondDesignCost">+€<?= number_format($design['price'], 2) ?></span>
                             </div>
                             <div class="price-row total">
                                 <span id="totalLabel"><?= t('view_design.price.total') ?></span>

@@ -789,9 +789,3 @@
     margin-bottom: 2px;
 }
 
-/* Second design on the opposite side (designs that are not fixed). */
-.second-design-option { display: flex; align-items: center; gap: 8px; margin: 10px 0 20px; }
-.second-design-option label { font-weight: 500; cursor: pointer; }
-.second-design-upload { margin-bottom: 10px; }
-.second-design-upload label { display: block; margin-bottom: 6px; font-weight: 500; }
-.second-design-preview { margin-top: 8px; }

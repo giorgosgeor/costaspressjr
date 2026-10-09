@@ -7,7 +7,7 @@
             $crumbs   = [[t('header.nav.home', false), '/'], [$pageName, null]];
             $heading  = $pageName;
             $lead     = $infoSubtitle ?? '';
-            $headNote = I18n::t('info.last_updated', ['date' => htmlspecialchars($infoUpdated ?? date('F Y'))]);
+            $headNote = isset($infoUpdated) ? I18n::t('info.last_updated', ['date' => htmlspecialchars($infoUpdated)]) : '';
             require View::path('partials/page_head');
         ?>
         <article class="info-article">

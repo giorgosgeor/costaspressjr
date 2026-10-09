@@ -1,7 +1,10 @@
 <?php
 
 /**
- * Machine-facing endpoints: the uptime health check and the sitemap.
+ * Machine-facing endpoints: the uptime health check, robots.txt and the
+ * sitemap. robots.txt and the sitemap name the site by APP_URL, so they are
+ * right on whatever domain it is deployed to (and behind a proxy, where the
+ * request itself can look like plain http).
  */
 class SiteController extends Controller {
     /**
@@ -33,12 +36,31 @@ class SiteController extends Controller {
     }
 
     /**
-     * Dynamic sitemap for search engines.
+     * robots.txt. Anything but production asks not to be indexed at all, so
+     * a staging copy never competes with the real shop in search results.
+     */
+    public function robots(): void {
+        header('Content-Type: text/plain; charset=utf-8');
+        if (Env::get('APP_ENV', 'production') !== 'production') {
+            echo "User-agent: *\nDisallow: /\n";
+            return;
+        }
+        $private = ['/admin', '/login', '/register', '/logout', '/account', '/cart', '/checkout',
+                    '/orders', '/api/', '/custom-design/', '/health', '/verify-email', '/forgot-password',
+                    '/reset-password', '/track-order', '/assistant/', '/stripe/', '/lang/'];
+        echo "User-agent: *\n";
+        foreach ($private as $path) {
+            echo "Disallow: $path\n";
+        }
+        echo "Allow: /\n\nSitemap: " . self::base() . "/sitemap.xml\n";
+    }
+
+    /**
+     * Dynamic sitemap for search engines: the shop's pages, every active
+     * product and every active premade design.
      */
     public function sitemap(): void {
-        $host = $_SERVER['HTTP_HOST'] ?? 'www.costaspressjr.com';
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $base = $scheme . '://' . $host;
+        $base = self::base();
 
         $urls = [
             ['path' => '/',          'changefreq' => 'weekly',  'priority' => '1.0'],
@@ -52,7 +74,20 @@ class SiteController extends Controller {
             ['path' => '/terms',     'changefreq' => 'yearly',  'priority' => '0.2'],
             ['path' => '/privacy',   'changefreq' => 'yearly',  'priority' => '0.2'],
             ['path' => '/cookies',   'changefreq' => 'yearly',  'priority' => '0.2'],
+            ['path' => '/shop/premade',        'changefreq' => 'weekly', 'priority' => '0.8'],
+            ['path' => '/shop/premade/anime',  'changefreq' => 'weekly', 'priority' => '0.7'],
+            ['path' => '/shop/select_product', 'changefreq' => 'weekly', 'priority' => '0.8'],
         ];
+        try {
+            foreach ($this->db->query("SELECT id FROM products WHERE active = 1 ORDER BY id")->fetchAll(PDO::FETCH_COLUMN) as $id) {
+                $urls[] = ['path' => '/product/' . (int)$id, 'changefreq' => 'weekly', 'priority' => '0.6'];
+            }
+            foreach ($this->db->query("SELECT id FROM premade_designs WHERE active = 1 ORDER BY id")->fetchAll(PDO::FETCH_COLUMN) as $id) {
+                $urls[] = ['path' => '/shop/design/' . (int)$id, 'changefreq' => 'weekly', 'priority' => '0.6'];
+            }
+        } catch (PDOException $e) {
+            // The pages above are still worth listing.
+        }
 
         header('Content-Type: application/xml; charset=utf-8');
         echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
@@ -65,5 +100,15 @@ class SiteController extends Controller {
             echo "  </url>\n";
         }
         echo '</urlset>' . "\n";
+    }
+
+    /** The site's own address (APP_URL), without a trailing slash. */
+    private static function base(): string {
+        $url = rtrim((string)Env::get('APP_URL', ''), '/');
+        if ($url !== '') {
+            return $url;
+        }
+        $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        return ($https ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
     }
 }
