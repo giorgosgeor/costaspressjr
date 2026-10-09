@@ -34,6 +34,14 @@
     Require all denied
 </FilesMatch>
 
+# Requests that reached a TLS-terminating proxy (Cloudflare, some shared
+# hosts) over HTTPS arrive here as plain http, so HTTPS is unset for them;
+# FORWARDED_HTTPS marks them for the HSTS header below. The header is safe
+# to trust for this: browsers ignore HSTS on a plain-http response.
+<IfModule mod_setenvif.c>
+    SetEnvIfNoCase X-Forwarded-Proto "^https$" FORWARDED_HTTPS
+</IfModule>
+
 # Security headers. HSTS is only sent over HTTPS (production).
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
@@ -42,28 +50,30 @@
     # geolocation=(self): the checkout asks for the browser's location to list
     # the nearest ACS pickup points. () would refuse it before any prompt.
     Header set Permissions-Policy "geolocation=(self), microphone=(), camera=()"
+    # Direct TLS (HTTPS) or TLS at a proxy (FORWARDED_HTTPS); "set" means a
+    # request matching both still gets one header.
     Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
-    # Stripe.js loads from js.stripe.com (and its *.js.stripe.com shards),
-    # mounts the Payment Element in iframes from js.stripe.com / hooks.stripe.com,
-    # and talks to api.stripe.com. Stripe's guidance is to allow *.stripe.com
-    # in script-src, frame-src and connect-src; without it the payment flow
-    # is blocked in the browser.
-    # Google Fonts (Inter) is loaded from fonts.googleapis.com (CSS) and
-    # fonts.gstatic.com (woff2) by the customer layout — both must be allowed
-    # or every page falls back to system fonts. interact.js is self-hosted
-    # under /js/vendor/ so no CDN entry is needed for it.
-    # The checkout's ACS pickup map loads Leaflet (JS + CSS) from
-    # cdn.jsdelivr.net and its map tiles from tile.openstreetmap.org.
-    # Stripe.js fetches the font CSS it is given for the card fields itself,
-    # so fonts.googleapis.com is in connect-src too; without it the fields fell
-    # back to the browser's default font.
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=FORWARDED_HTTPS
+    # Payment happens on Stripe's own hosted Checkout page: the checkout
+    # sends the browser there by navigation, which this policy doesn't limit,
+    # so no Stripe script, frame or connection is needed on these pages.
+    # Everything else is our own: the fonts (/fonts/), interact.js and Leaflet
+    # (/js/vendor/) are self-hosted, so no visitor's IP address goes to Google
+    # or a CDN, and no third party can change a script the checkout runs.
+    # The one exception is the ACS pickup map's tiles, from
+    # tile.openstreetmap.org (named in the Privacy Policy).
     # script-src has no 'unsafe-inline': templates carry no inline <script>
     # or on* handlers (page data travels in <script type="application/json">,
     # behaviour in data-* attributes - see public/js/site/actions.js), so a
     # script injected into a page is refused. Keep it that way: a new inline
     # script will simply not run. style-src still allows inline styles.
-    Header set Content-Security-Policy "default-src 'self'; script-src 'self' https://*.stripe.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https://tile.openstreetmap.org; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.stripe.com https://fonts.googleapis.com; frame-src https://*.stripe.com; form-action 'self'; frame-ancestors 'none'; base-uri 'self';"
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self';"
 </IfModule>
+
+# Older Apache mime.types files don't know woff2; without a type the
+# font caching rules below wouldn't apply to it.
+AddType font/woff2 .woff2
+AddType font/woff .woff
 
 # Default charset
 AddDefaultCharset UTF-8

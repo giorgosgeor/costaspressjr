@@ -86,7 +86,7 @@ $router->post('/cart/update-quantity', [$cart, 'updateQuantity']);
 $router->post('/cart/remove', [$cart, 'remove']);
 $router->post('/cart/save-previews', [$cart, 'savePreviews']);
 $router->get('/checkout', [$checkout, 'show']);
-$router->post('/api/create-payment-intent', [$checkout, 'createPaymentIntent']);
+$router->post('/api/create-checkout-session', [$checkout, 'createCheckoutSession']);
 $router->get('/checkout/complete', [$checkout, 'complete']);
 $router->get('/api/pickup-points', [$checkout, 'pickupPoints']);
 $router->post('/stripe/webhook', [$stripe, 'handle']);

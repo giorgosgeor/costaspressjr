@@ -9,8 +9,10 @@ app/config/*.local.php
 debug_*.log
 logs/
 
-# PHP
-vendor/
+# PHP — Composer's vendor/ at the root only. A bare "vendor/" also matched
+# public/js/vendor/, so interact.js and Leaflet, which the site serves
+# itself, never reached git and a server set up with git clone lacked them.
+/vendor/
 composer.phar
 
 # Dependency lock files for local dev tooling

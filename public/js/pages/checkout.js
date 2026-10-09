@@ -1,20 +1,19 @@
 /*
  * Checkout page (/checkout).
  *
- * One form, three sections: who's collecting, how (the store, free, or an
- * ACS point, with a fee), and payment through Stripe's Payment Element. The
- * order summary sits beside it (above it, collapsed, on phones).
+ * One form, two sections: who's collecting, and how (the store, free, or an
+ * ACS point, with a fee). The order summary sits beside it (above it,
+ * collapsed, on phones). The payment itself is on Stripe's hosted page.
  *
- * Pressing Pay:
- *   1. checks the details and pickup point here, pointing at what's missing;
- *   2. elements.submit() — Stripe checks its own fields, and wallets (Apple
- *      Pay) get the click they need to open;
- *   3. POST /api/create-payment-intent — the server re-validates, prices the
- *      cart and records the checkout against the new PaymentIntent;
- *   4. stripe.confirmPayment() — on success Stripe sends the browser to
- *      /checkout/complete, which places the order and shows it. Every method
- *      ends there, cards included. The webhook is the backstop for anyone who
- *      never arrives.
+ * Pressing "Continue to payment":
+ *   1. checks the details, pickup point and terms here, pointing at what's
+ *      missing;
+ *   2. POST /api/create-checkout-session — the server re-validates, prices
+ *      the cart, records the checkout and creates Stripe's Checkout page;
+ *   3. the browser goes to that page. After paying, Stripe sends it to
+ *      /checkout/complete, which places the order and shows it; "back" there
+ *      returns here. The webhook is the backstop for anyone who never comes
+ *      back.
  */
 (function () {
     'use strict';
@@ -46,9 +45,6 @@
         userMarker: null,
         mapFailed: false,
         leaflet: null,
-        stripe: null,
-        elements: null,
-        paymentEl: null,
         busy: false
     };
 
@@ -70,7 +66,6 @@
             el.classList.toggle('is-free', !fee);
         });
         document.querySelectorAll('[data-co-total]').forEach(function (el) { el.textContent = money(totalCents()); });
-        if (state.elements && totalCents() > 0) state.elements.update({ amount: totalCents() });
     }
 
     // ------------------------------------------------------------- details
@@ -145,7 +140,6 @@
             touched[key] = true;
             showFieldError(key, problem(key));
             markSections();
-            syncBillingDefaults();
         });
         input.addEventListener('input', function () {
             if (touched[key]) showFieldError(key, problem(key));
@@ -167,18 +161,6 @@
         ['name', 'phone', 'email'].forEach(function (key) {
             if (inputs[key] && !inputs[key].value && saved[key]) inputs[key].value = saved[key];
         });
-    }
-
-    // The Payment Element uses these for Link and for the receipt.
-    var lastSynced = '';
-    function syncBillingDefaults() {
-        if (!state.paymentEl) return;
-        var c = contact();
-        var billing = { name: c.name, email: c.email || cfg.accountEmail || '', phone: c.phone };
-        var key = JSON.stringify(billing);
-        if (key === lastSynced) return;
-        lastSynced = key;
-        state.paymentEl.update({ defaultValues: { billingDetails: billing } });
     }
 
     // ------------------------------------------------------------- collection
@@ -415,73 +397,6 @@
         return ok;
     }
 
-    function mountPayment() {
-        if (!cfg.stripeKey || typeof Stripe === 'undefined') {
-            showPayError(t('checkout.errors.stripe_missing'));
-            $('payBtn').disabled = true;
-            return;
-        }
-        var c = contact();
-        state.stripe = Stripe(cfg.stripeKey, { locale: cfg.locale });
-        // Deferred intent: the element renders from the amount alone; the
-        // PaymentIntent is created only when the customer presses Pay.
-        state.elements = state.stripe.elements({
-            mode: 'payment',
-            amount: totalCents(),
-            currency: 'eur',
-            fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=Geologica:wght@400;500;600&display=swap' }],
-            appearance: {
-                theme: 'flat',
-                variables: {
-                    colorPrimary: '#0D0D0D',
-                    colorBackground: '#FFFFFF',
-                    colorText: '#0D0D0D',
-                    colorTextSecondary: '#5F5E59',
-                    colorTextPlaceholder: '#6F6E68',
-                    colorDanger: '#B3271B',
-                    colorSuccess: '#1F7A46',
-                    fontFamily: '"Geologica", system-ui, sans-serif',
-                    fontSizeBase: '16px',
-                    fontWeightMedium: '600',
-                    borderRadius: '0px',
-                    spacingUnit: '4px',
-                    gridRowSpacing: '16px',
-                    gridColumnSpacing: '16px',
-                    focusOutline: 'none',
-                    focusBoxShadow: '0 0 0 1px #0D0D0D'
-                },
-                rules: {
-                    '.Label': { fontWeight: '500', color: '#0D0D0D', marginBottom: '6px' },
-                    '.Input': { border: '1px solid #8A8983', boxShadow: 'none', padding: '12px 14px' },
-                    '.Input:hover': { border: '1px solid #5F5E59' },
-                    '.Input:focus': { border: '1px solid #0D0D0D', boxShadow: '0 0 0 1px #0D0D0D' },
-                    '.Input--invalid': { border: '1px solid #B3271B', boxShadow: 'none' },
-                    '.Error': { fontWeight: '600' },
-                    '.AccordionItem': { border: '1px solid #8A8983', boxShadow: 'none', backgroundColor: '#FFFFFF' },
-                    '.AccordionItem--selected': { border: '1px solid #0D0D0D', boxShadow: '0 0 0 1px #0D0D0D' }
-                }
-            }
-        });
-
-        // Accordion: Stripe's recommendation above four payment methods.
-        state.paymentEl = state.elements.create('payment', {
-            layout: { type: 'accordion', defaultCollapsed: false, radios: 'always', spacedAccordionItems: true },
-            // Link stays on: a customer with a Link account gets a one-time
-            // code and their saved card, with "pay without Link" in Stripe's ⋯
-            // menu. (Switching it off for a plain card form was tried and undone.)
-            business: { name: cfg.business },
-            defaultValues: { billingDetails: { name: c.name, email: c.email || cfg.accountEmail || '', phone: c.phone } },
-            fields: { billingDetails: { address: 'if_required' } }
-        });
-        state.paymentEl.on('ready', function () { $('peStatus').textContent = ''; });
-        state.paymentEl.on('loaderror', function () { showPayError(t('checkout.errors.stripe_missing')); });
-        state.paymentEl.on('change', function (e) {
-            $('coSectionPayment').classList.toggle('is-complete', !!e.complete);
-        });
-        state.paymentEl.mount('#paymentElement');
-        lastSynced = JSON.stringify({ name: c.name, email: c.email || cfg.accountEmail || '', phone: c.phone });
-    }
-
     var payLabel = $('payLabel');
     var payLabelHtml = payLabel.innerHTML;
 
@@ -492,14 +407,13 @@
         b.classList.toggle('is-busy', on);
         form.setAttribute('aria-busy', on ? 'true' : 'false');
         if (on) {
-            payLabel.textContent = t('checkout.paying');
+            payLabel.textContent = t('checkout.redirecting');
         } else {
             payLabel.innerHTML = payLabelHtml;
-            refreshTotals();
         }
     }
 
-    async function pay(ev) {
+    async function continueToPayment(ev) {
         ev.preventDefault();
         if (state.busy) return;
         showPayError('');
@@ -517,25 +431,11 @@
             else if (!pointMissing) $('termsAccept').focus({ preventScroll: true });
             return;
         }
-        if (!state.elements) {
-            showPayError(t('checkout.errors.stripe_missing'));
-            return;
-        }
 
         setBusy(true);
         try {
-            // 2. Stripe's fields. Must be the first await: Apple Pay only
-            // opens from inside the click.
-            var submitted = await state.elements.submit();
-            if (submitted.error) {
-                // The Payment Element shows the message next to the field.
-                scrollToEl($('coSectionPayment'));
-                setBusy(false);
-                return;
-            }
-
-            // 3. The PaymentIntent.
-            var res = await fetch('/api/create-payment-intent', {
+            // 2. Stripe's Checkout page for this cart and choice.
+            var res = await fetch('/api/create-checkout-session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
                 body: JSON.stringify({
@@ -547,7 +447,7 @@
                 })
             });
             var data = await res.json().catch(function () { return {}; });
-            if (!res.ok || !data.clientSecret) {
+            if (!res.ok || !data.url) {
                 showPayError(data.error || t('checkout.errors.generic'));
                 scrollToEl($('payError'));
                 if (data.reload) setTimeout(function () { location.reload(); }, 2500);
@@ -555,20 +455,8 @@
                 return;
             }
 
-            // 4. Confirm. Success leaves this page for /checkout/complete, so
-            // the button stays busy; only an error comes back here.
-            var result = await state.stripe.confirmPayment({
-                elements: state.elements,
-                clientSecret: data.clientSecret,
-                confirmParams: { return_url: cfg.returnUrl }
-            });
-            var err = result.error || {};
-            // Stripe's wording is right for the customer on card and form
-            // problems (declined, wrong CVC); anything else is ours to explain.
-            var own = err.type === 'card_error' || err.type === 'validation_error';
-            showPayError(own && err.message ? err.message : t('checkout.errors.generic'));
-            scrollToEl($('payError'));
-            setBusy(false);
+            // 3. Off to pay. The button stays busy: this page is being left.
+            window.location.assign(data.url);
         } catch (e) {
             console.error('Checkout error:', e);
             showPayError(t('checkout.errors.generic'));
@@ -578,7 +466,7 @@
 
     // ------------------------------------------------------------- wiring
 
-    form.addEventListener('submit', pay);
+    form.addEventListener('submit', continueToPayment);
     // Ticking the box clears its error straight away.
     $('termsAccept').addEventListener('change', function () {
         if (this.checked) termsOk();
@@ -595,7 +483,7 @@
     var search = $('acsSearch');
     if (search) {
         search.addEventListener('input', function () { render(); });
-        // Enter searches; it must not submit the payment form.
+        // Enter searches; it must not submit the checkout form.
         search.addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
     }
     var locBtn = $('acsLocateBtn');
@@ -610,8 +498,9 @@
         toggle.querySelector('[data-when="open"]').hidden = !open;
     });
 
-    // Coming back with the browser's Back button (e.g. from PayPal) can
-    // restore the page from cache mid-payment; make it usable again.
+    // Coming back from Stripe's page with the browser's Back button can
+    // restore this page from cache with the button still busy; make it
+    // usable again.
     window.addEventListener('pageshow', function (e) { if (e.persisted && state.busy) setBusy(false); });
 
     restore();
@@ -619,5 +508,4 @@
     if (checkedMethod) state.method = checkedMethod.value;
     refreshTotals();
     markSections();
-    mountPayment();
 })();

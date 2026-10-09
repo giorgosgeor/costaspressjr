@@ -2,11 +2,21 @@
 $title        = t('info.returns.title', false);
 $infoTitle    = t('info.returns.h1_full', false);
 $infoSubtitle = t('info.returns.subtitle', false);
-$infoUpdated  = '08/10/2026';
+$infoUpdated  = '2026-10-09';
 ob_start();
 ?>
+<?php // EU consumer law: pre-made designs carry the 14-day right of withdrawal;
+      // custom designs are made to the customer's specifications and don't
+      // (Consumer Rights Directive, art. 16(c)). OrderCancellation and the
+      // order confirmation email (OrderConfirmation) follow the same rules. ?>
 <h2><?= t('info.returns.h1') ?></h2>
 <p><?= t('info.returns.p1', false) ?></p>
+<p><?= t('info.returns.p1_how', false) ?></p>
+<p><?= t('info.returns.p1_return') ?></p>
+<p><?= t('info.returns.p1_refund') ?></p>
+
+<h2><?= t('info.returns.h_custom') ?></h2>
+<p><?= t('info.returns.p_custom', false) ?></p>
 
 <h2><?= t('info.returns.h2') ?></h2>
 <p><?= t('info.returns.p2', false) ?></p>
@@ -23,9 +33,13 @@ ob_start();
     <li><?= t('info.returns.p4_c') ?></li>
 </ul>
 
-<?php if (Env::get('APP_ENV', 'production') !== 'production'): ?>
-<p class="info-disclaimer"><?= t('info.returns.placeholder', false) ?></p>
-<?php endif; ?>
+<h2 id="withdrawal-form"><?= t('info.returns.h_form') ?></h2>
+<p><?= t('info.returns.form_intro') ?></p>
+<div class="withdrawal-form">
+    <?php foreach (WithdrawalForm::lines() as $line): ?>
+    <p><?= e($line) ?></p>
+    <?php endforeach; ?>
+</div>
 <?php
 $infoBody = ob_get_clean();
 require View::path('pages/info/_layout');

@@ -31,9 +31,12 @@ $currentLocale   = I18n::locale();
     <meta name="twitter:title" content="<?= htmlspecialchars($pageFullTitle) ?>">
     <meta name="twitter:description" content="<?= htmlspecialchars($pageDescription) ?>">
     <meta name="twitter:image" content="/images/og-card.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <?php // Geologica is self-hosted (studio.css). Preloading the files every page
+          // needs saves a round trip before text can render in it. ?>
+    <link rel="preload" href="/fonts/geologica/geologica-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <?php if ($currentLocale === 'el'): ?>
+    <link rel="preload" href="/fonts/geologica/geologica-greek.woff2" as="font" type="font/woff2" crossorigin>
+    <?php endif; ?>
     <?php // data-* behaviour (replaces inline on* handlers); before any image can fail ?>
     <?= View::script('/js/site/actions.js') ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/base.css')) ?>">

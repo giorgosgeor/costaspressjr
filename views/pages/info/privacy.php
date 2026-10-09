@@ -2,7 +2,7 @@
 $title        = t('info.privacy.title', false);
 $infoTitle    = t('info.privacy.title', false);
 $infoSubtitle = t('info.privacy.subtitle', false);
-$infoUpdated  = '08/10/2026';
+$infoUpdated  = '2026-10-09';
 ob_start();
 ?>
 <p><?= t('info.privacy.intro') ?></p>
@@ -33,6 +33,7 @@ ob_start();
 <ul>
     <li><?= t('info.privacy.share_stripe', false) ?></li>
     <li><?= t('info.privacy.share_acs', false) ?></li>
+    <li><?= t('info.privacy.share_osm', false) ?></li>
     <li><?= t('info.privacy.share_email', false) ?></li>
     <li><?= t('info.privacy.share_hosting', false) ?></li>
 </ul>

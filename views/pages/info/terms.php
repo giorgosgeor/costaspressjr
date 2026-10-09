@@ -2,7 +2,7 @@
 $title         = t('info.terms.title', false);
 $infoTitle     = t('info.terms.title', false);
 $infoSubtitle  = t('info.terms.subtitle', false);
-$infoUpdated   = '08/10/2026';
+$infoUpdated   = '2026-10-09';
 ob_start();
 ?>
 <p><?= t('info.terms.intro') ?></p>

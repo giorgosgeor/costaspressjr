@@ -58,16 +58,28 @@ Copy `.env.example` to `.env` on the server (never into git) and fill in:
 ## 4. Stripe (live mode)
 
 1. **Restricted key** (Developers → API keys → Create restricted key) with
-   only: PaymentIntents *write*, Refunds *write*, Charges *read*, Disputes
-   *read*, **Balance transactions *read*** (a cancelled order is refunded
-   minus Stripe's fee, which is read from there). That `rk_live_…` key is
-   `STRIPE_SECRET_KEY`; the `pk_live_…` key is `STRIPE_PUBLISHABLE_KEY`.
+   only: **Checkout Sessions *write*** (customers pay on Stripe's hosted
+   Checkout page), PaymentIntents *write*, Refunds *write*, Charges *read*,
+   Disputes *read*, **Balance transactions *read*** (a cancelled custom-design
+   order is refunded minus Stripe's fee, which is read from there). That
+   `rk_live_…` key is `STRIPE_SECRET_KEY`; the `pk_live_…` key is
+   `STRIPE_PUBLISHABLE_KEY`.
 2. **Webhook** (Developers → Webhooks → Add endpoint):
    `https://www.your-domain/stripe/webhook`, events `payment_intent.succeeded`,
    `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`. Its
    signing secret (`whsec_…`) is `STRIPE_WEBHOOK_SECRET`.
-3. Settings → Payment methods: switch on the ones to offer. For Apple Pay,
-   register the domain there too.
+3. Settings → Payment methods: switch on the ones to offer.
+4. Settings → Public details: **Terms of service URL**
+   `https://www.your-domain/terms`. With live keys the Checkout page asks
+   customers to accept it, and Stripe refuses to open the page without it.
+   (Test keys skip that, so testing doesn't need it.)
+5. Settings → **Tax**: Stripe Tax set up (head office address, default product
+   tax code, prices *inclusive* of tax, and a Cyprus VAT registration if the
+   business is registered). The Checkout page calculates tax automatically
+   and won't open until this is done.
+6. Settings → Branding: logo and colours for the Checkout page.
+
+`STRIPE_INTEGRATION_TODO.md` has the details of each.
 
 ## 5. Email that arrives
 
@@ -92,12 +104,13 @@ also `php database/sync_acs_points.php` once a day.
 2. Contact page, footer, Terms and Privacy show the business details.
 3. Register an account: the verification email arrives (not in spam).
 4. Place a real order with your own card — the smallest one, store pickup.
-   The order appears in /admin/orders and the Stripe Dashboard shows the
-   payment.
-5. Open that order from My Account and cancel it. You should get back the
-   amount minus Stripe's fee, and an email should reach `ALERT_EMAIL`. (If
-   the cancel fails with a permissions error, the restricted key is missing
-   Balance transactions *read*.)
+   "Continue to payment" opens Stripe's page; after paying you land on the
+   order confirmation, and the confirmation email arrives. The order appears
+   in /admin/orders and the Stripe Dashboard shows the payment.
+5. Open that order from My Account and cancel it. A custom-design order comes
+   back minus Stripe's fee, one with a pre-made design in full, and an email
+   should reach `ALERT_EMAIL`. (If the cancel fails with a permissions error,
+   the restricted key is missing Balance transactions *read*.)
 6. Send a message from the contact form; it reaches `CONTACT_EMAIL`.
 
 ## After launch

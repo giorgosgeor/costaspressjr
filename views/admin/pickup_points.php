@@ -1,7 +1,6 @@
 <?php $title = 'Pickup Points'; ?>
-<?php $extraCss[] = '/css/admin/pickup-points.css'; require View::path('layouts/admin_header'); ?>
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<?php // Leaflet 1.9.4 is self-hosted under /js/vendor/leaflet (not a CDN). ?>
+<?php $extraCss[] = '/js/vendor/leaflet/leaflet.css'; $extraCss[] = '/css/admin/pickup-points.css'; require View::path('layouts/admin_header'); ?>
 
 <div class="admin-header">
     <h1>Pickup Points</h1>
@@ -140,7 +139,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<?= View::script('/js/vendor/leaflet/leaflet.js') ?>
 <?= View::json('pickup-points-data', array_map(fn($p) => ['lat' => (float)$p['lat'], 'lng' => (float)$p['lng'], 'name' => $p['name'], 'active' => (bool)$p['active']], $points)) ?>
 <?= View::script('/js/admin/pickup-points.js') ?>
 

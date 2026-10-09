@@ -84,18 +84,6 @@ class Stripe {
         return $data;
     }
 
-    public static function createPaymentIntent(int $amountCents, string $currency, array $metadata = []): array {
-        $params = [
-            'amount'   => $amountCents,
-            'currency' => $currency,
-            'automatic_payment_methods[enabled]' => 'true',
-        ];
-        foreach ($metadata as $k => $v) {
-            $params['metadata[' . $k . ']'] = $v;
-        }
-        return self::request('POST', '/payment_intents', $params);
-    }
-
     /**
      * What a payment came to, what Stripe kept as its fee, and how much has
      * been refunded so far — all in cents. The fee comes from the charge's
@@ -123,6 +111,20 @@ class Stripe {
         return self::request('GET', '/payment_intents/' . urlencode($id), [
             'expand[]' => 'latest_charge',
         ]);
+    }
+
+    /**
+     * A Stripe-hosted Checkout page (CheckoutController::createCheckoutSession).
+     * $params is in the API's own nested shape and goes out form-encoded, so
+     * booleans must be the strings 'true' / 'false'.
+     */
+    public static function createCheckoutSession(array $params): array {
+        return self::request('POST', '/checkout/sessions', $params);
+    }
+
+    /** A Checkout Session, as the return page reads it after payment. */
+    public static function retrieveCheckoutSession(string $id): array {
+        return self::request('GET', '/checkout/sessions/' . urlencode($id));
     }
 
     /** One page of PaymentIntents, newest first (see database/reconcile_payments.php). */

@@ -6,9 +6,6 @@
     <title><?= htmlspecialchars($title) ?></title>
     <link rel="icon" type="image/png" href="/images/logo.png">
     <meta name="robots" content="noindex, nofollow">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <?php // This page renders standalone, outside the admin layout, so it has to
           // pull in base.css itself — every colour, radius and font below is a
           // var() defined there. Without it the controls render unstyled. ?>

@@ -2,7 +2,7 @@
 $title        = t('info.cookies.title', false);
 $infoTitle    = t('info.cookies.title', false);
 $infoSubtitle = t('info.cookies.subtitle', false);
-$infoUpdated  = '08/10/2026';
+$infoUpdated  = '2026-10-09';
 ob_start();
 ?>
 <p><?= t('info.cookies.intro') ?></p>
@@ -12,6 +12,8 @@ ob_start();
 <ul>
     <li><?= t('info.cookies.essential_phpsessid', false) ?></li>
     <li><?= t('info.cookies.essential_csrf') ?></li>
+    <li><?= t('info.cookies.essential_lang', false) ?></li>
+    <li><?= t('info.cookies.essential_stripe', false) ?></li>
 </ul>
 
 <h2><?= t('info.cookies.preference') ?></h2>

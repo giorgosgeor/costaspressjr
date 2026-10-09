@@ -2,7 +2,7 @@
 $title        = t('info.sizing.title', false);
 $infoTitle    = t('info.sizing.title', false);
 $infoSubtitle = t('info.sizing.subtitle', false);
-$infoUpdated  = '08/10/2026';
+$infoUpdated  = '2026-10-08';
 ob_start();
 ?>
 <h2><?= t('info.sizing.h1') ?></h2>

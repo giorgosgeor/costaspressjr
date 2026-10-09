@@ -384,7 +384,8 @@ class CartController extends Controller {
 
         if ($ok) {
             // Line/cart totals use the stored retail unit_price plus the flat
-            // print-placement fee, matching the Stripe charge in createPaymentIntent().
+            // print-placement fee, matching the Stripe charge in
+            // CheckoutController::createCheckoutSession().
             $unitTotal = (float)$item['unit_price'] + (float)($item['custom_design_fee'] ?? 0);
             $lineTotal = $unitTotal * $quantity;
 

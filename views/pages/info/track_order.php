@@ -2,7 +2,7 @@
 $title        = t('info.track.title', false);
 $infoTitle    = t('info.track.h1', false);
 $infoSubtitle = t('info.track.subtitle', false);
-$infoUpdated  = '08/10/2026';
+$infoUpdated  = '2026-10-08';
 ob_start();
 ?>
 <?php if (\Auth::check()): ?>

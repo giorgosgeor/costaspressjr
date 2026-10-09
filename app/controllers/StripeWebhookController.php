@@ -7,6 +7,9 @@ class StripeWebhookController extends Controller {
     /**
      * POST /stripe/webhook — the backstop. If the customer paid and closed the
      * tab before coming back, this still places the order (or refunds it).
+     * Payments on Stripe's hosted Checkout page arrive here as
+     * payment_intent.succeeded too; their intent's checkout_ref metadata
+     * leads OrderPlacement to the checkout they belong to.
      * It also keeps order_payments.status in step with refunds and disputes
      * made outside the site.
      * Configure in Stripe: events payment_intent.succeeded, charge.refunded,

@@ -9,10 +9,6 @@ require View::path('layouts/customer_header');
 $acsAvailable = !empty($checkout['acsAvailable']);
 $acsFee       = $checkout['acsFee'] ?? null;
 $storeAddress = (string)($checkout['storeAddress'] ?? '');
-$appUrl       = rtrim((string)Env::get('APP_URL', ''), '/');
-if ($appUrl === '') {
-    $appUrl = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
-}
 $isGuest = !Auth::check();
 $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
 ?>
@@ -209,27 +205,12 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                     <?php endif; ?>
                 </section>
 
-                <!-- 3 · Payment -->
-                <section class="co-section" id="coSectionPayment" aria-labelledby="coPaymentTitle">
-                    <div class="co-section-head">
-                        <span class="co-step" aria-hidden="true">
-                            <span class="co-step-num">3</span>
-                            <svg class="co-step-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        </span>
-                        <h2 class="co-section-title" id="coPaymentTitle"><?= t('checkout.steps.payment') ?></h2>
-                    </div>
-                    <p class="co-section-lead"><?= t('checkout.payment.lead') ?></p>
-
-                    <?php // Stripe draws its own loading skeleton, styled by the
-                          // appearance settings in pages/checkout.js. ?>
-                    <div class="co-pe">
-                        <div id="paymentElement"></div>
-                    </div>
-                    <p class="visually-hidden" id="peStatus" role="status"><?= t('checkout.payment.loading') ?></p>
-                </section>
+                <?php // The payment itself is on Stripe's hosted Checkout page,
+                      // which "Continue to payment" opens (CheckoutController::
+                      // createCheckoutSession). ?>
 
                 <?php // Required before paying: pages/checkout.js stops at it, and
-                      // /api/create-payment-intent refuses a payment without it. ?>
+                      // /api/create-checkout-session refuses a payment without it. ?>
                 <?php // The refund policy, said plainly before anyone pays. ?>
                 <div class="co-policy" id="coPolicy">
                     <p class="co-policy-title"><?= t('checkout.policy.title') ?></p>
@@ -258,9 +239,10 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                         <span class="co-pay-icon" aria-hidden="true">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="1"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                         </span>
-                        <span class="co-pay-label" id="payLabel"><?= t('checkout.pay') ?> <span data-co-total><?= money($cartTotal) ?></span></span>
+                        <span class="co-pay-label" id="payLabel"><?= t('checkout.continue_payment') ?></span>
                     </button>
                 </div>
+                <p class="co-hint co-continue-note"><?= t('checkout.continue_note') ?></p>
 
                 <ul class="co-trust">
                     <li>
@@ -284,19 +266,14 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
 </div>
 
 <script type="application/json" id="checkoutConfig"><?= json_encode([
-    'stripeKey'     => (string)Env::get('STRIPE_PUBLISHABLE_KEY', ''),
-    'locale'        => I18n::locale() === 'el' ? 'el' : 'en',
     'subtotalCents' => (int)round((float)$cartTotal * 100),
     'acsFeeCents'   => $acsAvailable ? (int)round((float)$acsFee * 100) : null,
-    'accountEmail'  => $accountEmail ?? null,
-    'isGuest'       => $isGuest,
-    'business'      => t('site.brand', false),
-    'returnUrl'     => $appUrl . '/checkout/complete',
-    'leafletCss'    => 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css',
-    'leafletJs'     => 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',
+    // Leaflet 1.9.4, self-hosted: a script from a CDN on the checkout page
+    // could be swapped for anything the CDN served.
+    'leafletCss'    => Asset::url('/js/vendor/leaflet/leaflet.css'),
+    'leafletJs'     => Asset::url('/js/vendor/leaflet/leaflet.js'),
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?></script>
 
-<script src="https://js.stripe.com/v3/"></script>
 <script src="<?= htmlspecialchars(Asset::url('/js/pages/checkout.js')) ?>" defer></script>
 
 <?php require View::path('layouts/customer_footer'); ?>

@@ -180,14 +180,18 @@ class AccountController extends Controller {
             unset($_SESSION['order_notice']);
         }
 
-        // Cancelling refunds the payment minus Stripe's fee; the exact sums
-        // are shown before the customer confirms (null: shown without figures).
-        $canCancel = OrderCancellation::canCancel($order);
-        $quote     = $canCancel ? OrderCancellation::quote((string)$order['payment_intent_id']) : null;
+        // Cancelling refunds everything if the order has a pre-made design,
+        // otherwise the payment minus Stripe's fee (OrderCancellation); the
+        // exact sums are shown before the customer confirms (null: shown
+        // without figures).
+        $hasPremade = OrderCancellation::hasPremade($this->db, $orderId);
+        $canCancel  = OrderCancellation::canCancel($order);
+        $quote      = $canCancel ? OrderCancellation::quote((string)$order['payment_intent_id'], !$hasPremade) : null;
 
         $this->render('account/order', [
             'order'      => $order,
             'orderItems' => $orderItems,
+            'hasPremade' => $hasPremade,
             'canCancel'  => $canCancel,
             'quote'      => $quote,
             'notice'     => $notice,

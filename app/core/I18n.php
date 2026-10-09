@@ -129,7 +129,11 @@ class I18n
     private static function writeCookie(string $locale): void
     {
         if (headers_sent()) return;
-        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+        // Secure in production, like the session cookie (public/index.php):
+        // production is HTTPS-only (.htaccess), and behind a TLS proxy the
+        // request itself looks like plain http, so HTTPS alone would miss it.
+        $secure = Env::get('APP_ENV', 'production') === 'production'
+            || (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
         setcookie(self::COOKIE_NAME, $locale, [
             'expires'  => time() + 60 * 60 * 24 * 365,
             'path'     => '/',

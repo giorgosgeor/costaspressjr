@@ -7,9 +7,6 @@
     <title><?= htmlspecialchars($title) ?> - Admin</title>
     <link rel="icon" type="image/png" href="/images/logo.png">
     <meta name="robots" content="noindex, nofollow">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <?php // Standalone page, outside the admin layout — base.css holds the var()
           // definitions this stylesheet is built on and must load first. ?>
     <?php // data-* behaviour (replaces inline on* handlers); before any image can fail ?>

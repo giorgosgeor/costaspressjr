@@ -1,11 +1,22 @@
 <?php
 
 /**
- * Orders are not refundable. The one exception: a customer may cancel their
- * own order while it is still 'pending' (before production), and gets back
- * what they paid MINUS Stripe's processing fee — Stripe keeps its fee on a
- * refund, so the shop passes that cost on rather than paying it. Once the
- * shop moves the order to 'processing' it can't be cancelled at all.
+ * A customer may cancel their own order while it is still 'pending' (before
+ * production). What comes back depends on what is in it (see /returns):
+ *   - any pre-made design: everything they paid. Pre-made designs carry the
+ *     EU 14-day right of withdrawal, and a withdrawal is refunded in full,
+ *     so the shop absorbs Stripe's fee;
+ *   - custom designs only: what they paid MINUS Stripe's processing fee.
+ *     Made to the customer's own specifications, they have no right of
+ *     withdrawal (Consumer Rights Directive, art. 16(c)), so cancelling is a
+ *     courtesy, and Stripe keeps its fee on a refund — the shop passes that
+ *     cost on rather than paying it.
+ * Once the shop moves the order to 'processing' it can't be cancelled here.
+ * Pre-made designs can still be withdrawn within 14 days of collection by
+ * telling the shop, which refunds them from the Stripe dashboard.
+ *
+ * Someone who keeps ordering and cancelling costs the shop a fee each time;
+ * tooManyRecent() lets the checkout pause new orders from such an account.
  *
  * Order of work matters:
  *   1. The order is claimed with a conditional UPDATE (pending → cancelled),
@@ -18,8 +29,50 @@
  */
 class OrderCancellation
 {
+    /** Cancelled orders an account may have in RECENT_DAYS days before new ones pause. */
+    public const RECENT_LIMIT = 3;
+    public const RECENT_DAYS  = 30;
+
     public function __construct(private PDO $db)
     {
+    }
+
+    /** Whether any item of the order is a pre-made design (the 14-day right applies). */
+    public static function hasPremade(PDO $db, int $orderId): bool
+    {
+        $stmt = $db->prepare("
+            SELECT d.design_data
+            FROM order_items oi
+            JOIN order_item_designs d ON d.order_item_id = oi.id
+            WHERE oi.order_id = ?
+        ");
+        $stmt->execute([$orderId]);
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $json) {
+            $data = json_decode((string)$json, true);
+            if (is_array($data) && ($data['type'] ?? '') === 'premade') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Whether this account has had RECENT_LIMIT or more orders cancelled in
+     * the last RECENT_DAYS days. The checkout then takes no new order from
+     * it (the customer is asked to contact the shop) until the oldest falls
+     * out of the window; orders already placed keep every right to cancel.
+     * Cancellations by staff count too — three in a month is worth a word
+     * with the customer either way.
+     */
+    public static function tooManyRecent(PDO $db, int $userId): bool
+    {
+        $stmt = $db->prepare("
+            SELECT COUNT(*) FROM orders
+            WHERE user_id = ? AND status = 'cancelled'
+              AND created_at >= NOW() - INTERVAL " . self::RECENT_DAYS . " DAY
+        ");
+        $stmt->execute([$userId]);
+        return (int)$stmt->fetchColumn() >= self::RECENT_LIMIT;
     }
 
     /** Whether an order row (with its payment's status and intent) can be cancelled now. */
@@ -31,13 +84,15 @@ class OrderCancellation
     }
 
     /**
-     * What cancelling would give back, in cents: the payment, Stripe's fee
-     * on it, and the refund (the difference). Null when Stripe can't say —
-     * the order page then words it without figures.
+     * What cancelling would give back, in cents: the payment, the fee kept
+     * from it, and the refund (the difference). $keepFee is false for an
+     * order with a pre-made design: no fee is kept and everything comes back.
+     * Null when Stripe can't say — the order page then words it without
+     * figures.
      *
      * @return ?array{paid:int, fee:int, refund:int}
      */
-    public static function quote(string $piId): ?array
+    public static function quote(string $piId, bool $keepFee = true): ?array
     {
         try {
             $a = Stripe::paymentAmounts($piId);
@@ -45,12 +100,14 @@ class OrderCancellation
             Log::warning('cancellation quote unavailable', ['pi' => $piId, 'error' => $e->getMessage()]);
             return null;
         }
-        $refund = $a['amount'] - $a['fee'] - $a['refunded'];
-        return ['paid' => $a['amount'], 'fee' => $a['fee'], 'refund' => max(0, $refund)];
+        $fee    = $keepFee ? $a['fee'] : 0;
+        $refund = $a['amount'] - $fee - $a['refunded'];
+        return ['paid' => $a['amount'], 'fee' => $fee, 'refund' => max(0, $refund)];
     }
 
     /**
-     * Cancel and refund (minus the fee). Only the customer's own order.
+     * Cancel and refund (in full, or minus the fee — see above). Only the
+     * customer's own order.
      *
      * @return string 'cancelled' | 'not_allowed' | 'refund_failed'
      */
@@ -73,6 +130,9 @@ class OrderCancellation
         if (!$order || !self::canCancel($order)) {
             return 'not_allowed';
         }
+        // Read before anything changes: if this failed after the claim, the
+        // order would be left cancelled with nothing refunded.
+        $keepFee = !self::hasPremade($this->db, $orderId);
 
         // 1. Claim it. Zero rows means another request got there first:
         //    staff moving it on, or this customer's own second click.
@@ -88,9 +148,9 @@ class OrderCancellation
                 ->execute([$orderId]);
         };
 
-        // 2. The fee, then the refund of the rest.
+        // 2. The fee (none with a pre-made design), then the refund of the rest.
         $piId  = (string)$order['payment_intent_id'];
-        $quote = self::quote($piId);
+        $quote = self::quote($piId, $keepFee);
         if ($quote === null || $quote['refund'] <= 0) {
             $undo();
             return $quote === null ? 'refund_failed' : 'not_allowed';
@@ -98,7 +158,9 @@ class OrderCancellation
         try {
             Stripe::refundPaymentIntent(
                 $piId,
-                sprintf('Order #%d cancelled by the customer before production; refunded minus the %s Stripe fee', $orderId, money($quote['fee'] / 100)),
+                $keepFee
+                    ? sprintf('Order #%d cancelled by the customer before production; refunded minus the %s Stripe fee', $orderId, money($quote['fee'] / 100))
+                    : sprintf('Order #%d cancelled by the customer before production; refunded in full (pre-made design: right of withdrawal)', $orderId),
                 'requested_by_customer',
                 $quote['refund']
             );
@@ -111,8 +173,8 @@ class OrderCancellation
 
         // Record it at once, then read the exact state back from Stripe (the
         // charge.refunded webhook does the same later).
-        $this->db->prepare("UPDATE order_payments SET status = 'partially_refunded', refunded_amount = ? WHERE payment_intent_id = ?")
-            ->execute([round($quote['refund'] / 100, 2), $piId]);
+        $this->db->prepare("UPDATE order_payments SET status = ?, refunded_amount = ? WHERE payment_intent_id = ?")
+            ->execute([$quote['fee'] > 0 ? 'partially_refunded' : 'refunded', round($quote['refund'] / 100, 2), $piId]);
         try {
             (new OrderPlacement($this->db))->syncPaymentStatus($piId);
         } catch (Throwable $e) {

@@ -3,13 +3,13 @@
 /**
  * Turns a paid Stripe PaymentIntent into an order.
  *
- * Three callers reach this for the same payment, in any order and possibly at
- * the same moment:
- *   - the checkout page, right after an in-page payment (card, Apple Pay,
- *     Google Pay);
- *   - the return page, after a redirect payment (Revolut Pay, PayPal);
+ * Several callers reach this for the same payment, in any order and possibly
+ * at the same moment:
+ *   - the return page, when Stripe's hosted Checkout page sends the customer
+ *     back (CheckoutController::complete);
  *   - the payment_intent.succeeded webhook, the backstop for a customer who
- *     paid and never came back.
+ *     paid and never came back;
+ *   - database/reconcile_payments.php, for any payment both of them missed.
  * So place() is idempotent — a payment that already has an order returns that
  * order — and the UNIQUE index on order_payments.payment_intent_id settles a
  * race between two of them.
@@ -82,7 +82,7 @@ class OrderPlacement
             return ['status' => 'failed', 'http' => 409, 'error' => I18n::t('checkout.errors.refunded'), 'refunded' => true];
         }
 
-        $pending = $this->pendingFor($piId);
+        $pending = $this->pendingFor($piId) ?? $this->claimPending($piId, $pi);
         if (!$pending) {
             if (($pi['metadata']['checkout'] ?? '') !== self::TAG) {
                 // Not an intent this checkout created — not ours to refund.
@@ -192,6 +192,17 @@ class OrderPlacement
             // refund() first checks whether a concurrent caller placed it.
             return $this->refund($piId, 500, 'order insert failed');
         }
+
+        // The customer's confirmation, with the cancellation terms the law
+        // wants them to keep (OrderConfirmation). Only the caller that placed
+        // the order gets here, so it is sent once; a failure is only logged.
+        OrderConfirmation::send(
+            $this->db,
+            $orderId,
+            (string)($pending['contact_email'] ?? ''),
+            (string)($pending['contact_name'] ?? ''),
+            (string)($pi['metadata']['locale'] ?? I18n::locale())
+        );
 
         return ['status' => 'placed', 'order_id' => $orderId, 'tracking' => $trackingToken, 'user_id' => $ownerId];
     }
@@ -305,6 +316,24 @@ class OrderPlacement
         $stmt = $this->db->prepare("SELECT * FROM pending_checkouts WHERE payment_intent_id = ?");
         $stmt->execute([$piId]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
+     * A payment made on Stripe's hosted Checkout page. Its intent didn't
+     * exist yet when the checkout was saved, so the row was saved under our
+     * own checkout_ref, which Checkout copied into the intent's metadata
+     * (CheckoutController::createCheckoutSession). Link the two. A concurrent
+     * caller may just have done it; that comes to the same thing.
+     */
+    private function claimPending(string $piId, array $pi): ?array
+    {
+        $ref = (string)($pi['metadata']['checkout_ref'] ?? '');
+        if (!preg_match('/^[a-f0-9]{32}$/', $ref)) {
+            return null;
+        }
+        $this->db->prepare("UPDATE pending_checkouts SET payment_intent_id = ? WHERE checkout_ref = ? AND payment_intent_id IS NULL")
+            ->execute([$piId, $ref]);
+        return $this->pendingFor($piId);
     }
 
     private function cartItems(int $cartId): array

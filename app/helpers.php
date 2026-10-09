@@ -38,6 +38,38 @@ function money(mixed $amount): string
 }
 
 /**
+ * A date in words, in the page's language: long_date('2026-10-08') →
+ * "8 October 2026" / "8 Οκτωβρίου 2026". Unlike 08/10/2026, it can't be
+ * read as the 10th of August.
+ */
+function long_date(string $date): string
+{
+    $ts = strtotime($date);
+    if ($ts === false) {
+        return $date;
+    }
+    return I18n::t('date.long', [
+        'day'   => date('j', $ts),
+        'month' => I18n::t('date.month_' . date('n', $ts)),
+        'year'  => date('Y', $ts),
+    ]);
+}
+
+/**
+ * The site's own absolute address (APP_URL, which production requires),
+ * for links that leave the page: emails, the sitemap. app_url('/returns').
+ */
+function app_url(string $path = ''): string
+{
+    $base = rtrim((string)Env::get('APP_URL', ''), '/');
+    if ($base === '') {
+        $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        $base  = ($https ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    }
+    return $base . $path;
+}
+
+/**
  * A stored image path as a URL path. Paths are saved as "public/…",
  * "images/…" or "/images/…"; all three come back as "/images/…".
  */

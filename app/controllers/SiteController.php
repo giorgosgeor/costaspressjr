@@ -52,7 +52,7 @@ class SiteController extends Controller {
         foreach ($private as $path) {
             echo "Disallow: $path\n";
         }
-        echo "Allow: /\n\nSitemap: " . self::base() . "/sitemap.xml\n";
+        echo "Allow: /\n\nSitemap: " . app_url('/sitemap.xml') . "\n";
     }
 
     /**
@@ -60,7 +60,7 @@ class SiteController extends Controller {
      * product and every active premade design.
      */
     public function sitemap(): void {
-        $base = self::base();
+        $base = app_url();
 
         $urls = [
             ['path' => '/',          'changefreq' => 'weekly',  'priority' => '1.0'],
@@ -100,15 +100,5 @@ class SiteController extends Controller {
             echo "  </url>\n";
         }
         echo '</urlset>' . "\n";
-    }
-
-    /** The site's own address (APP_URL), without a trailing slash. */
-    private static function base(): string {
-        $url = rtrim((string)Env::get('APP_URL', ''), '/');
-        if ($url !== '') {
-            return $url;
-        }
-        $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
-        return ($https ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
     }
 }

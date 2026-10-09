@@ -346,10 +346,6 @@
 .acs-selected-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: var(--tracking-caps); color: var(--spot); }
 .acs-selected-hours { font-size: 0.84rem; color: var(--ink-muted); }
 
-/* ---- Payment --------------------------------------------------------- */
-/* Reserve room while Stripe loads so the Pay button doesn't jump. */
-.co-pe { position: relative; min-height: 200px; }
-
 /* ---- Alerts ---------------------------------------------------------- */
 .co-alert {
     display: flex;
@@ -368,6 +364,8 @@
 
 /* ---- Pay ------------------------------------------------------------- */
 .co-paybar { margin-top: var(--space-2); }
+/* The payment itself is on Stripe's page; the line under the button says so. */
+.co-continue-note { margin-top: 10px; text-align: center; }
 
 .co-pay {
     width: 100%;

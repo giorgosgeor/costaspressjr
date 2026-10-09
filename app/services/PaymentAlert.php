@@ -46,9 +46,10 @@ class PaymentAlert
     }
 
     /**
-     * A customer cancelled their order from the website and was refunded
-     * minus Stripe's fee (OrderCancellation). It was still 'pending', but
-     * someone may already have it on the bench — this tells them to stop.
+     * A customer cancelled their order from the website and was refunded —
+     * in full if it had a pre-made design, otherwise minus Stripe's fee
+     * (OrderCancellation). It was still 'pending', but someone may already
+     * have it on the bench — this tells them to stop.
      */
     public static function orderCancelled(PDO $db, int $orderId, string $piId, float $paid, float $refunded, float $fee): void
     {
@@ -60,16 +61,20 @@ class PaymentAlert
             $stmt->execute([$orderId]);
             // shipping_address is the order's contact block: where, then name, phone, email.
             $contact = trim(implode(' · ', array_slice(array_filter(array_map('trim', explode("\n", (string)$stmt->fetchColumn()))), 1)));
+            $full = $fee <= 0;
             self::send(
                 $db,
-                'Order #' . $orderId . ' cancelled by the customer — refunded minus the fee',
+                'Order #' . $orderId . ' cancelled by the customer — ' . ($full ? 'refunded in full' : 'refunded minus the fee'),
                 'The customer cancelled order #' . $orderId . ' on the website before it went into processing. '
-                . 'They were refunded automatically, minus Stripe\'s processing fee. Please don\'t start or print it.',
+                . ($full
+                    ? 'It has a pre-made design, so they were refunded in full automatically (their 14-day right of withdrawal). '
+                    : 'They were refunded automatically, minus Stripe\'s processing fee. ')
+                . 'Please don\'t start or print it.',
                 [[
                     'Order'    => '#' . $orderId,
                     'Paid'     => '€' . number_format($paid, 2),
                     'Refunded' => '€' . number_format($refunded, 2),
-                    'Fee kept' => '€' . number_format($fee, 2) . ' (Stripe)',
+                    'Fee kept' => $full ? 'none (the shop pays Stripe\'s fee)' : '€' . number_format($fee, 2) . ' (Stripe)',
                     'Payment'  => $piId,
                     'Customer' => $contact !== '' ? $contact : 'see the order',
                 ]]

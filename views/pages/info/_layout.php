@@ -7,7 +7,8 @@
             $crumbs   = [[t('header.nav.home', false), '/'], [$pageName, null]];
             $heading  = $pageName;
             $lead     = $infoSubtitle ?? '';
-            $headNote = isset($infoUpdated) ? I18n::t('info.last_updated', ['date' => htmlspecialchars($infoUpdated)]) : '';
+            // $infoUpdated is a Y-m-d date, shown in words in the page's language.
+            $headNote = isset($infoUpdated) ? I18n::t('info.last_updated', ['date' => htmlspecialchars(long_date($infoUpdated))]) : '';
             require View::path('partials/page_head');
         ?>
         <article class="info-article">

@@ -1,15 +1,17 @@
 <?php
 
 /**
- * How an order gets to the customer. There is no home delivery: they collect
- * it from the store (free) or from an ACS point (ACS_PICKUP_FEE).
+ * How an order gets to the customer. There is no home delivery and no
+ * collection from the store: every order is sent by ACS to the ACS store or
+ * Smartpoint locker the customer picks, for a fixed fee (ACS_PICKUP_FEE).
+ * STORE remains only for orders placed when store pickup was offered.
  */
 class Pickup
 {
     public const STORE = 'store';
     public const ACS   = 'acs_point';
 
-    /** Fee for ACS collection in EUR, or null while it isn't set — the option is hidden until then. */
+    /** The delivery fee in EUR, or null while it isn't set — the checkout takes no orders until it is. */
     public static function acsFee(): ?float
     {
         $raw = trim((string)Env::get('ACS_PICKUP_FEE', ''));
@@ -25,7 +27,7 @@ class Pickup
         return trim((string)Env::get('STORE_PICKUP_ADDRESS', ''));
     }
 
-    /** ACS collection is offered only with a fee set AND at least one point to pick. */
+    /** Orders can be taken only with a fee set AND at least one point to pick. */
     public static function acsAvailable(PDO $db): bool
     {
         if (self::acsFee() === null) {
@@ -76,26 +78,24 @@ class Pickup
      * @param ?string $accountEmail the logged-in customer's email; null for guests,
      *                              who must type one.
      * @return array either ['error' => message] or the normalised choice:
-     *               method, point (row|null), fee, name, phone, email
+     *               method, point (row), fee, name, phone, email
      */
     public static function validateChoice(PDO $db, array $data, ?string $accountEmail): array
     {
         $method = (string)($data['delivery_method'] ?? '');
-        $point  = null;
-        $fee    = 0.0;
 
-        if ($method === self::ACS) {
-            if (!self::acsAvailable($db)) {
-                return ['error' => I18n::t('checkout.pickup.errors.acs_unavailable')];
-            }
-            $point = self::findActivePoint($db, (int)($data['pickup_point_id'] ?? 0));
-            if (!$point) {
-                return ['error' => I18n::t('checkout.pickup.errors.no_point')];
-            }
-            $fee = (float)self::acsFee();
-        } elseif ($method !== self::STORE) {
-            return ['error' => I18n::t('checkout.pickup.errors.no_method')];
+        // ACS is the only way an order travels; store pickup is no longer offered.
+        if ($method !== self::ACS) {
+            return ['error' => I18n::t('checkout.pickup.errors.no_point')];
         }
+        if (!self::acsAvailable($db)) {
+            return ['error' => I18n::t('checkout.pickup.errors.acs_unavailable')];
+        }
+        $point = self::findActivePoint($db, (int)($data['pickup_point_id'] ?? 0));
+        if (!$point) {
+            return ['error' => I18n::t('checkout.pickup.errors.no_point')];
+        }
+        $fee = (float)self::acsFee();
 
         $contact = is_array($data['contact'] ?? null) ? $data['contact'] : [];
         // Control characters out; names are free text in two alphabets.
@@ -106,9 +106,9 @@ class Pickup
             return ['error' => I18n::t('checkout.pickup.errors.name')];
         }
 
-        // ACS requires a mobile number for Smartpoint parcels, and the store
-        // calls it when the order is ready. Loose check: 8–15 digits, with
-        // the usual + ( ) - and spaces allowed.
+        // ACS needs a mobile number: it texts the customer when the parcel
+        // arrives (with the code, for a Smartpoint locker). Loose check: 8–15
+        // digits, with the usual + ( ) - and spaces allowed.
         $phone  = $clean($contact['phone'] ?? '');
         $digits = preg_replace('/\D/', '', $phone);
         if (!preg_match('/^[+\d][\d\s()\-]*$/', $phone) || strlen($digits) < 8 || strlen($digits) > 15 || mb_strlen($phone) > 30) {

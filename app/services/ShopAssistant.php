@@ -217,7 +217,8 @@ final class ShopAssistant
                     'wrong', 'broken', 'misprint', 'defect', 'complaint',
                     'επιστροφ', 'αλλαγ', 'χαλασμεν', 'ελαττωματικ', 'λαθος', 'παραπον',
                 ],
-                'answer' => fn() => $this->answerFromFaq('info.returns.p1', 'info.faq.a5'),
+                // The policy in one line (pre-made vs custom), then faults.
+                'answer' => fn() => $this->answerFromFaq('info.returns.subtitle', 'info.faq.a5'),
                 'links'  => [
                     ['label' => t('assistant.link.returns', false), 'href' => '/returns'],
                     ['label' => t('assistant.link.contact', false), 'href' => '/contact'],

@@ -52,9 +52,12 @@ $placedOn    = date('d/m/Y', strtotime($order['created_at']));
     ?>
 
     <?php if ($notice === 'cancelled'): ?>
-    <div class="alert alert-success od-notice" role="status"><?= $refundedAmt !== null
-        ? I18n::t('order.cancel.done', ['refund' => money($refundedAmt), 'paid' => money($paidAmount), 'fee' => money(max(0, $paidAmount - $refundedAmt))])
-        : t('order.cancel.done_plain') ?></div>
+    <?php // A pre-made design is refunded in full; otherwise minus the fee. ?>
+    <div class="alert alert-success od-notice" role="status"><?= !empty($hasPremade)
+        ? I18n::t('order.cancel.done_full', ['refund' => money($refundedAmt ?? $paidAmount)])
+        : ($refundedAmt !== null
+            ? I18n::t('order.cancel.done', ['refund' => money($refundedAmt), 'paid' => money($paidAmount), 'fee' => money(max(0, $paidAmount - $refundedAmt))])
+            : t('order.cancel.done_plain')) ?></div>
     <?php elseif ($notice === 'not_allowed'): ?>
     <div class="alert alert-error od-notice" role="alert"><?= t('order.cancel.not_allowed') ?></div>
     <?php elseif ($notice === 'refund_failed'): ?>
@@ -229,14 +232,19 @@ $placedOn    = date('d/m/Y', strtotime($order['created_at']));
             <?php endif; ?>
 
             <?php if (!empty($canCancel)): ?>
-            <?php // Only while the order is still pending (OrderCancellation): the
-                  // one way to get money back, minus the payment processing fee. ?>
+            <?php // Only while the order is still pending (OrderCancellation):
+                  // everything back with a pre-made design, otherwise minus the
+                  // payment processing fee. ?>
             <div class="od-cancel">
-                <p class="od-cancel-lead"><?= $q ? I18n::t('order.cancel.lead_quote', $q) : t('order.cancel.lead') ?></p>
+                <p class="od-cancel-lead"><?= !empty($hasPremade)
+                    ? t('order.cancel.lead_full')
+                    : ($q ? I18n::t('order.cancel.lead_quote', $q) : t('order.cancel.lead')) ?></p>
                 <button type="button" class="btn btn-danger btn-block" data-on-click="openCancelOrder"><?= t('order.cancel.button') ?></button>
             </div>
             <?php elseif (in_array($status, ['processing', 'in-transit', 'delivered'], true)): ?>
-            <p class="od-policy"><?= t('order.policy.final') ?> <a href="/returns"><?= t('order.policy.link') ?></a></p>
+            <?php // In production: pre-made designs can still be withdrawn within
+                  // 14 days of collection, by telling the shop; custom ones can't. ?>
+            <p class="od-policy"><?= t(!empty($hasPremade) ? 'order.policy.ready_made' : 'order.policy.final') ?> <a href="/returns"><?= t('order.policy.link') ?></a></p>
             <?php endif; ?>
             <p class="od-help"><?= t('assistant.answer.human', false) ?> <a href="/contact"><?= t('assistant.link.contact') ?></a></p>
         </aside>
@@ -250,7 +258,9 @@ ob_start(); ?>
 <div id="cancelOrderOverlay" class="confirm-overlay" data-on-click="closeCancelOrder" data-click-self role="dialog" aria-modal="true" aria-labelledby="cancelOrderTitle">
     <div class="confirm-dialog">
         <h3 id="cancelOrderTitle" class="confirm-title"><?= t('order.cancel.title') ?></h3>
-        <p class="confirm-lead"><?= $q ? I18n::t('order.cancel.confirm_lead', $q) : t('order.cancel.confirm_lead_plain') ?></p>
+        <p class="confirm-lead"><?= !empty($hasPremade)
+            ? ($q ? I18n::t('order.cancel.confirm_lead_full', $q) : t('order.cancel.confirm_lead_full_plain'))
+            : ($q ? I18n::t('order.cancel.confirm_lead', $q) : t('order.cancel.confirm_lead_plain')) ?></p>
         <form method="post" action="/orders/cancel" class="confirm-actions" data-cancel-order-form>
             <?= Csrf::field() ?>
             <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
