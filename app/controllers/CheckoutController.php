@@ -91,10 +91,11 @@ class CheckoutController extends Controller {
             return;
         }
 
-        // The cart as Stripe's page lists it. Prices already include VAT, so
-        // each line is tax-inclusive: automatic tax works the VAT out of the
-        // price rather than adding it on top, and the charge stays the total
-        // the customer saw (OrderPlacement refunds one that doesn't match).
+        // The cart as Stripe's page lists it. The shop's prices already include
+        // VAT and are charged exactly as shown: each line says so
+        // (tax_behavior inclusive) and Stripe calculates no tax of its own
+        // (no automatic_tax), so the charge is the total the customer saw
+        // (OrderPlacement refunds one that doesn't match).
         [$items] = $cartModel->contents($userId);
         $lineItems  = [];
         $itemsCents = 0;
@@ -149,15 +150,17 @@ class CheckoutController extends Controller {
 
         $params = [
             // As configured in Stripe's Checkout Studio
-            // (STRIPE_INTEGRATION_TODO.md lists what each needs). Not
-            // saved_payment_method_options: Stripe refuses it without a
-            // Customer, and the shop keeps none, so a saved card could
-            // never be offered back.
+            // (STRIPE_INTEGRATION_TODO.md lists what each needs), except:
+            // - no automatic_tax: prices already include VAT (see above);
+            //   it would also hide Google Pay, which needs a shipping address
+            //   alongside it;
+            // - no saved_payment_method_options: Stripe refuses it without a
+            //   Customer, and the shop keeps none, so a saved card could
+            //   never be offered back.
             'ui_mode'                    => 'hosted_page',
             'mode'                       => 'payment',
             'billing_address_collection' => 'auto',
             'phone_number_collection'    => ['enabled' => 'true'],
-            'automatic_tax'              => ['enabled' => 'true'],
             'allow_promotion_codes'      => 'false',
             'submit_type'                => 'auto',
             'name_collection'            => ['individual' => ['enabled' => 'true', 'optional' => 'true']],
@@ -224,7 +227,7 @@ class CheckoutController extends Controller {
         echo json_encode(['url' => $session['url']]);
     }
 
-    /** One line of Stripe's Checkout page, in cents, VAT included (see createCheckoutSession). */
+    /** One line of Stripe's Checkout page, in cents, VAT already included (see createCheckoutSession). */
     private static function lineItem(string $name, string $description, int $unitCents, int $quantity): array {
         $product = ['name' => $name !== '' ? $name : I18n::t('checkout.summary.title')];
         if ($description !== '') {

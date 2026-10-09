@@ -8,7 +8,9 @@ require View::path('layouts/customer_header');
 
 $acsAvailable = !empty($checkout['acsAvailable']);
 $acsFee       = $checkout['acsFee'] ?? null;
-$storeAddress = (string)($checkout['storeAddress'] ?? '');
+// Every order goes to an ACS point, so its fee is in the total from the start.
+$deliveryFee  = $acsAvailable ? (float)$acsFee : 0.0;
+$orderTotal   = (float)$cartTotal + $deliveryFee;
 $isGuest = !Auth::check();
 $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
 ?>
@@ -23,7 +25,7 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
             <span data-when="open" hidden><?= t('checkout.summary.hide') ?></span>
             <svg class="co-summary-toggle-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </span>
-        <strong data-co-total><?= money($cartTotal) ?></strong>
+        <strong data-co-total><?= money($orderTotal) ?></strong>
     </button>
 
     <div class="co-grid">
@@ -84,11 +86,11 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                     </div>
                     <div>
                         <dt><?= t('checkout.pickup.summary_label') ?></dt>
-                        <dd data-co-fee class="is-free"><?= t('checkout.pickup.free') ?></dd>
+                        <dd data-co-fee><?= money($deliveryFee) ?></dd>
                     </div>
                     <div class="co-total">
                         <dt><?= t('checkout.review.total') ?></dt>
-                        <dd data-co-total><?= money($cartTotal) ?></dd>
+                        <dd data-co-total><?= money($orderTotal) ?></dd>
                     </div>
                 </dl>
 
@@ -147,7 +149,7 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                     </div>
                 </section>
 
-                <!-- 2 · How it's collected -->
+                <!-- 2 · Where it goes -->
                 <section class="co-section" id="coSectionCollection" aria-labelledby="coCollectionTitle">
                     <div class="co-section-head">
                         <span class="co-step" aria-hidden="true">
@@ -157,37 +159,20 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                         <h2 class="co-section-title" id="coCollectionTitle"><?= t('checkout.steps.collection') ?></h2>
                     </div>
 
-                    <fieldset class="co-options">
-                        <legend class="visually-hidden"><?= t('checkout.pickup.title') ?></legend>
-                        <label class="co-option">
-                            <input type="radio" name="deliveryMethod" value="store" checked>
-                            <span class="co-option-body">
-                                <span class="co-option-head">
-                                    <span class="co-option-title"><?= t('checkout.pickup.store') ?></span>
-                                    <span class="co-option-price is-free"><?= t('checkout.pickup.free') ?></span>
-                                </span>
-                                <?php if ($storeAddress !== ''): ?>
-                                <span class="co-option-note"><?= htmlspecialchars($storeAddress) ?></span>
-                                <?php endif; ?>
-                                <span class="co-option-note"><?= t('checkout.pickup.store_note') ?></span>
-                            </span>
-                        </label>
-                        <?php if ($acsAvailable): ?>
-                        <label class="co-option">
-                            <input type="radio" name="deliveryMethod" value="acs_point">
-                            <span class="co-option-body">
-                                <span class="co-option-head">
-                                    <span class="co-option-title"><?= t('checkout.pickup.acs') ?></span>
-                                    <span class="co-option-price"><?= money($acsFee) ?></span>
-                                </span>
-                                <span class="co-option-note"><?= t('checkout.pickup.acs_note') ?></span>
-                            </span>
-                        </label>
-                        <?php endif; ?>
-                    </fieldset>
-
                     <?php if ($acsAvailable): ?>
-                    <div class="acs-locator" id="acsLocator" hidden>
+                    <?php // The one way an order travels (Pickup): ACS, to the point or
+                          // locker picked below, for a fixed fee — so no choice to make. ?>
+                    <div class="co-option is-fixed">
+                        <span class="co-option-body">
+                            <span class="co-option-head">
+                                <span class="co-option-title"><?= t('checkout.pickup.acs') ?></span>
+                                <span class="co-option-price"><?= money($acsFee) ?></span>
+                            </span>
+                            <span class="co-option-note"><?= t('checkout.pickup.acs_note') ?></span>
+                        </span>
+                    </div>
+
+                    <div class="acs-locator" id="acsLocator">
                         <div class="acs-locator-bar">
                             <button type="button" class="acs-locate-btn" id="acsLocateBtn">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/></svg>
@@ -202,6 +187,9 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                         <div class="acs-selected" id="acsSelected" hidden></div>
                         <p class="co-field-error" id="coPointErr" hidden></p>
                     </div>
+                    <?php else: ?>
+                    <?php // No fee set or no active point: nowhere to send an order. ?>
+                    <p class="co-alert" role="alert"><span><?= t('checkout.pickup.errors.acs_unavailable') ?></span></p>
                     <?php endif; ?>
                 </section>
 
@@ -235,7 +223,7 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                 </div>
 
                 <div class="co-paybar">
-                    <button type="submit" class="co-pay" id="payBtn">
+                    <button type="submit" class="co-pay" id="payBtn"<?= $acsAvailable ? '' : ' disabled' ?>>
                         <span class="co-pay-icon" aria-hidden="true">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="1"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                         </span>
