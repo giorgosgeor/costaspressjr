@@ -1,5 +1,5 @@
 <?php $title = $product['name'] ?? 'Customize Product'; ?>
-<?php $pageCss[] = '/css/pages/custom-product.css'; require View::path('layouts/customer_header'); ?>
+<?php $pageCss[] = '/css/pages/custom-product.css'; $shopScripts = true; require View::path('layouts/customer_header'); ?>
 
 
 

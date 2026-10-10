@@ -59,71 +59,12 @@ function openAddToCartModal(designId, productId, productName, designName, basePr
     document.getElementById('addToCartModal').style.display = 'flex';
 }
 
-// Helper function to convert hex to HSL for color filters
-function cartHexToHSL(hex) {
-    hex = hex.replace('#', '');
-    if (hex.length === 3) {
-        hex = hex.split('').map(c => c + c).join('');
-    }
-    const r = parseInt(hex.substring(0, 2), 16) / 255;
-    const g = parseInt(hex.substring(2, 4), 16) / 255;
-    const b = parseInt(hex.substring(4, 6), 16) / 255;
-
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
-
-    if (max === min) {
-        h = s = 0;
-    } else {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) {
-            case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-            case g: h = ((b - r) / d + 2) / 6; break;
-            case b: h = ((r - g) / d + 4) / 6; break;
-        }
-    }
-    return { h: h * 360, s: s * 100, l: l * 100 };
-}
-
 // Apply color filter to cart preview product image
 function applyCartProductColorFilter(hex) {
     const productImg = document.getElementById('cartPreviewProduct');
     if (!productImg || !hex) return;
-
-    hex = hex.trim();
-    if (!hex.startsWith('#')) hex = '#' + hex;
-
-    const hexLower = hex.toLowerCase();
-    const hsl = cartHexToHSL(hex);
-    const isWhite = hexLower === '#ffffff' || hexLower === '#fff' || hsl.l > 95;
-    const isBlack = hexLower === '#000000' || hexLower === '#000' || hsl.l < 10;
-    const isGray = hsl.s < 10;
-
-    const tintOverride = window.CostasTint && window.CostasTint.getOverride(hex);
-    if (tintOverride) {
-        productImg.style.filter = tintOverride;
-    } else if (isWhite) {
-        productImg.style.filter = 'grayscale(1) brightness(2.2) contrast(0.85)';
-    } else if (isBlack) {
-        productImg.style.filter = 'grayscale(1) brightness(0.45) contrast(1.2)';
-    } else if (isGray) {
-        const brightness = 0.2 + (hsl.l / 100) * 1.5;
-        productImg.style.filter = `grayscale(1) brightness(${brightness})`;
-    } else {
-        const hueRotate = hsl.h - 38; // sepia base hue ≈ 38°
-        const isReddish   = hsl.h <= 20 || hsl.h >= 340;
-        const isYellowish = hsl.h >= 45 && hsl.h <= 80;
-        let saturation = (hsl.s / 100) * 3 + 0.8;
-        if (isReddish)   saturation = (hsl.s / 100) * 4 + 1.2;
-        if (isYellowish) saturation = (hsl.s / 100) * 4 + 1.0;
-        let brightness;
-        if (hsl.l < 30)      brightness = 0.3 + (hsl.l / 100) * 0.7;
-        else if (hsl.l < 50) brightness = 0.5 + (hsl.l / 100) * 0.6;
-        else                 brightness = 0.6 + (hsl.l / 100) * 0.5;
-        if (isYellowish && hsl.l >= 45) brightness = Math.min(brightness * 1.25, 1.5);
-        productImg.style.filter = `grayscale(1) sepia(1) saturate(${saturation}) hue-rotate(${hueRotate}deg) brightness(${brightness})`;
-    }
+    // The garment in this colour (lib/color-tint.js, the one formula).
+    productImg.style.filter = window.CostasTint.filterFor(hex);
 }
 
 // Capture the current design into the cart preview using HTML elements

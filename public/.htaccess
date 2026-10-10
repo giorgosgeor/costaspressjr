@@ -20,6 +20,15 @@
     RewriteRule ^images/products/.*\.(php|phtml|phar)$ - [F,L,NC]
     RewriteRule ^uploads/cart/.*\.(php|phtml|phar)$ - [F,L,NC]
 
+    # A product photo or design preview with a WebP copy beside it (Webp,
+    # database/make_webp.php) is sent as that copy to browsers that take WebP:
+    # same address, about a tenth of the size. Customers' uploaded artwork is
+    # not included: the print shop needs the originals.
+    RewriteCond %{HTTP_ACCEPT} image/webp
+    RewriteCond %{REQUEST_FILENAME} ^(.+)\.(png|jpe?g)$ [NC]
+    RewriteCond %1.webp -f
+    RewriteRule ^(images/(?:products|designs/previews)/.+)\.(?:png|jpe?g)$ $1.webp [NC,T=image/webp,L]
+
     # If the request maps to a real file or directory, serve it directly.
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d
@@ -122,4 +131,7 @@ Options -Indexes
     <FilesMatch "\.(css|js|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)$">
         Header append Cache-Control "public"
     </FilesMatch>
+    # The same address gives WebP or PNG depending on the browser (see the
+    # rewrite above), so caches must keep the two apart.
+    Header append Vary Accept "expr=%{REQUEST_URI} =~ m#^/images/(products|designs/previews)/#"
 </IfModule>

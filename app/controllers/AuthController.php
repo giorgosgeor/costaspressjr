@@ -16,7 +16,7 @@ class AuthController extends Controller {
 
     public function showLogin(): void {
         $redirect = $this->safeRedirect($_GET['redirect'] ?? '');
-        $this->render('auth/login', ['redirect' => $redirect]);
+        $this->render('auth/login', ['redirect' => $redirect, 'savedDesign' => ($_GET['saved'] ?? '') === 'design']);
     }
 
     public function login(): void {
@@ -70,7 +70,7 @@ class AuthController extends Controller {
         // Ensure user has a cart, then pull in anything they added as a guest
         $cartModel = new \Cart($this->db);
         $cartModel->getOrCreateCartId($user['id']);
-        $this->mergeGuestCart((int)$user['id']);
+        $this->mergeGuest((int)$user['id']);
 
         if ($redirect) {
             header('Location: ' . $redirect);
@@ -146,17 +146,24 @@ class AuthController extends Controller {
     }
 
     /**
-     * A guest who built a cart and then logs in (or registers) keeps that
-     * cart: move the guest cart's items into the account's cart and drop the
-     * session's guest binding. cart_item_uploads reference cart_item_id, so
-     * they travel with the rows automatically.
+     * A guest who then logs in (or registers) keeps what they made: their
+     * designs move to the account, their cart's items into the account's
+     * cart, and the session's guest binding is dropped. cart_item_uploads
+     * reference cart_item_id, so they travel with the rows automatically.
      */
-    private function mergeGuestCart(int $userId): void {
+    private function mergeGuest(int $userId): void {
         $guestId = (int)($_SESSION['guest_user_id'] ?? 0);
         unset($_SESSION['guest_user_id']);
         if ($guestId <= 0 || $guestId === $userId) return;
 
         try {
+            // The guest's designs, saved ones and those behind cart lines: a
+            // design saved before signing in shows up in the account, and
+            // the moved cart lines keep pointing at designs their owner owns.
+            // Only the guest of this very session can be claimed.
+            $this->db->prepare("UPDATE custom_designs SET user_id = ? WHERE user_id = ?")
+                ->execute([$userId, $guestId]);
+
             $stmt = $this->db->prepare("SELECT id FROM carts WHERE user_id = ? LIMIT 1");
             $stmt->execute([$guestId]);
             $guestCart = (int)$stmt->fetchColumn();
@@ -217,8 +224,13 @@ class AuthController extends Controller {
         return $url;
     }
 
+    // Where to go once registered, as for sign-in: a guest who saved a design
+    // comes back to it in their account (CustomDesignController::save).
     public function showRegister(): void {
-        $this->render('auth/register');
+        $this->render('auth/register', [
+            'redirect'    => $this->safeRedirect($_GET['redirect'] ?? ''),
+            'savedDesign' => ($_GET['saved'] ?? '') === 'design',
+        ]);
     }
 
     public function register(): void {
@@ -226,6 +238,7 @@ class AuthController extends Controller {
         $email    = trim((string)($_POST['email'] ?? ''));
         $password = (string)($_POST['password'] ?? '');
         $phone    = trim((string)($_POST['phone'] ?? ''));
+        $redirect = $this->safeRedirect($_POST['redirect'] ?? '');
 
         $error = $this->validateRegistration($username, $email, $password);
         // Each registration emails the address given, so it is throttled like
@@ -235,7 +248,7 @@ class AuthController extends Controller {
             $error = 'Too many attempts. Please try again in a few minutes.';
         }
         if ($error !== null) {
-            $this->render('auth/register', ['username' => $username, 'email' => $email, 'phone' => $phone, 'error' => $error]);
+            $this->render('auth/register', ['username' => $username, 'email' => $email, 'phone' => $phone, 'error' => $error, 'redirect' => $redirect]);
             return;
         }
 
@@ -245,7 +258,7 @@ class AuthController extends Controller {
             $stmt->execute([$username, $email, $phone, $hash]);
         } catch (PDOException $e) {
             $error = 'Email, username, or phone already registered';
-            $this->render('auth/register', ['username' => $username, 'email' => $email, 'phone' => $phone, 'error' => $error]);
+            $this->render('auth/register', ['username' => $username, 'email' => $email, 'phone' => $phone, 'error' => $error, 'redirect' => $redirect]);
             return;
         }
 
@@ -254,11 +267,11 @@ class AuthController extends Controller {
 
         $cartModel = new \Cart($this->db);
         $cartModel->getOrCreateCartId($userId);
-        $this->mergeGuestCart($userId);
+        $this->mergeGuest($userId);
 
         $this->sendVerificationEmail($userId, $email, $username);
 
-        header('Location: /home');
+        header('Location: ' . ($redirect !== '' ? $redirect : '/home'));
         exit;
     }
 

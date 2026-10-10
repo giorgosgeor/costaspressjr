@@ -95,10 +95,6 @@
     transition: background-color 0.3s;
 }
 
-.mockup-container.dark-bg {
-    background: #1a1a1a;
-}
-
 /* Color overlay - hidden, we use filters instead */
 .color-overlay {
     display: none;

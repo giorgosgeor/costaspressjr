@@ -32,7 +32,14 @@ answers 500 until then).
 2. On the host: create an empty database and a user for it; import
    `database.sql` into it.
 3. Upload the **contents** of `images/` into `public/` on the server (product
-   photos and size charts are not in git).
+   photos and size charts are not in git). Then, on the server,
+   `php database/enhance_products.php`, which cleans up product photos for
+   colouring (fabric noise, stepped outlines; photos already cleaned, such as
+   those exported from a computer that ran it, are skipped), and
+   `php database/make_webp.php`: WebP copies of the product photos, about a
+   tenth of their size, which browsers are sent instead (both need PHP's GD
+   extension, standard on hosts). Photos uploaded later in the admin get both
+   automatically.
 4. On the server: `php database/migrate.php` — applies anything newer than
    the export. Run it again after every update.
 5. First admin: `php database/create_admin.php --email=you@… --username=…`

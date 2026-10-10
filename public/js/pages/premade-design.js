@@ -103,7 +103,6 @@ document.querySelectorAll('.product-option').forEach(option => {
         // preview colour (if one is picked) and its sizes. The reset used to
         // come after the new tint and would have wiped it.
         document.getElementById('mockupProduct').style.filter = 'none';
-        document.getElementById('mockupContainer').classList.remove('dark-bg');
 
         // Show correct customization panel
         document.querySelectorAll('.product-customization').forEach(panel => {
@@ -228,7 +227,6 @@ function updateColors(sizeInput) {
     if (colorIds.length === 0 || !colorIds[0]) {
         colorContainer.innerHTML = '<p class="no-variants">' + I18N.t('view_design.no_colors_for_size') + '</p>';
         document.getElementById('mockupProduct').style.filter = 'none';
-        document.getElementById('mockupContainer').classList.remove('dark-bg');
         return;
     }
 
@@ -242,7 +240,7 @@ function updateColors(sizeInput) {
             <label class="color-option">
                 <input type="radio" name="color_${productId}" value="${colorIds[i]}" 
                        data-color-hex="${colorHexes[i]}" data-color-name="${colorNames[i]}" ${checked}
-                       onchange="applyColorTint('${colorHexes[i]}')">
+                       data-on-change="applyColorTint" data-args='${JSON.stringify([colorHexes[i] || '']).replace(/'/g, '&#39;')}'>
                 <span class="color-swatch${isWhite ? ' is-white' : ''}" style="background-color: ${colorHexes[i]}"></span>
                 <span class="color-name">${colorNames[i]}</span>
             </label>
@@ -256,34 +254,6 @@ function updateColors(sizeInput) {
     }
 }
 
-function buildColorFilter(hexColor) {
-    if (!hexColor) return 'none';
-    hexColor = hexColor.trim();
-    if (!hexColor.startsWith('#')) hexColor = '#' + hexColor;
-    const hsl = hexToHSL(hexColor);
-    const isWhite = hexColor.toLowerCase() === '#ffffff' || hsl.l > 95;
-    const isBlack = hsl.l < 10;
-    const isGray  = hsl.s < 10;
-    const tintOverride = window.CostasTint && window.CostasTint.getOverride(hexColor);
-    if (tintOverride) return tintOverride;
-
-    if (isWhite) return 'grayscale(1) brightness(2.2) contrast(0.85)';
-    if (isBlack) return 'grayscale(1) brightness(0.45) contrast(1.2)';
-    if (isGray)  return `grayscale(1) brightness(${0.2 + (hsl.l / 100) * 1.5})`;
-    const hueRotate = hsl.h - 38; // sepia base hue ≈ 38°
-    const isReddish  = hsl.h <= 20 || hsl.h >= 340;
-    const isYellowish = hsl.h >= 45 && hsl.h <= 80;
-    let saturate = (hsl.s / 100) * 3 + 0.8;
-    if (isReddish)   saturate = (hsl.s / 100) * 6 + 2.0;
-    if (isYellowish) saturate = (hsl.s / 100) * 4 + 1.0;
-    let brightness;
-    if (hsl.l < 30)      brightness = 0.3 + (hsl.l / 100) * 0.7;
-    else if (hsl.l < 50) brightness = 0.5 + (hsl.l / 100) * 0.6;
-    else                 brightness = 0.6 + (hsl.l / 100) * 0.5;
-    if (isYellowish && hsl.l >= 45) brightness = Math.min(brightness * 1.25, 1.5);
-    return `grayscale(1) sepia(1) saturate(${saturate}) hue-rotate(${hueRotate}deg) brightness(${brightness})`;
-}
-
 function applyColorTint(hexColor) {
     if (!hexColor) return;
 
@@ -294,95 +264,11 @@ function applyColorTint(hexColor) {
     }
 
     const mockupProduct = document.getElementById('mockupProduct');
-    const mockupContainer = document.getElementById('mockupContainer');
-    if (!mockupProduct || !mockupContainer) return;
+    if (!mockupProduct) return;
 
-    // Convert hex to HSL for the hue-rotate filter
-    const hsl = hexToHSL(hexColor);
-
-    // Check if it's white or very light
-    const isWhite = hexColor.toLowerCase() === '#ffffff' || hexColor.toLowerCase() === '#fff' || hsl.l > 95;
-    const isVeryLight = hsl.l > 85;
-    const isBlack = hexColor.toLowerCase() === '#000000' || hexColor.toLowerCase() === '#000' || hsl.l < 10;
-    const isGray = hsl.s < 10; // Low saturation = gray
-
-    // Set background: white by default, dark for white/light products
-    if (isWhite || isVeryLight) {
-        mockupContainer.classList.add('dark-bg');
-    } else {
-        mockupContainer.classList.remove('dark-bg');
-    }
-
-    // Apply color filter to product image
-    // Base image is ORANGE (~30deg hue) with transparent background
-    const tintOverride = window.CostasTint && window.CostasTint.getOverride(hexColor);
-    if (tintOverride) {
-        mockupProduct.style.filter = tintOverride;
-    } else if (isWhite) {
-        // White product - desaturate completely and brighten significantly
-        mockupProduct.style.filter = 'grayscale(1) brightness(2.2) contrast(0.85)';
-    } else if (isBlack) {
-        // Black product - desaturate and darken significantly
-        mockupProduct.style.filter = 'grayscale(1) brightness(0.45) contrast(1.2)';
-    } else if (isGray) {
-        // Gray - desaturate and adjust brightness based on lightness
-        const brightness = 0.2 + (hsl.l / 100) * 1.5;
-        mockupProduct.style.filter = `grayscale(1) brightness(${brightness})`;
-    } else {
-        // Colorize using sepia base then hue-rotate to target
-        // This works better than direct hue-rotate from orange
-        const hueRotate = hsl.h - 38; // sepia base hue ≈ 38°
-
-        const isReddish   = hsl.h <= 20 || hsl.h >= 340;
-        const isYellowish = hsl.h >= 45 && hsl.h <= 80;
-        let saturate = (hsl.s / 100) * 3 + 0.8;
-        if (isReddish)   saturate = (hsl.s / 100) * 6 + 2.0;
-        if (isYellowish) saturate = (hsl.s / 100) * 4 + 1.0;
-
-        let brightness;
-        if (hsl.l < 30) {
-            brightness = 0.3 + (hsl.l / 100) * 0.7;
-        } else if (hsl.l < 50) {
-            brightness = 0.5 + (hsl.l / 100) * 0.6;
-        } else {
-            brightness = 0.6 + (hsl.l / 100) * 0.5;
-        }
-        if (isYellowish && hsl.l >= 45) brightness = Math.min(brightness * 1.25, 1.5);
-
-        mockupProduct.style.filter = `grayscale(1) sepia(1) saturate(${saturate}) hue-rotate(${hueRotate}deg) brightness(${brightness})`;
-    }
-}
-
-function hexToHSL(hex) {
-    // Remove # if present
-    hex = hex.replace('#', '');
-
-    // Parse RGB
-    const r = parseInt(hex.substring(0, 2), 16) / 255;
-    const g = parseInt(hex.substring(2, 4), 16) / 255;
-    const b = parseInt(hex.substring(4, 6), 16) / 255;
-
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
-
-    if (max === min) {
-        h = s = 0;
-    } else {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) {
-            case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-            case g: h = ((b - r) / d + 2) / 6; break;
-            case b: h = ((r - g) / d + 4) / 6; break;
-        }
-    }
-
-    return {
-        h: Math.round(h * 360),
-        s: Math.round(s * 100),
-        l: Math.round(l * 100)
-    };
+    // The garment in this colour (lib/color-tint.js, the one formula). The
+    // background stays white for every colour, as in the designer.
+    mockupProduct.style.filter = window.CostasTint.filterFor(hexColor);
 }
 
 // ==================== DRAG & RESIZE DESIGN ====================

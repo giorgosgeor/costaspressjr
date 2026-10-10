@@ -9,6 +9,9 @@
 
     <?php if (isset($error)): ?>
         <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
+    <?php elseif (!empty($savedDesign)): ?>
+        <?php // A guest's design, kept until they sign in (CustomDesignController::save). ?>
+        <div class="alert alert-info" role="status"><?= t('auth.saved_design') ?></div>
     <?php endif; ?>
     <?php // After a password reset (AuthController::resetPassword). ?>
     <?php if (isset($success)): ?>
@@ -35,7 +38,10 @@
     </form>
 
     <div class="form-footer">
-        <p><?= t('auth.login.no_account') ?> <a href="/register"><?= t('auth.login.create') ?></a></p>
+        <?php // Registering keeps where to go next, as signing in does: a saved
+              // design was lost when this link dropped it. ?>
+        <?php $registerQuery = array_filter(['saved' => !empty($savedDesign) ? 'design' : null, 'redirect' => $redirect ?? '']); ?>
+        <p><?= t('auth.login.no_account') ?> <a href="/register<?= $registerQuery ? '?' . e(http_build_query($registerQuery)) : '' ?>"><?= t('auth.login.create') ?></a></p>
     </div>
 </div>
 

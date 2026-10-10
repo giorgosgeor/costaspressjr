@@ -1,105 +1,124 @@
 <?php
 /**
- * Garment mockup colour tinting, server side.
+ * Garment colour, server side: the PHP twin of public/js/lib/color-tint.js,
+ * which explains the method. Keep the two in step: same constants, same
+ * formula. Some previews are rendered here (saved-design cards, cart and
+ * checkout lines, the admin order view) and some in the browser, and they
+ * must agree: a card showing a different shade from the studio that made it
+ * looks like a bug to the person who saved it.
  *
- * PHP mirror of public/js/lib/color-tint.js. Some previews are rendered on the
- * server (saved-design cards, cart lines, the admin order view) and some in the
- * browser, and they must agree — a design card showing a different shade from
- * the studio that produced it looks like a bug to the person who saved it.
- *
- * Keep this file and lib/color-tint.js in step: same formula, same override table.
- * The reasoning behind the overrides is documented there.
+ * filterFor() returns the CSS filter for a garment in a colour and notes the
+ * colour; svgDefs(), printed by the layouts at the end of the page, holds the
+ * SVG filters those CSS filters point at.
  */
 class Tint
 {
-    /**
-     * Solved chains for colours the generic formula flattens. Each was found
-     * numerically against the real mockup art, maximising L* spread over
-     * garment pixels under a CIE76 dE budget on the midtone.
-     */
-    private const OVERRIDES = [
-        // Generic formula measures L* spread 2.1 here; this gives 6.6.
-        '#ff0000' => 'grayscale(1) brightness(0.4) sepia(1) saturate(4) hue-rotate(-40deg) saturate(3.25)',
-        // Generic formula asks for saturate(8.0), which clamps the red channel
-        // on 81.5% of garment pixels and flattens the shirt: spread 1.4 against
-        // orange's 7.1. This gives 4.8 with midtone #951d12 (dE 6.9 vs 26.6).
-        '#800000' => 'grayscale(1) brightness(0.2852) sepia(1) saturate(3.565) hue-rotate(-43.55deg) saturate(2.086) brightness(1.358)',
-    ];
+    private const SAMPLES = 64;
+    private const FOLD_DEPTH = 0.85;
+    private const L_MIN = 6.0;
+    private const L_MAX = 95.0;
+    private const MID_GREY = 0.46;
+    private const KEEP_FROM = 80.0;
+    private const KEEP_TO = 92.0;
 
+    /** Colours filterFor() handed out on this page, for svgDefs(). */
+    private static array $used = [];
+
+    /** "#rrggbb", lower case, or '' for anything that isn't a colour. */
     public static function normalizeHex(?string $hex): string
     {
         $hex = strtolower(trim((string)$hex));
-        if ($hex === '') return '';
-        if ($hex[0] !== '#') $hex = '#' . $hex;
-        if (strlen($hex) === 4) {
+        if ($hex !== '' && $hex[0] !== '#') $hex = '#' . $hex;
+        if (preg_match('/^#[0-9a-f]{3}$/', $hex)) {
             $hex = '#' . $hex[1] . $hex[1] . $hex[2] . $hex[2] . $hex[3] . $hex[3];
         }
-        return $hex;
+        return preg_match('/^#[0-9a-f]{6}$/', $hex) ? $hex : '';
     }
 
-    /** @return array{h: float, s: float, l: float} */
-    public static function hexToHsl(string $hex): array
-    {
-        $hex = ltrim(self::normalizeHex($hex), '#');
-        if (strlen($hex) !== 6) return ['h' => 0.0, 's' => 0.0, 'l' => 0.0];
-        $r = hexdec(substr($hex, 0, 2)) / 255;
-        $g = hexdec(substr($hex, 2, 2)) / 255;
-        $b = hexdec(substr($hex, 4, 2)) / 255;
-        $max = max($r, $g, $b);
-        $min = min($r, $g, $b);
-        $l = ($max + $min) / 2;
-        $h = 0.0;
-        $s = 0.0;
-        if ($max !== $min) {
-            $d = $max - $min;
-            $s = $l > 0.5 ? $d / (2 - $max - $min) : $d / ($max + $min);
-            if ($max === $r)      $h = (($g - $b) / $d + ($g < $b ? 6 : 0)) / 6;
-            elseif ($max === $g)  $h = (($b - $r) / $d + 2) / 6;
-            else                  $h = (($r - $g) / $d + 4) / 6;
-        }
-        return ['h' => $h * 360, 's' => $s * 100, 'l' => $l * 100];
-    }
-
-    /**
-     * Round to 4dp and drop trailing zeros. PHP and JS print floats to
-     * different precisions ("2.36" vs "2.3599999999999994"), which is harmless
-     * to CSS but makes it impossible to assert the two implementations agree.
-     * Rounding both the same way keeps them byte-identical and testable.
-     */
-    private static function num(float $v): string
-    {
-        return rtrim(rtrim(number_format(round($v, 4), 4, '.', ''), '0'), '.');
-    }
-
-    /** Complete CSS filter chain for a swatch colour. */
+    /** CSS filter for a garment in this colour; "none" for anything that isn't a colour. */
     public static function filterFor(?string $hex): string
     {
-        $norm = self::normalizeHex($hex);
-        if ($norm === '') return 'none';
-        if (isset(self::OVERRIDES[$norm])) return self::OVERRIDES[$norm];
+        $hex = self::normalizeHex($hex);
+        if ($hex === '') return 'none';
+        self::$used[$hex] = true;
+        return 'url(#tint-' . substr($hex, 1) . ')';
+    }
 
-        $hsl = self::hexToHsl($norm);
-        if ($norm === '#ffffff' || $hsl['l'] > 95) return 'grayscale(1) brightness(2.2) contrast(0.85)';
-        if ($hsl['l'] < 10)                        return 'grayscale(1) brightness(0.45) contrast(1.2)';
-        if ($hsl['s'] < 10)                        return 'grayscale(1) brightness(' . self::num(0.2 + ($hsl['l'] / 100) * 1.5) . ')';
+    /** The SVG filters for every colour filterFor() was asked for; '' if none. */
+    public static function svgDefs(): string
+    {
+        if (!self::$used) return '';
+        $filters = '';
+        foreach (array_keys(self::$used) as $hex) {
+            $funcs = '';
+            foreach (self::tables($hex) as $c => $table) {
+                $funcs .= '<feFunc' . 'RGB'[$c] . ' type="table" tableValues="' . implode(' ', $table) . '"/>';
+            }
+            $filters .= '<filter id="tint-' . substr($hex, 1) . '" color-interpolation-filters="sRGB">'
+                      . '<feComponentTransfer>' . $funcs . '</feComponentTransfer></filter>';
+        }
+        // Not display:none, which some browsers skip filters in.
+        return '<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs id="tint-defs">'
+             . $filters . '</defs></svg>';
+    }
 
-        $hueRotate   = $hsl['h'] - 38; // sepia base hue ~38deg
-        $isReddish   = $hsl['h'] <= 20 || $hsl['h'] >= 340;
-        $isYellowish = $hsl['h'] >= 45 && $hsl['h'] <= 80;
+    /** The three tables for a colour: [r[], g[], b[]], SAMPLES values each, 0..1. */
+    public static function tables(string $hex): array
+    {
+        $hex = self::normalizeHex($hex);
+        [$lA, $aA, $bA] = self::rgbToLab(hexdec(substr($hex, 1, 2)) / 255, hexdec(substr($hex, 3, 2)) / 255, hexdec(substr($hex, 5, 2)) / 255);
+        $lA = max(self::L_MIN, min(self::L_MAX, $lA));
+        $lMid = self::rgbToLab(self::MID_GREY, self::MID_GREY, self::MID_GREY)[0];
+        $out = [[], [], []];
+        for ($i = 0; $i < self::SAMPLES; $i++) {
+            $grey = $i / (self::SAMPLES - 1);
+            $lGrey = self::rgbToLab($grey, $grey, $grey)[0];
+            $l = max(0.0, min(100.0, $lA + self::FOLD_DEPTH * ($lGrey - $lMid)));
+            $chroma = $l < $lA ? $l / $lA : (100 - $l) / (100 - $lA);
+            $rgb = self::labToRgb($l, $aA * $chroma, $bA * $chroma);
+            $x = max(0.0, min(1.0, ($lGrey - self::KEEP_FROM) / (self::KEEP_TO - self::KEEP_FROM)));
+            $keep = $x * $x * (3 - 2 * $x);
+            foreach ($rgb as $c => $v) {
+                $out[$c][] = round($v * (1 - $keep) + $grey * $keep, 4);
+            }
+        }
+        return $out;
+    }
 
-        $saturate = ($hsl['s'] / 100) * 3 + 0.8;
-        // Capped: past ~4.5 the red channel clamps across most of the garment
-        // and the shading is gone. Deep reds get a solved override instead.
-        if ($isReddish)   $saturate = min(($hsl['s'] / 100) * 6 + 2.0, 4.5);
-        if ($isYellowish) $saturate = ($hsl['s'] / 100) * 4 + 1.0;
+    private static function toLinear(float $c): float
+    {
+        return $c <= 0.04045 ? $c / 12.92 : (($c + 0.055) / 1.055) ** 2.4;
+    }
 
-        if ($hsl['l'] < 30)      $brightness = 0.3 + ($hsl['l'] / 100) * 0.7;
-        elseif ($hsl['l'] < 50)  $brightness = 0.5 + ($hsl['l'] / 100) * 0.6;
-        else                     $brightness = 0.6 + ($hsl['l'] / 100) * 0.5;
-        if ($isYellowish && $hsl['l'] >= 45) $brightness = min($brightness * 1.25, 1.5);
+    private static function toSrgb(float $c): float
+    {
+        $c = max(0.0, min(1.0, $c));
+        return $c <= 0.0031308 ? $c * 12.92 : 1.055 * $c ** (1 / 2.4) - 0.055;
+    }
 
-        return 'grayscale(1) sepia(1) saturate(' . self::num($saturate)
-             . ') hue-rotate(' . self::num($hueRotate)
-             . 'deg) brightness(' . self::num($brightness) . ')';
+    /** sRGB 0..1 to CIE Lab (D65). */
+    private static function rgbToLab(float $r, float $g, float $b): array
+    {
+        [$r, $g, $b] = [self::toLinear($r), self::toLinear($g), self::toLinear($b)];
+        $f = fn(float $t): float => $t > 216 / 24389 ? $t ** (1 / 3) : (24389 / 27 * $t + 16) / 116;
+        $x = $f((0.4124 * $r + 0.3576 * $g + 0.1805 * $b) / 0.95047);
+        $y = $f(0.2126 * $r + 0.7152 * $g + 0.0722 * $b);
+        $z = $f((0.0193 * $r + 0.1192 * $g + 0.9505 * $b) / 1.08883);
+        return [116 * $y - 16, 500 * ($x - $y), 200 * ($y - $z)];
+    }
+
+    /** CIE Lab to sRGB 0..1, each channel clamped. */
+    private static function labToRgb(float $l, float $a, float $b): array
+    {
+        $inv = fn(float $t): float => $t ** 3 > 216 / 24389 ? $t ** 3 : (116 * $t - 16) / (24389 / 27);
+        $fy = ($l + 16) / 116;
+        $x = 0.95047 * $inv($fy + $a / 500);
+        $y = $inv($fy);
+        $z = 1.08883 * $inv($fy - $b / 200);
+        return [
+            self::toSrgb( 3.2406 * $x - 1.5372 * $y - 0.4986 * $z),
+            self::toSrgb(-0.9689 * $x + 1.8758 * $y + 0.0415 * $z),
+            self::toSrgb( 0.0557 * $x - 0.2040 * $y + 1.0570 * $z),
+        ];
     }
 }

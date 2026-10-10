@@ -150,13 +150,13 @@ function addSizeRowEdit(sizeName = '', priceModifier = '0.00', selectedColors = 
 
     row.innerHTML = `
         <input type="text" name="sizes[${editSizeIndex}][name]" placeholder="Size" value="${sizeName}" required>
-        <button type="button" class="btn-colors" onclick="openColorModalEdit(this)">
+        <button type="button" class="btn-colors" data-on-click="openColorModalEdit" data-args='["$this"]'>
             Colors <span class="color-count">${colorCount}</span>
         </button>
         <input type="number" name="sizes[${editSizeIndex}][price_modifier]" placeholder="+$" step="0.01" value="${priceModifier}">
         <input type="hidden" name="sizes[${editSizeIndex}][colors]" value="${selectedColors.join(',')}">
         ${sizeId ? `<input type="hidden" name="sizes[${editSizeIndex}][id]" value="${sizeId}">` : ''}
-        <button type="button" class="btn-remove" onclick="this.closest('.size-row').remove()">✕</button>
+        <button type="button" class="btn-remove" data-on-click="removeEditSizeRow" data-args='["$this"]'>✕</button>
     `;
 
     container.appendChild(row);
@@ -170,6 +170,10 @@ function addClothingSizesEdit() {
 function addMugSizesEdit() {
     addSizeRowEdit('11oz', '0.00');
     addSizeRowEdit('15oz', '2.00');
+}
+
+function removeEditSizeRow(btn) {
+    btn.closest('.size-row').remove();
 }
 
 function openColorModalEdit(btn) {

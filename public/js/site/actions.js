@@ -23,8 +23,9 @@
  * Handlers run in the order inline ones did: the innermost element first,
  * before any listener a container added, so this listens in the capture
  * phase. A function that returns false cancels the default action, as an
- * inline handler's `return false` did. Loaded in <head> without defer, so it
- * is in place before the first image can fail to load.
+ * inline handler's `return false` did. Loaded in <head> with defer, so it
+ * doesn't hold up the page; images that loaded or failed before it ran are
+ * settled when it starts (the end of this file).
  */
 (function () {
     'use strict';
@@ -108,11 +109,7 @@
         }
     }, true);
 
-    // Image load/error events don't bubble, but they do pass through the
-    // capture phase, so one listener sees every image on the page.
-    document.addEventListener('error', function (event) {
-        var img = event.target;
-        if (!img || img.tagName !== 'IMG') return;
+    function imageFailed(img) {
         if (img.hasAttribute('data-fallback') && !img.__fellBack) {
             img.__fellBack = true;
             img.src = img.getAttribute('data-fallback');
@@ -123,12 +120,34 @@
         } else if (img.hasAttribute('data-hide-on-error')) {
             img.style.display = 'none';
         }
-    }, true);
-
-    document.addEventListener('load', function (event) {
-        var img = event.target;
-        if (img && img.tagName === 'IMG' && img.hasAttribute('data-show-on-load')) {
+    }
+    function imageLoaded(img) {
+        if (img.hasAttribute('data-show-on-load')) {
             img.style.display = img.getAttribute('src') ? '' : 'none';
         }
+    }
+
+    // Image load/error events don't bubble, but they do pass through the
+    // capture phase, so one listener sees every image on the page.
+    document.addEventListener('error', function (event) {
+        var img = event.target;
+        if (img && img.tagName === 'IMG') imageFailed(img);
     }, true);
+    document.addEventListener('load', function (event) {
+        var img = event.target;
+        if (img && img.tagName === 'IMG') imageLoaded(img);
+    }, true);
+
+    // This script is deferred (audit P6), so an image may have loaded or
+    // failed before the listeners above existed. Settle those as the events
+    // would have. An SVG can report no width even when fine, so it is never
+    // taken for a broken image here.
+    Array.prototype.forEach.call(document.images, function (img) {
+        if (!img.complete || !img.getAttribute('src')) return;
+        if (img.naturalWidth === 0 && !/\.svg(\?|#|$)/i.test(img.currentSrc || img.src)) {
+            imageFailed(img);
+        } else {
+            imageLoaded(img);
+        }
+    });
 })();

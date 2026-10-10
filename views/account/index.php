@@ -1,4 +1,4 @@
-<?php $extraCss = ['/css/pages/account.css']; $verifyBannerAlways = true; ?>
+<?php $extraCss = ['/css/pages/account.css']; $verifyBannerAlways = true; $shopScripts = true; ?>
 <?php require View::path('layouts/customer_header'); ?>
 
 

@@ -229,68 +229,10 @@ function applyColorTint(hex) {
     if (!hex.startsWith('#')) hex = '#' + hex;
     const img = document.getElementById('mainProductImage');
     if (!img) return;
-    const hsl = hexToHSL(hex);
-    const hexLower = hex.toLowerCase();
-    const isWhite = hexLower === '#ffffff' || hexLower === '#fff' || hsl.l > 95;
-    const isVeryLight = hsl.l > 85;
-    const isBlack = hexLower === '#000000' || hexLower === '#000' || hsl.l < 10;
-    const isGray = hsl.s < 10;
-    const tintOverride = window.CostasTint && window.CostasTint.getOverride(hex);
-    if (tintOverride) {
-        img.style.filter = tintOverride;
-    } else if (isWhite) {
-        img.style.filter = 'saturate(0) brightness(2) contrast(0.8)';
-    } else if (isBlack) {
-        img.style.filter = 'saturate(0) brightness(0.65) contrast(1.1)';
-    } else if (isGray) {
-        const brightness = 0.2 + (hsl.l / 100) * 1.5;
-        img.style.filter = `saturate(0) brightness(${brightness})`;
-    } else {
-        const hueRotate = hsl.h - 50;
-        const isReddish = hsl.h <= 20 || hsl.h >= 340;
-        let saturate = (hsl.s / 100) * 2 + 0.5;
-        if (isReddish) saturate = (hsl.s / 100) * 3 + 1;
-        let brightness;
-        if (hsl.l < 30) {
-            brightness = 0.3 + (hsl.l / 100) * 0.7;
-        } else if (hsl.l < 50) {
-            brightness = 0.5 + (hsl.l / 100) * 0.6;
-        } else {
-            brightness = 0.6 + (hsl.l / 100) * 0.5;
-        }
-        img.style.filter = `sepia(1) saturate(${saturate}) hue-rotate(${hueRotate}deg) brightness(${brightness})`;
-    }
+    // The garment in this colour (lib/color-tint.js, the one formula).
+    img.style.filter = window.CostasTint.filterFor(hex);
 }
 
-function hexToHSL(H) {
-    // Convert hex to RGB first
-    let r = 0, g = 0, b = 0;
-    if (H.length == 4) {
-        r = '0x' + H[1] + H[1];
-        g = '0x' + H[2] + H[2];
-        b = '0x' + H[3] + H[3];
-    } else if (H.length == 7) {
-        r = '0x' + H[1] + H[2];
-        g = '0x' + H[3] + H[4];
-        b = '0x' + H[5] + H[6];
-    }
-    r /= 255; g /= 255; b /= 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
-    if (max == min) {
-        h = s = 0; // achromatic
-    } else {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) {
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
-        }
-        h /= 6;
-    }
-    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
-}
 
 // Patch event handlers for color swatches to update image color
 const origDOMContentLoaded = document.onreadystatechange;

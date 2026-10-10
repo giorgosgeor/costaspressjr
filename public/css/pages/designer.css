@@ -427,10 +427,6 @@
     transition: background-color 0.3s;
 }
 
-.mockup-container.dark-bg {
-    background: #2a2a2a;
-}
-
 .mockup-product {
     max-width: 98%;
     max-height: 98%;

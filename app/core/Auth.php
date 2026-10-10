@@ -79,7 +79,7 @@ class Auth {
      * the session's GUEST user row (role 'guest', unroutable placeholder email,
      * unusable password) created on demand. Guests browse, design, add to cart
      * and check out; they can never log in as the guest row, and
-     * AuthController::mergeGuestCart folds the cart into a real account on
+     * AuthController::mergeGuest folds the cart and designs into a real account on
      * login/registration.
      *
      * @param bool $createGuest create the guest row if none exists yet. Keep

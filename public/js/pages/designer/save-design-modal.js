@@ -175,7 +175,7 @@ function renderChangeColorModalContent() {
     colors.forEach(function(c) {
         var selected = (window.studioSelectedColorId && String(c.id) === String(window.studioSelectedColorId)) ? 'modal-color-selected' : '';
         var borderStyle = (c.hex && (c.hex.toLowerCase() === '#ffffff' || c.hex.toLowerCase() === '#fff')) ? 'border:2px solid #ccc;' : '';
-        html += `<div class="modal-color-swatch ${selected}" title="${c.name || 'Color'}" style="background:${c.hex || '#ccc'};${borderStyle}" data-color-id="${c.id}" data-hex="${c.hex || '#ccc'}" onclick="selectModalColor('${c.id}', '${c.hex || '#ccc'}')">${selected ? '<span class="modal-color-check">&#10003;</span>' : ''}</div>`;
+        html += `<div class="modal-color-swatch ${selected}" title="${c.name || 'Color'}" style="background:${c.hex || '#ccc'};${borderStyle}" data-color-id="${c.id}" data-hex="${c.hex || '#ccc'}" data-on-click="selectModalColor" data-args='${JSON.stringify([String(c.id), c.hex || '#ccc']).replace(/'/g, '&#39;')}'>${selected ? '<span class="modal-color-check">&#10003;</span>' : ''}</div>`;
     });
     html += '</div></div>';
 

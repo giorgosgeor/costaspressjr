@@ -1,5 +1,5 @@
 <?php $title = htmlspecialchars($design['name']) . ' - ' . htmlspecialchars($design['section_name']); ?>
-<?php $pageCss[] = '/css/pages/premade-design.css'; require View::path('layouts/customer_header'); ?>
+<?php $pageCss[] = '/css/pages/premade-design.css'; $shopScripts = true; require View::path('layouts/customer_header'); ?>
 
 <!-- Interact.js for drag & resize (only loaded for non-fixed designs) -->
 <?php if (empty($design['is_fixed'])): ?>

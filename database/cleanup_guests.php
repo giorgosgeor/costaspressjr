@@ -12,9 +12,10 @@
  * Always kept:
  *  - guests with an order. orders.user_id cascades, so deleting the user
  *    would delete the order.
- *  - guests owning a design another cart or an order uses. Signing in moves
- *    the guest's cart into the account (AuthController::mergeGuestCart) but
- *    leaves the designs on the guest row, and an order prints from them.
+ *  - guests owning a design another cart or an order uses. Signing in now
+ *    moves the guest's designs into the account along with the cart
+ *    (AuthController::mergeGuest), but before that change they stayed on the
+ *    guest row, and an order prints from them.
  *
  * Run daily from cron (DEPLOY.md step 6):
  *   php database/cleanup_guests.php          (dry run: reports only)

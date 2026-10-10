@@ -48,6 +48,8 @@ final class PreviewImages {
             }
             if (file_put_contents("$dir/$name.$ext", $raw) !== false) {
                 $saved[$view] = self::DIR . "/$folder/$name.$ext";
+                // Browsers that couldn't send WebP sent PNG: served as WebP anyway.
+                Webp::sibling("$dir/$name.$ext");
             }
         }
         return $saved;

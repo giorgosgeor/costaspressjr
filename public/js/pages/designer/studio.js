@@ -130,32 +130,6 @@ function afterElementAdded() {
         document.getElementById('imageEditorPanel').style.display = 'none';
     }
 
-// Convert hex color to HSL values
-function hexToHSL(hex) {
-    hex = hex.replace('#', '');
-    const r = parseInt(hex.substring(0,2), 16) / 255;
-    const g = parseInt(hex.substring(2,4), 16) / 255;
-    const b = parseInt(hex.substring(4,6), 16) / 255;
-
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
-
-    if (max === min) {
-        h = s = 0;
-    } else {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch(max) {
-            case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-            case g: h = ((b - r) / d + 2) / 6; break;
-            case b: h = ((r - g) / d + 4) / 6; break;
-        }
-    }
-
-    return { h: h * 360, s: s * 100, l: l * 100 };
-}
-
 // Apply color tint to the mockup product image
 function applyColorTint(hex) {
     if (!hex) return;
@@ -171,49 +145,8 @@ function applyColorTint(hex) {
     const mockupContainer = document.getElementById('mockupContainer');
     if (!mockupImg) return;
 
-    const hexLower = hex.toLowerCase();
-
-    // Convert hex to HSL for the filter calculation
-    const hsl = hexToHSL(hex);
-    const isWhite = hexLower === '#ffffff' || hexLower === '#fff' || hsl.l > 95;
-    const isVeryLight = hsl.l > 85;
-    const isBlack = hexLower === '#000000' || hexLower === '#000' || hsl.l < 10;
-    const isGray = hsl.s < 10; // Low saturation = gray
-
-    // Apply color filter to product image
-    // Base image is ORANGE (~30deg hue) with transparent background
-    const tintOverride = window.CostasTint && window.CostasTint.getOverride(hex);
-    if (tintOverride) {
-        mockupImg.style.filter = tintOverride;
-    } else if (isWhite) {
-        // White product - desaturate completely and brighten significantly
-        mockupImg.style.filter = 'saturate(0) brightness(2) contrast(0.8)';
-    } else if (isBlack) {
-        // Black product - desaturate and darken, but keep visibility
-        mockupImg.style.filter = 'saturate(0) brightness(0.65) contrast(1.1)';
-    } else if (isGray) {
-        // Gray - desaturate and adjust brightness based on lightness
-        const brightness = 0.2 + (hsl.l / 100) * 1.5;
-        mockupImg.style.filter = `saturate(0) brightness(${brightness})`;
-    } else {
-        // Colorize using sepia base then hue-rotate to target
-        // This works better than direct hue-rotate from orange
-        const hueRotate = hsl.h - 38; // sepia base hue ≈ 38°
-
-        const isReddish   = hsl.h <= 20 || hsl.h >= 340;
-        const isYellowish = hsl.h >= 45 && hsl.h <= 80;
-        let saturate = (hsl.s / 100) * 3 + 0.8;
-        if (isReddish)   saturate = (hsl.s / 100) * 6 + 2.0;
-        if (isYellowish) saturate = (hsl.s / 100) * 4 + 1.0;
-
-        let brightness;
-        if (hsl.l < 30)      brightness = 0.3 + (hsl.l / 100) * 0.7;
-        else if (hsl.l < 50) brightness = 0.5 + (hsl.l / 100) * 0.6;
-        else                 brightness = 0.6 + (hsl.l / 100) * 0.5;
-        if (isYellowish && hsl.l >= 45) brightness = Math.min(brightness * 1.25, 1.5);
-
-        mockupImg.style.filter = `grayscale(1) sepia(1) saturate(${saturate}) hue-rotate(${hueRotate}deg) brightness(${brightness})`;
-    }
+    // The garment in this colour (lib/color-tint.js, the one formula).
+    mockupImg.style.filter = window.CostasTint.filterFor(hex);
 }
 
 // Load an existing design for editing
@@ -1337,7 +1270,7 @@ function renderElements() {
             const rotateLabel = window.I18N ? window.I18N.t('studio.image_edit.rotation') : 'Drag to rotate';
             div.innerHTML = `
                 <div style="position:relative;width:100%;height:100%;">
-                  <img src="${imgSrc}" style="${imgStyle};opacity:${opacity};" onerror="console.error('Failed to load image:', this.src); this.style.border='2px solid red';">
+                  <img src="${imgSrc}" style="${imgStyle};opacity:${opacity};">
                   ${overlay}
                 </div>
                 <div class="resize-handle"></div>
@@ -1345,7 +1278,7 @@ function renderElements() {
                      aria-valuemin="0" aria-valuemax="359" aria-valuenow="${Math.round(element.rotation || 0)}">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
                 </div>
-                <button class="delete-btn" onclick="deleteElement('${element.id}')">x</button>
+                <button class="delete-btn" data-on-click="deleteElement" data-args="${escapeHtml(JSON.stringify([String(element.id)]))}">x</button>
             `;
         } else if (element.type === 'text') {
             let style = `
@@ -1358,7 +1291,7 @@ function renderElements() {
             `;
             div.innerHTML = `
                 <div class="text-content" style="${style}" data-element-id="${element.id}">${escapeHtml(element.text)}</div>
-                <button class="delete-btn" onclick="deleteElement('${element.id}')">x</button>
+                <button class="delete-btn" data-on-click="deleteElement" data-args="${escapeHtml(JSON.stringify([String(element.id)]))}">x</button>
             `;
 
             // Distinguish click (inline edit) from drag (move)

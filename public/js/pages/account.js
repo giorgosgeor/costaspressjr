@@ -214,34 +214,6 @@ function addDesignToCart(designData) {
     document.getElementById('addToCartModal').style.display = 'flex';
 }
 
-// Convert hex color to HSL
-function hexToHSL(hex) {
-    hex = hex.replace('#', '');
-    if (hex.length === 3) {
-        hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
-    }
-    const r = parseInt(hex.substring(0, 2), 16) / 255;
-    const g = parseInt(hex.substring(2, 4), 16) / 255;
-    const b = parseInt(hex.substring(4, 6), 16) / 255;
-
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
-
-    if (max === min) {
-        h = s = 0;
-    } else {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) {
-            case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-            case g: h = ((b - r) / d + 2) / 6; break;
-            case b: h = ((r - g) / d + 4) / 6; break;
-        }
-    }
-
-    return { h: h * 360, s: s * 100, l: l * 100 };
-}
 
 // Apply color filter to product image (same algorithm as shop_custom.php)
 function applyProductColorFilter(imgElement, hex) {
@@ -253,6 +225,7 @@ function applyProductColorFilter(imgElement, hex) {
     // Delegated to the one implementation in lib/color-tint.js — this copy had
     // drifted and never saw the solved overrides for deep reds.
     imgElement.style.filter = window.CostasTint.filterFor(hex);
+    imgElement.dataset.tintHex = hex;   // for the canvas preview below
 }
 
 function _getCartFrontElements() {
@@ -494,12 +467,9 @@ async function saveAccountCartPreview(cartItemId, designId) {
         offscreen.height = size;
         const ctx = offscreen.getContext('2d');
 
-        // 1. Draw shirt with the currently-selected color filter
+        // 1. Draw shirt in the currently-selected colour (not ctx.filter: Safari has none)
         if (productImg && productImg.complete && productImg.naturalWidth) {
-            const filterStr = productImg.style.filter;
-            if (filterStr) ctx.filter = filterStr;
-            ctx.drawImage(productImg, 0, 0, size, size);
-            ctx.filter = 'none';
+            window.CostasTint.drawImage(ctx, productImg, 0, 0, size, size, productImg.dataset.tintHex || '');
         }
 
         // 2. Draw design layer — use the same transparent design PNG the modal uses
@@ -582,7 +552,7 @@ async function saveAccountCartPreview(cartItemId, designId) {
 
         let previewData;
         try {
-            previewData = offscreen.toDataURL('image/png');
+            previewData = offscreen.toDataURL('image/webp', 0.85);   // PNG where WebP can't be encoded
         } catch (secErr) {
             return;
         }

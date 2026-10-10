@@ -153,5 +153,7 @@ $traderLine = $trader['name'] === '' ? '' : implode(' · ', array_filter([
     <script src="<?= htmlspecialchars(Asset::url('/js/site/assistant.js')) ?>" defer></script>
     <?= View::json('cookie-consent-data', ['signedIn' => Auth::check(), 'accepted' => (int)$cookieAccepted]) ?>
     <?= View::script('/js/site/cookie-consent.js') ?>
+    <?php // The garment colours this page used (Tint::filterFor). ?>
+    <?= Tint::svgDefs() ?>
 </body>
 </html>

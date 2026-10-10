@@ -473,6 +473,10 @@ class AdminProductController extends AdminController {
 
         $stmt = $this->db->prepare("UPDATE products SET image_path = ? WHERE id = ?");
         $stmt->execute([$result['path'], $productId]);
+        // Cleaned up for tinting (ProductPhoto), then the WebP copy browsers
+        // are served instead (Webp, public/.htaccess).
+        ProductPhoto::enhance($result['fullPath']);
+        Webp::sibling($result['fullPath'], ProductPhoto::WEBP_QUALITY);
     }
 
     private function removeProductImage(int $productId): void {
@@ -512,6 +516,10 @@ class AdminProductController extends AdminController {
 
         $stmt = $this->db->prepare("UPDATE products SET back_image_path = ? WHERE id = ?");
         $stmt->execute([$result['path'], $productId]);
+        // Cleaned up for tinting (ProductPhoto), then the WebP copy browsers
+        // are served instead (Webp, public/.htaccess).
+        ProductPhoto::enhance($result['fullPath']);
+        Webp::sibling($result['fullPath'], ProductPhoto::WEBP_QUALITY);
     }
 
     private function removeProductBackImage(int $productId): void {
@@ -555,6 +563,10 @@ class AdminProductController extends AdminController {
 
         $stmt = $this->db->prepare("UPDATE products SET $dbColumn = ? WHERE id = ?");
         $stmt->execute([$result['path'], $productId]);
+        // Cleaned up for tinting (ProductPhoto), then the WebP copy browsers
+        // are served instead (Webp, public/.htaccess).
+        ProductPhoto::enhance($result['fullPath']);
+        Webp::sibling($result['fullPath'], ProductPhoto::WEBP_QUALITY);
     }
 
     private function removeProductSleeveImage(int $productId, string $side): void {

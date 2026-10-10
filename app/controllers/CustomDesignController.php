@@ -14,18 +14,17 @@ class CustomDesignController extends Controller {
             return;
         }
 
-        // Two kinds of save share this endpoint:
-        //  - The "Save Design" library feature: accounts only. Guests get the
-        //    requireLogin response and the studio redirects them to log in.
+        // Two kinds of save share this endpoint, and guests may make both;
+        // their designs go under the session's guest user row:
+        //  - The "Save Design" library feature. A guest's design is kept at
+        //    once, and the reply (requireLogin) sends them to sign in or
+        //    register, which moves it into their account
+        //    (AuthController::mergeGuest). It used to wait in the browser tab
+        //    until the studio reopened after sign-in, so it was lost whenever
+        //    that didn't happen: registering went to /home, and a design with
+        //    photos was too big to wait in the tab at all.
         //  - cart_flow: the internal save that backs Add to Cart (cart items
-        //    reference a design row). Guests may buy without an account, so
-        //    this path runs under the session's guest user row.
-        if (!Auth::check() && empty($data['cart_flow'])) {
-            header('Content-Type: application/json');
-            http_response_code(401);
-            echo json_encode(['requireLogin' => true, 'redirect' => '/login']);
-            return;
-        }
+        //    reference a design row). Guests may buy without an account.
         // Counted before any guest row is created, so that is capped too.
         if (!WriteLimit::allow($this->db, 'design')) {
             WriteLimit::refuse();
@@ -47,7 +46,16 @@ class CustomDesignController extends Controller {
             return;
         }
         $designId = $customDesignModel->save($data, $userId);
-        if ($designId) {
+        if ($designId && !Auth::check() && empty($data['cart_flow'])) {
+            // Kept for the guest; signing in or registering claims it, then
+            // they land on the design in their account.
+            header('Content-Type: application/json');
+            echo json_encode([
+                'id'           => $designId,
+                'requireLogin' => true,
+                'redirect'     => '/login?saved=design&redirect=' . rawurlencode('/account?tab=designs'),
+            ]);
+        } elseif ($designId) {
             header('Content-Type: application/json');
             echo json_encode(['id' => $designId]);
         } else {

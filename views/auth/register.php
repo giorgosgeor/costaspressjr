@@ -9,10 +9,15 @@
 
     <?php if (isset($error)): ?>
         <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
+    <?php elseif (!empty($savedDesign)): ?>
+        <div class="alert alert-info" role="status"><?= t('auth.saved_design') ?></div>
     <?php endif; ?>
 
     <form method="post" action="/register">
         <?= Csrf::field() ?>
+        <?php if (!empty($redirect)): ?>
+        <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirect) ?>">
+        <?php endif; ?>
         <div class="form-group">
             <label for="username"><?= t('auth.register.username') ?></label>
             <input type="text" id="username" name="username" value="<?= htmlspecialchars($username ?? '') ?>" placeholder="<?= t('auth.register.username_placeholder') ?>" minlength="3" maxlength="32" pattern="[A-Za-z0-9_.\-]+" title="<?= t('auth.register.username_title') ?>" required>
@@ -34,7 +39,8 @@
     </form>
 
     <div class="form-footer">
-        <p><?= t('auth.register.have_account') ?> <a href="/login"><?= t('auth.register.sign_in') ?></a></p>
+        <?php $loginQuery = array_filter(['saved' => !empty($savedDesign) ? 'design' : null, 'redirect' => $redirect ?? '']); ?>
+        <p><?= t('auth.register.have_account') ?> <a href="/login<?= $loginQuery ? '?' . e(http_build_query($loginQuery)) : '' ?>"><?= t('auth.register.sign_in') ?></a></p>
     </div>
 </div>
 

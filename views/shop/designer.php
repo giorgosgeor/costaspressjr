@@ -1,5 +1,5 @@
 <?php $title = t('studio.title', false); ?>
-<?php $pageCss[] = '/css/pages/designer.css'; require View::path('layouts/customer_header'); ?>
+<?php $pageCss[] = '/css/pages/designer.css'; $shopScripts = true; require View::path('layouts/customer_header'); ?>
 
 <?= View::script('/js/pages/designer/cart-modal.js') ?>
 <?= View::script('/js/pages/designer/save-design.js') ?>

@@ -39,25 +39,28 @@ $currentLocale   = I18n::locale();
     <?php if ($currentLocale === 'el'): ?>
     <link rel="preload" href="/fonts/geologica/geologica-greek.woff2" as="font" type="font/woff2" crossorigin>
     <?php endif; ?>
-    <?php // data-* behaviour (replaces inline on* handlers); before any image can fail ?>
-    <?= View::script('/js/site/actions.js') ?>
-    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/base.css')) ?>">
-    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/shop.css')) ?>">
-    <?php // The Studio look, over the base styles and under the page ones. ?>
-    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/studio.css')) ?>">
+    <?php // data-* behaviour (replaces inline on* handlers). Deferred: it settles
+          // images that loaded or failed before it ran. ?>
+    <script src="<?= htmlspecialchars(Asset::url('/js/site/actions.js')) ?>" defer></script>
+    <?php // base, shop, then the Studio look (over the base styles and under the
+          // page ones): one minified file, built from them (Asset::styles). ?>
+    <?= Asset::styles('site', ['/css/base.css', '/css/shop.css', '/css/studio.css']) ?>
     <?php if (!empty($extraCss)): foreach ($extraCss as $css): ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url($css)) ?>">
     <?php endforeach; endif; ?>
     <?php // Last on purpose. mobile.css holds every phone-specific decision in
           // one readable layer, and loading it after the per-page stylesheets
           // lets it win on specificity ties without a single !important. ?>
-    <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url('/css/mobile.css')) ?>">
+    <?= Asset::styles('mobile', ['/css/mobile.css']) ?>
     <?php // Stylesheets that began life as a template's inline <style> block load
           // here, where the block used to sit, so they keep winning over
           // mobile.css exactly as before. New page styles belong in $extraCss. ?>
     <?php if (!empty($pageCss)): foreach ($pageCss as $css): ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Asset::url($css)) ?>">
     <?php endforeach; endif; ?>
+    <?php // The shop's own libraries, 41 KB, only on the pages that use them
+          // ($shopScripts: account, premade design, custom product, studio). ?>
+    <?php if (!empty($shopScripts)): ?>
     <!-- Client-side pricing mirror (previews only; server is authoritative) -->
     <script src="<?= htmlspecialchars(Asset::url('/js/lib/pricing.js')) ?>" defer></script>
     <script src="<?= htmlspecialchars(Asset::url('/js/lib/size-qty.js')) ?>" defer></script>
@@ -67,6 +70,7 @@ $currentLocale   = I18n::locale();
     <script src="<?= htmlspecialchars(Asset::url('/js/lib/view-switcher.js')) ?>" defer></script>
     <!-- Live quantity → price ladder (reads the same tiers the server charges) -->
     <script src="<?= htmlspecialchars(Asset::url('/js/lib/price-tiers.js')) ?>" defer></script>
+    <?php endif; ?>
 </head>
 <?php // theme-studio switches on studio.css for every customer page; a page
       // can add its own class through $bodyClass. ?>

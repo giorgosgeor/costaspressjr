@@ -15,12 +15,12 @@ function addSizeRow(sizeName = '', priceModifier = '0.00', selectedColors = []) 
     const colorCount = selectedColors.length;
     row.innerHTML = `
         <input type="text" name="sizes[${sizeIndex}][name]" placeholder="Size name" value="${sizeName}" required>
-        <button type="button" class="btn-colors" onclick="openColorModal(this)">
+        <button type="button" class="btn-colors" data-on-click="openColorModal" data-args='["$this"]'>
             Colors <span class="color-count">${colorCount}</span>
         </button>
         <input type="number" name="sizes[${sizeIndex}][price_modifier]" placeholder="+$" step="0.01" value="${priceModifier}" title="Additional price for this size">
         <input type="hidden" name="sizes[${sizeIndex}][colors]" value="${selectedColors.join(',')}">
-        <button type="button" class="btn-remove" onclick="removeSizeRow(this)">✕</button>
+        <button type="button" class="btn-remove" data-on-click="removeSizeRow" data-args='["$this"]'>✕</button>
     `;
     container.appendChild(row);
     sizeIndex++;

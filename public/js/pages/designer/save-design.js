@@ -28,61 +28,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Helper: get the CSS filter string for a given hex color (mirrors applyColorTint logic)
-    window.getColorFilterString = function getColorFilterString(hex) {
-        if (!hex) return 'none';
-        hex = hex.trim();
-        if (!hex.startsWith('#')) hex = '#' + hex;
-
-        const hexLower = hex.toLowerCase();
-        const hexClean = hex.replace('#', '');
-        const r = parseInt(hexClean.substring(0,2), 16) / 255;
-        const g = parseInt(hexClean.substring(2,4), 16) / 255;
-        const b = parseInt(hexClean.substring(4,6), 16) / 255;
-        const max = Math.max(r, g, b), min = Math.min(r, g, b);
-        let h, s, l = (max + min) / 2;
-        if (max === min) { h = s = 0; }
-        else {
-            const d = max - min;
-            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-            switch(max) {
-                case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-                case g: h = ((b - r) / d + 2) / 6; break;
-                case b: h = ((r - g) / d + 4) / 6; break;
-            }
-        }
-        h *= 360; s *= 100; l *= 100;
-
-        const isWhite = hexLower === '#ffffff' || hexLower === '#fff' || l > 95;
-        const isBlack = hexLower === '#000000' || hexLower === '#000' || l < 10;
-        const isGray = s < 10;
-
-        const tintOverride = window.CostasTint && window.CostasTint.getOverride(hex);
-        if (tintOverride) return tintOverride;
-
-        if (isWhite) return 'saturate(0) brightness(2) contrast(0.8)';
-        if (isBlack) return 'saturate(0) brightness(0.65) contrast(1.1)';
-        if (isGray) {
-            const brightness = 0.2 + (l / 100) * 1.5;
-            return `saturate(0) brightness(${brightness})`;
-        }
-
-        const hueRotate = h - 38; // sepia base hue ≈ 38°
-        const isReddish   = h <= 20 || h >= 340;
-        const isYellowish = h >= 45 && h <= 80;
-        let saturate = (s / 100) * 3 + 0.8;
-        if (isReddish)   saturate = (s / 100) * 6 + 2.0;
-        if (isYellowish) saturate = (s / 100) * 4 + 1.0;
-
-        let brightness;
-        if (l < 30) brightness = 0.3 + (l / 100) * 0.7;
-        else if (l < 50) brightness = 0.5 + (l / 100) * 0.6;
-        else brightness = 0.6 + (l / 100) * 0.5;
-        if (isYellowish && l >= 45) brightness = Math.min(brightness * 1.25, 1.5);
-
-        return `grayscale(1) sepia(1) saturate(${saturate}) hue-rotate(${hueRotate}deg) brightness(${brightness})`;
-    }
-
     // Generates preview images for each view using Canvas API
     // options: { colorHex: string, cartItemId: number|null }
     // options.returnOnly — render the previews and hand them back WITHOUT
@@ -147,11 +92,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const imgX = (canvasSize - imgW) / 2;
                 const imgY = (canvasSize - imgH) / 2;
 
-                // Apply color tint using canvas filter (same as CSS filter)
-                const filterStr = getColorFilterString(colorHexToUse);
-                ctx.filter = filterStr;
-                ctx.drawImage(productImg, imgX, imgY, imgW, imgH);
-                ctx.filter = 'none';
+                // The garment in the chosen colour, the same tables as on the page.
+                // Not ctx.filter: Safari has none, so its previews came out grey.
+                window.CostasTint.drawImage(ctx, productImg, imgX, imgY, imgW, imgH, colorHexToUse);
 
                 // Calculate design area position on canvas using the same da_* values
                 // as applyDesignArea() in the editor — percentages of the product image.
@@ -290,9 +233,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 ctx.restore(); // End design area clipping
 
-                previews[view] = canvas.toDataURL('image/png');
+                // WebP: about a tenth of a PNG's size (audit P2). A browser that can't
+                // encode it returns PNG, and the server stores whichever arrived.
+                previews[view] = canvas.toDataURL('image/webp', 0.85);
 
-                // Design-only transparent PNG (front view only) — used for color-swap overlay in cart modal
+                // Design-only transparent image (front view only) — used for color-swap overlay in cart modal
                 if (view === 'front') {
                     const dCanvas = document.createElement('canvas');
                     dCanvas.width = canvasSize;
@@ -362,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                     dCtx.restore();
-                    previews['front_design'] = dCanvas.toDataURL('image/png');
+                    previews['front_design'] = dCanvas.toDataURL('image/webp', 0.85);   // keeps transparency
                 }
             } catch (err) {
                 console.error('Preview generation failed for view:', view, err);
@@ -546,6 +491,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify(designData)
                 });
                 const parsed = await resp.json();
+
+                if (parsed && parsed.requireLogin && parsed.id) {
+                    // A guest: the server kept the design, and signing in or
+                    // registering moves it into the account. Its previews are
+                    // drawn now, while the studio is open, then off to sign in.
+                    btn.textContent = window.I18N.t('studio.cart.adding');
+                    try { await generateAndSavePreviews(parsed.id); } catch (e) {}
+                    closeSaveDesignModal();
+                    window.location.href = parsed.redirect || '/login?redirect=' + encodeURIComponent('/account?tab=designs');
+                    return;
+                }
 
                 if (parsed && parsed.requireLogin) {
                     // Capture front preview while editor is still loaded, then redirect
