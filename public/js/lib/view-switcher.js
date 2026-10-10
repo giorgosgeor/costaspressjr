@@ -16,6 +16,9 @@
  *    needed to change, and the label stays correct no matter who flips it.
  *  - Hidden dots (display:none) are skipped when swiping, so a product with no
  *    sleeves swipes straight from Back back round to Front.
+ *  - Arrows on the mockup's left and right edges step to the previous/next
+ *    view. They exist only while the product has more than one view, and show
+ *    when the pointer is over the mockup (CSS: .view-arrow, in shop.css).
  */
 (function (global) {
     'use strict';
@@ -54,9 +57,47 @@
             if (a) label.textContent = a.getAttribute('data-label') || '';
         }
 
-        // Follow whoever sets .active — no changes needed in the page's own
-        // switching code.
-        var observer = new MutationObserver(syncLabel);
+        // ---- arrows: previous / next view, on the mockup itself ----
+        var arrows = [];
+        if (surface && opts.arrows !== false) {
+            var say = function (key, fallback) {
+                return (global.I18N && global.I18N.t) ? global.I18N.t(key) : fallback;
+            };
+            arrows = [-1, 1].map(function (dir) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'view-arrow ' + (dir < 0 ? 'view-arrow-prev' : 'view-arrow-next');
+                var name = dir < 0 ? say('view.prev', 'Previous view') : say('view.next', 'Next view');
+                b.setAttribute('aria-label', name);
+                b.title = name;
+                b.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+                    + (dir < 0 ? '<polyline points="15 18 9 12 15 6"/>' : '<polyline points="9 18 15 12 9 6"/>')
+                    + '</svg>';
+                b.hidden = true;
+                b.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    // Not a click on the mockup: that would deselect artwork.
+                    e.stopPropagation();
+                    step(dir);
+                });
+                surface.appendChild(b);
+                return b;
+            });
+        }
+        // Only worth showing with somewhere to go.
+        function syncArrows() {
+            var several = visibleDots(all()).length > 1;
+            arrows.forEach(function (b) { b.hidden = !several; });
+        }
+
+        function sync() {
+            syncLabel();
+            syncArrows();
+        }
+
+        // Follow whoever sets .active or hides a view — no changes needed in
+        // the page's own switching code.
+        var observer = new MutationObserver(sync);
         Array.prototype.forEach.call(all(), function (d) {
             observer.observe(d, { attributes: true, attributeFilter: ['class', 'style'] });
         });
@@ -69,7 +110,7 @@
         if (first && !first.classList.contains('active')) {
             first.click();
         }
-        syncLabel();
+        sync();
 
         function step(dir) {
             var vis = visibleDots(all());
@@ -148,7 +189,7 @@
             if (a) a.focus();
         }
 
-        return { next: function () { step(1); }, prev: function () { step(-1); }, sync: syncLabel };
+        return { next: function () { step(1); }, prev: function () { step(-1); }, sync: sync };
     }
 
     global.ViewSwitcher = { init: init };

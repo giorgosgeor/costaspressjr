@@ -17,7 +17,7 @@ already real in this shop.
 | mode | `payment` | One-time purchases; nothing is sold as a subscription. |
 | success_url | `APP_URL/checkout/complete?session_id={CHECKOUT_SESSION_ID}` | The existing confirmation page: it places the order and shows it. |
 | cancel_url | `APP_URL/checkout` | Back to the details page, still filled in. |
-| line_items | Built from the cart: one line per item (`price_data`, VAT included), plus the ACS pickup fee | Prices depend on the garment, the design and the quantity, so there are no fixed Stripe Price IDs to use. |
+| line_items | Built from the cart: one line per item (`price_data`, `tax_behavior: inclusive`, since prices already include VAT), plus the ACS delivery fee | Prices depend on the garment, the design and the quantity, so there are no fixed Stripe Price IDs to use. |
 
 ## Configured Parameters
 
@@ -30,8 +30,7 @@ These parameters were configured in Checkout Studio and are set in the call.
 |-----------|-------|------|
 | ui_mode | `hosted_page` | The project has no Stripe SDK; its own client pins API version `2026-08-26.dahlia` ([app/services/Stripe.php](app/services/Stripe.php)), which accepts `hosted_page` (tested). |
 | billing_address_collection | `auto` | |
-| phone_number_collection | `enabled: true` | The checkout already asks for a phone number for the pickup, so customers type it twice. |
-| automatic_tax | `enabled: true` | Needs Stripe Tax set up (Setup, step 3). Lines are `tax_behavior: inclusive`, so VAT is worked out of the price, never added on top. |
+| phone_number_collection | `enabled: true` | The checkout already asks for a phone number for ACS, so customers type it twice. |
 | allow_promotion_codes | `false` | |
 | submit_type | `auto` | |
 | consent_collection | `terms_of_service: required` | Sent with **live keys only**. It needs the Terms URL in the account's public details (Setup, step 2), which Stripe accepts only with the full business details. With test keys it is left out, so testing works without them. The shop's own terms checkbox applies either way. |
@@ -43,6 +42,7 @@ Not sent:
 
 | Parameter | Value in Checkout Studio | Why |
 |-----------|--------------------------|-----|
+| automatic_tax | `enabled: true` | The shop's prices already include VAT. Each line says so (`tax_behavior: inclusive`), and Stripe charges the prices as they are. Automatic tax would only add an empty "Tax €0.00" line (no VAT registration in Stripe), ask for an address to work it out, cost Stripe Tax's fee and hide Google Pay. To turn it back on later, for Stripe's VAT reports, set up Stripe Tax with a Cyprus registration. |
 | payment_method_collection | `always` | Allowed only in subscription mode. |
 | saved_payment_method_options | `payment_method_save: enabled` | Stripe refuses it without a Customer (tested). The shop keeps no Stripe Customers, so a saved card could never be offered back. See Next steps. |
 
@@ -50,17 +50,11 @@ Not sent:
 
 1. **Database.** Run `php database/migrate.php`. It adds `pending_checkouts.checkout_ref` and is already applied on the local database.
 2. **Terms of service URL** (before going live). Dashboard → Settings → Public details → Terms of service: `https://www.your-domain/terms`. Stripe asks for the full business details on that page, which you will have when you activate the account for live payments. With live keys, "Continue to payment" fails until it is set, and the log says "You cannot collect consent to your terms of service unless a URL is set". With test keys the shop doesn't ask Stripe for terms consent, so this isn't needed for testing.
-3. **Stripe Tax.** Dashboard → Settings → Tax:
-   - Head office address: the business address in Cyprus.
-   - Default product tax code: one that fits clothing.
-   - Default tax behavior: *inclusive*, since prices include VAT.
-   - Registrations: add Cyprus VAT if the business is VAT-registered. Without a registration, Stripe charges no tax.
-
-   Stripe Tax has its own fee ([stripe.com/tax/pricing](https://stripe.com/tax/pricing)). If the business is not VAT-registered, consider turning automatic tax off in Checkout Studio and removing `automatic_tax` from the call.
+3. **Tax.** Nothing to set up. The prices include VAT and Stripe charges them as they are (see `automatic_tax` above).
 4. **Restricted key.** The live `rk_live_…` key needs **Checkout Sessions: Write**. The local test key already has it: the test sessions were created and read with it. The other permissions stay as listed in [DEPLOY.md](DEPLOY.md).
 5. **Webhook.** No change. Checkout payments arrive as `payment_intent.succeeded`, as before.
 6. **Branding.** Dashboard → Settings → Branding: the logo, colours and font of Stripe's page.
-7. **Payment methods.** Dashboard → Settings → Payment methods: Checkout offers the ones switched on there. Google Pay is not shown while automatic tax is on and no shipping address is collected (Stripe's rule).
+7. **Payment methods.** Dashboard → Settings → Payment methods: Checkout offers the ones switched on there. Google Pay appears only in a browser that supports it (mainly Chrome) with a card saved in Google Pay.
 8. **Environment variables.** No new ones. `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are used as before. No page loads Stripe.js any more, but the production check still compares `STRIPE_PUBLISHABLE_KEY`'s mode with the secret key's, so keep it set.
 
 ## Files
@@ -80,7 +74,7 @@ Changed:
 
 ## How it works
 
-1. On `/checkout`, the customer gives a name, phone and email (guests only), picks the store or an ACS point, and ticks the terms box.
+1. On `/checkout`, the customer gives a name, phone and email (guests only), picks the ACS point or Smartpoint locker the order goes to (the delivery fee, `ACS_PICKUP_FEE`, is added automatically), and ticks the terms box.
 2. **Continue to payment** posts to `/api/create-checkout-session`. The server:
    - checks everything again and prices the cart
    - pauses accounts with many recent cancellations

@@ -21,7 +21,8 @@ function updateAllPrices(total, count) {
     const subtotalEl = document.getElementById('cart-subtotal');
     if (subtotalEl) subtotalEl.textContent = fmt;
     const cartTotalEl = document.getElementById('cart-total');
-    if (cartTotalEl) cartTotalEl.textContent = fmt;
+    // The total includes the fixed ACS delivery fee (cart/show.php).
+    if (cartTotalEl) cartTotalEl.textContent = '€' + (total + (parseFloat(cartTotalEl.dataset.deliveryFee) || 0)).toFixed(2);
     // Same bare number the page renders on load (was an English "3 pcs").
     const itemsCountEl = document.getElementById('items-count');
     if (itemsCountEl) itemsCountEl.textContent = count;

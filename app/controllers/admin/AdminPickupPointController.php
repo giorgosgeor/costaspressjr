@@ -17,12 +17,11 @@ class AdminPickupPointController extends AdminController {
             $migrated = false;
         }
         $acsFee        = Pickup::acsFee();
-        $storeAddress  = Pickup::storeAddress();
         $acsConfigured = AcsClient::configured();
         $flash = $_SESSION['admin_flash'] ?? null;
         unset($_SESSION['admin_flash']);
 
-        $this->render('admin/pickup_points', ['points' => $points, 'migrated' => $migrated, 'acsFee' => $acsFee, 'storeAddress' => $storeAddress, 'acsConfigured' => $acsConfigured, 'flash' => $flash]);
+        $this->render('admin/pickup_points', ['points' => $points, 'migrated' => $migrated, 'acsFee' => $acsFee, 'acsConfigured' => $acsConfigured, 'flash' => $flash]);
     }
 
     public function store(): void {

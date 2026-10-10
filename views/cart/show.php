@@ -132,13 +132,21 @@ require View::path('layouts/customer_header');
                     <span class="summary-label"><?= t('cart.summary.subtotal') ?></span>
                     <span class="summary-value" id="cart-subtotal">€<?= number_format($cartTotal ?? 0, 2) ?></span>
                 </div>
+                <?php // Every order goes to an ACS point for a fixed fee (Pickup), so
+                      // the total includes it; pages/cart.js adds it back on every
+                      // quantity change. No fee set yet: just say it comes at checkout. ?>
+                <?php $deliveryFee = Pickup::acsFee(); ?>
                 <div class="summary-row">
                     <span class="summary-label"><?= t('cart.summary.collection') ?></span>
+                    <?php if ($deliveryFee !== null): ?>
+                    <span class="summary-value"><?= money($deliveryFee) ?></span>
+                    <?php else: ?>
                     <span class="summary-value summary-value-note"><?= t('cart.summary.collection_value') ?></span>
+                    <?php endif; ?>
                 </div>
                 <div class="summary-row total">
                     <span class="summary-label"><?= t('cart.summary.total') ?></span>
-                    <span class="summary-value" id="cart-total">€<?= number_format($cartTotal ?? 0, 2) ?></span>
+                    <span class="summary-value" id="cart-total" data-delivery-fee="<?= number_format((float)$deliveryFee, 2, '.', '') ?>">€<?= number_format(($cartTotal ?? 0) + (float)$deliveryFee, 2) ?></span>
                 </div>
                 <?php // btn-outline-light is for DARK surfaces — white text on a
                       // white border. On this light summary card it rendered

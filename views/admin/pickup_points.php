@@ -15,20 +15,13 @@
 <?php endif; ?>
 
 <div class="pp-status">
+    <?php // Every order goes to an ACS point (Pickup); store pickup is no longer offered. ?>
     <div>
-        <strong>ACS pickup fee</strong>
+        <strong>Delivery fee</strong>
         <?php if ($acsFee !== null): ?>
-            <span class="pp-ok">€<?= number_format($acsFee, 2) ?></span>
+            <span class="pp-ok">€<?= number_format($acsFee, 2) ?></span> on every order
         <?php else: ?>
-            <span class="pp-missing">Not set</span> — ACS pickup is hidden at checkout until <code>ACS_PICKUP_FEE</code> is in .env.
-        <?php endif; ?>
-    </div>
-    <div>
-        <strong>Store pickup address</strong>
-        <?php if ($storeAddress !== ''): ?>
-            <?= htmlspecialchars($storeAddress) ?>
-        <?php else: ?>
-            <span class="pp-missing">Not set</span> — set <code>STORE_PICKUP_ADDRESS</code> in .env so customers know where to go.
+            <span class="pp-missing">Not set</span> — the checkout takes no orders until <code>ACS_PICKUP_FEE</code> is in .env.
         <?php endif; ?>
     </div>
     <div>
@@ -103,7 +96,7 @@
     <div class="form-section">
         <h3 class="form-section-title">Points (<?= count($points) ?>)</h3>
         <?php if (!$points): ?>
-            <p class="form-hint">No points yet. Customers can only choose store pickup until there is at least one active point.</p>
+            <p class="form-hint">No points yet. The checkout takes no orders until there is at least one active point.</p>
         <?php else: ?>
         <table class="pp-table">
             <thead><tr><th>Point</th><th>Type</th><th>Source</th><th></th></tr></thead>

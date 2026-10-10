@@ -2,7 +2,9 @@
 $title        = t('info.shipping.title', false);
 $infoTitle    = t('info.shipping.title', false);
 $infoSubtitle = t('info.shipping.subtitle', false);
-$infoUpdated  = '2026-10-08';
+$infoUpdated  = '2026-10-09';
+// Every order goes to an ACS point for this fixed fee (Pickup).
+$deliveryFee  = Pickup::acsFee();
 ob_start();
 ?>
 <h2><?= t('info.shipping.h1') ?></h2>
@@ -12,12 +14,13 @@ ob_start();
 <p><?= t('info.shipping.p2_lead') ?></p>
 <ul>
     <li><?= t('info.shipping.p2_a') ?></li>
-    <li><?= t('info.shipping.p2_b') ?></li>
 </ul>
 <p><?= t('info.shipping.p2_after', false) ?></p>
 
+<?php if ($deliveryFee !== null): ?>
 <h2><?= t('info.shipping.h3') ?></h2>
-<p><?= t('info.shipping.p3', false) ?></p>
+<p><?= t('info.shipping.p3', true, ['fee' => money($deliveryFee)]) ?></p>
+<?php endif; ?>
 
 <h2><?= t('info.shipping.h4') ?></h2>
 <p><?= t('info.shipping.p4', false) ?></p>

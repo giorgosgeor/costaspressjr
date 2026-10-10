@@ -69,6 +69,17 @@
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* Garment photos (public/images/products/) are grey, so that any colour can
+   be tinted onto them with a CSS filter (app/services/Tint.php and
+   js/lib/color-tint.js). Wherever no colour has been chosen — listings,
+   cards, thumbnails — they show white: the same filter as Tint's white. A
+   chosen colour comes as an inline style and wins over this. Size charts and
+   designs live in other folders, so they're untouched; the admin shows the
+   photos as uploaded. */
+body.theme-studio:not(.admin-body) img[src*="images/products/"] {
+    filter: grayscale(1) brightness(2.2) contrast(0.85);
+}
+
 body.theme-studio {
     --st-ink:     #0D0D0D;
     --st-muted:   #5F5E59;

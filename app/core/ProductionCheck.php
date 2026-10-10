@@ -37,6 +37,11 @@ class ProductionCheck {
         } elseif ($secretIsTest && Env::get('STRIPE_ALLOW_TEST_KEYS', '') !== '1') {
             $problems[] = 'Stripe keys are TEST keys (set STRIPE_ALLOW_TEST_KEYS=1 only for a dry run)';
         }
+        // Every order goes to an ACS point for this fee (Pickup); without it
+        // the checkout has no way to send anything, so it takes no orders.
+        if (Pickup::acsFee() === null) {
+            $problems[] = 'ACS_PICKUP_FEE is empty (the delivery fee, e.g. 3.00)';
+        }
         $mailTransport = Env::get('MAIL_TRANSPORT', 'log');
         if (!in_array($mailTransport, ['smtp', 'mail'], true)) {
             $problems[] = 'MAIL_TRANSPORT must be smtp (or mail), not "' . $mailTransport . '"';

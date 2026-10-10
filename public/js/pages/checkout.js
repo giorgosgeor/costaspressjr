@@ -1,9 +1,10 @@
 /*
  * Checkout page (/checkout).
  *
- * One form, two sections: who's collecting, and how (the store, free, or an
- * ACS point, with a fee). The order summary sits beside it (above it,
- * collapsed, on phones). The payment itself is on Stripe's hosted page.
+ * One form, two sections: who's collecting, and the ACS point or Smartpoint
+ * locker the order goes to (the only delivery, for a fixed fee). The order
+ * summary sits beside it (above it, collapsed, on phones). The payment
+ * itself is on Stripe's hosted page.
  *
  * Pressing "Continue to payment":
  *   1. checks the details, pickup point and terms here, pointing at what's
@@ -35,7 +36,7 @@
 
     var state = {
         subtotal: cfg.subtotalCents,
-        method: 'store',
+        method: 'acs_point',
         point: null,
         points: null,
         userPos: null,
@@ -48,7 +49,8 @@
         busy: false
     };
 
-    function feeCents() { return state.method === 'acs_point' ? (cfg.acsFeeCents || 0) : 0; }
+    // Every order goes to an ACS point, so its fee always applies.
+    function feeCents() { return cfg.acsFeeCents || 0; }
     function totalCents() { return state.subtotal + feeCents(); }
 
     function scrollToEl(el) {
@@ -113,7 +115,7 @@
 
     function markSections() {
         $('coSectionDetails').classList.toggle('is-complete', detailsComplete());
-        $('coSectionCollection').classList.toggle('is-complete', state.method === 'store' || !!state.point);
+        $('coSectionCollection').classList.toggle('is-complete', !!state.point);
     }
 
     /** Show every problem; return the first bad input, or null. */
@@ -172,16 +174,6 @@
         el.hidden = !msg;
     }
 
-    function setMethod(method) {
-        state.method = method;
-        var loc = $('acsLocator');
-        if (loc) loc.hidden = method !== 'acs_point';
-        showPointError('');
-        refreshTotals();
-        markSections();
-        if (method === 'acs_point') openLocator();
-    }
-
     function setStatus(msg) {
         var el = $('acsStatus');
         if (el) el.textContent = msg || '';
@@ -203,13 +195,9 @@
             }
             return loadLeaflet().then(initMap, function () { state.mapFailed = true; }).then(function () {
                 if (state.map) setTimeout(function () { state.map.invalidateSize(); }, 50);
-                // Ask for the location once, when the customer first picks ACS.
-                if (!state.locAsked) {
-                    state.locAsked = true;
-                    locate();
-                } else {
-                    render();
-                }
+                // The locator opens with the page, so it doesn't ask for the
+                // customer's location by itself: "Use my location" does.
+                render();
             });
         });
     }
@@ -420,7 +408,7 @@
 
         // 1. Our own fields.
         var firstBad = validateDetails();
-        var pointMissing = state.method === 'acs_point' && !state.point;
+        var pointMissing = !state.point;
         if (pointMissing) showPointError(t('checkout.pickup.errors.no_point'));
         var termsAccepted = termsOk();
         markSections();
@@ -472,9 +460,6 @@
         if (this.checked) termsOk();
     });
 
-    document.querySelectorAll('input[name="deliveryMethod"]').forEach(function (r) {
-        r.addEventListener('change', function () { if (r.checked) setMethod(r.value); });
-    });
     var list = $('acsList');
     if (list) list.addEventListener('click', function (e) {
         var b = e.target.closest('.acs-point');
@@ -504,8 +489,9 @@
     window.addEventListener('pageshow', function (e) { if (e.persisted && state.busy) setBusy(false); });
 
     restore();
-    var checkedMethod = document.querySelector('input[name="deliveryMethod"]:checked');
-    if (checkedMethod) state.method = checkedMethod.value;
     refreshTotals();
     markSections();
+    // The ACS point is the one thing left to choose (absent when delivery
+    // isn't available, and the button is disabled then).
+    if ($('acsLocator')) openLocator();
 })();

@@ -52,8 +52,9 @@ Copy `.env.example` to `.env` on the server (never into git) and fill in:
   domain), `CONTACT_EMAIL` (the inbox you read), `ALERT_EMAIL`
 - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`
   (step 4). Leave `STRIPE_ALLOW_TEST_KEYS` empty.
-- Collection: `STORE_PICKUP_ADDRESS`, and `ACS_PICKUP_FEE` to offer ACS points
-  (empty hides them)
+- Delivery: `ACS_PICKUP_FEE=3.00` (required). Every order goes to the ACS
+  point or Smartpoint locker the customer picks, so the checkout also needs
+  active ACS points (/admin/pickup-points, or the sync in step 6).
 
 ## 4. Stripe (live mode)
 
@@ -73,11 +74,10 @@ Copy `.env.example` to `.env` on the server (never into git) and fill in:
    `https://www.your-domain/terms`. With live keys the Checkout page asks
    customers to accept it, and Stripe refuses to open the page without it.
    (Test keys skip that, so testing doesn't need it.)
-5. Settings → **Tax**: Stripe Tax set up (head office address, default product
-   tax code, prices *inclusive* of tax, and a Cyprus VAT registration if the
-   business is registered). The Checkout page calculates tax automatically
-   and won't open until this is done.
-6. Settings → Branding: logo and colours for the Checkout page.
+5. Settings → Branding: logo and colours for the Checkout page.
+
+Stripe Tax isn't needed: the shop's prices already include VAT, and Stripe
+charges them as they are.
 
 `STRIPE_INTEGRATION_TODO.md` has the details of each.
 
@@ -103,7 +103,7 @@ also `php database/sync_acs_points.php` once a day.
    redirects to `https://`.
 2. Contact page, footer, Terms and Privacy show the business details.
 3. Register an account: the verification email arrives (not in spam).
-4. Place a real order with your own card — the smallest one, store pickup.
+4. Place a real order with your own card — the smallest one, to an ACS point.
    "Continue to payment" opens Stripe's page; after paying you land on the
    order confirmation, and the confirmation email arrives. The order appears
    in /admin/orders and the Stripe Dashboard shows the payment.

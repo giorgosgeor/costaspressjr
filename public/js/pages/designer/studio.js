@@ -118,26 +118,17 @@ function afterElementAdded() {
     // No need to disable upload/text buttons after adding
 }
 
-    // Show the image editor panel and populate fields with selected image's properties
+    // Show the image editor panel (its buttons act on the selected image; size
+    // and rotation are set with the grips on the image itself).
     function showImageEditor(el) {
         if (!el) return;
         document.getElementById('imageEditorPanel').style.display = 'flex';
-        document.getElementById('imgEditWidth').value = el.width || 80;
-        document.getElementById('imgEditHeight').value = el.height || 80;
-        document.getElementById('imgEditRotation').value = el.rotation || 0;
-        document.getElementById('imgEditRotationVal').value = el.rotation || 0;
-        document.getElementById('imgEditColor').value = el.color || '#ffffff';
-        // Optionally set checkboxes if you have them (color, remove bg, etc.)
     }
 
     // Hide the image editor panel
     function hideImageEditor() {
         document.getElementById('imageEditorPanel').style.display = 'none';
     }
-
-    // Update image size (width or height) for the selected image
-
-    // Update image color for the selected image
 
 // Convert hex color to HSL values
 function hexToHSL(hex) {
@@ -304,14 +295,8 @@ function loadExistingDesign(designData) {
     window.loadedDesignName = designData.name || '';
     window.loadedDesignEmail = designData.email || '';
 
-    // Update sleeve buttons visibility
-    if (window.currentProduct.leftSleeveImagePath || window.currentProduct.rightSleeveImagePath) {
-        document.getElementById('leftSleeveBtn').style.display = window.currentProduct.leftSleeveImagePath ? '' : 'none';
-        document.getElementById('rightSleeveBtn').style.display = window.currentProduct.rightSleeveImagePath ? '' : 'none';
-    } else {
-        document.getElementById('leftSleeveBtn').style.display = 'none';
-        document.getElementById('rightSleeveBtn').style.display = 'none';
-    }
+    // Only the views this product has
+    refreshViewButtons();
 
     // Show correct options panel (may not exist in studio mode)
     document.querySelectorAll('.product-options').forEach(p => p.style.display = 'none');
@@ -639,14 +624,8 @@ document.addEventListener('mousedown', function(e) {
                 da_rsleeve_x: product.da_rsleeve_x, da_rsleeve_y: product.da_rsleeve_y,
                 da_rsleeve_w: product.da_rsleeve_w, da_rsleeve_h: product.da_rsleeve_h,
             };
-            // Show sleeve buttons if any sleeve image exists
-            if (window.currentProduct.leftSleeveImagePath || window.currentProduct.rightSleeveImagePath) {
-                document.getElementById('leftSleeveBtn').style.display = window.currentProduct.leftSleeveImagePath ? '' : 'none';
-                document.getElementById('rightSleeveBtn').style.display = window.currentProduct.rightSleeveImagePath ? '' : 'none';
-            } else {
-                document.getElementById('leftSleeveBtn').style.display = 'none';
-                document.getElementById('rightSleeveBtn').style.display = 'none';
-            }
+            // Only the views this product has
+            refreshViewButtons();
             // Init color panel and pre-select the color chosen on the product page
             if (colorId) window.pendingColorId = colorId;
             initStudioColorPanel(product.id);
@@ -707,10 +686,7 @@ document.addEventListener('mousedown', function(e) {
             da_rsleeve_x: p.da_rsleeve_x, da_rsleeve_y: p.da_rsleeve_y,
             da_rsleeve_w: p.da_rsleeve_w, da_rsleeve_h: p.da_rsleeve_h
         };
-        var ls = document.getElementById('leftSleeveBtn');
-        var rs = document.getElementById('rightSleeveBtn');
-        if (ls) ls.style.display = window.currentProduct.leftSleeveImagePath ? '' : 'none';
-        if (rs) rs.style.display = window.currentProduct.rightSleeveImagePath ? '' : 'none';
+        refreshViewButtons();
         try { initStudioColorPanel(p.id); } catch (e) {}
         updateMockupImage();
         applyDesignArea();
@@ -756,18 +732,8 @@ function selectProduct(el) {
     // Update mockup image
     updateMockupImage();
     applyDesignArea();
-    // Show sleeve buttons if any sleeve image exists
-    if (window.currentProduct.leftSleeveImagePath || window.currentProduct.rightSleeveImagePath) {
-        document.getElementById('leftSleeveBtn').style.display = window.currentProduct.leftSleeveImagePath ? '' : 'none';
-        document.getElementById('rightSleeveBtn').style.display = window.currentProduct.rightSleeveImagePath ? '' : 'none';
-    } else {
-        document.getElementById('leftSleeveBtn').style.display = 'none';
-        document.getElementById('rightSleeveBtn').style.display = 'none';
-    }
-    // If currently on sleeve view but product doesn't have sleeves, switch to front
-    if (!(window.currentProduct.leftSleeveImagePath || window.currentProduct.rightSleeveImagePath) && (currentView === 'left-sleeve' || currentView === 'right-sleeve')) {
-        switchView('front');
-    }
+    // Only the views this product has (leaves one it lacks for the front)
+    refreshViewButtons();
 
     // Show correct options panel
     document.querySelectorAll('.product-options').forEach(p => p.style.display = 'none');
@@ -829,6 +795,24 @@ function updateMockupImage() {
         'right-sleeve': 'Right Sleeve'
     };
     document.getElementById('designAreaLabel').textContent = labels[currentView];
+}
+
+// Offer only the views the product has a photo for. A view without one used
+// to stay offered and quietly showed the front again — the "back" of the
+// Female Polo was its front. If the current view isn't available, go to the
+// front. (lib/view-switcher.js follows these dots for swipes and arrows.)
+function refreshViewButtons() {
+    const p = window.currentProduct || {};
+    const has = {
+        'front': true,
+        'back': !!p.backImagePath,
+        'left-sleeve': !!p.leftSleeveImagePath,
+        'right-sleeve': !!p.rightSleeveImagePath
+    };
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.style.display = has[btn.dataset.view] ? '' : 'none';
+    });
+    if (!has[currentView]) switchView('front');
 }
 
 function switchView(view) {
@@ -1331,16 +1315,9 @@ function renderElements() {
                 div.removeAttribute('data-selected');
             }
             let imgStyle = 'width: 100%; height: 100%; object-fit: contain;';
-            // Combine rotation and flip in a single transform
-            let transforms = [];
-            if (element.rotation) {
-                transforms.push(`rotate(${element.rotation}deg)`);
-            }
-            if (element.flipped) {
-                transforms.push('scaleX(-1)');
-            }
-            if (transforms.length > 0) {
-                imgStyle += ` transform: ${transforms.join(' ')};`;
+            const transform = imageTransform(element);
+            if (transform !== 'none') {
+                imgStyle += ` transform: ${transform};`;
             }
             let overlay = '';
             if (element.color && element.color !== '#ffffff' && element.color !== '#fff') {
@@ -1356,12 +1333,17 @@ function renderElements() {
                 imgSrc = '/' + imgSrc;
             }
 
+            const rotateLabel = window.I18N ? window.I18N.t('studio.image_edit.rotation') : 'Drag to rotate';
             div.innerHTML = `
                 <div style="position:relative;width:100%;height:100%;">
                   <img src="${imgSrc}" style="${imgStyle};opacity:${opacity};" onerror="console.error('Failed to load image:', this.src); this.style.border='2px solid red';">
                   ${overlay}
                 </div>
                 <div class="resize-handle"></div>
+                <div class="rotate-handle" role="slider" aria-label="${escapeHtml(rotateLabel)}" title="${escapeHtml(rotateLabel)}"
+                     aria-valuemin="0" aria-valuemax="359" aria-valuenow="${Math.round(element.rotation || 0)}">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
+                </div>
                 <button class="delete-btn" onclick="deleteElement('${element.id}')">x</button>
             `;
         } else if (element.type === 'text') {
@@ -1401,6 +1383,75 @@ function renderElements() {
 
         // Initialize interact.js
         initInteract(div, element);
+        if (element.type === 'image') initRotate(div, element);
+    });
+}
+
+// The image's own transform: its rotation and mirror, applied to the <img>
+// inside the element (never to the element itself, so its box and the
+// bounds checks below stay unrotated).
+function imageTransform(element) {
+    const parts = [];
+    if (element.rotation) parts.push(`rotate(${element.rotation}deg)`);
+    if (element.flipped) parts.push('scaleX(-1)');
+    return parts.length ? parts.join(' ') : 'none';
+}
+
+// The round grip at the image's bottom-left corner: drag it around the image
+// to rotate it about its centre. Snaps to the nearest right angle within a
+// few degrees, so straight is easy to hit.
+function initRotate(div, element) {
+    const handle = div.querySelector('.rotate-handle');
+    const img = div.querySelector('img');
+    if (!handle || !img) return;
+
+    handle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        selectElementById(element.id);
+
+        const box = div.getBoundingClientRect();
+        const cx = box.left + box.width / 2;
+        const cy = box.top + box.height / 2;
+        const angleTo = (x, y) => Math.atan2(y - cy, x - cx) * 180 / Math.PI;
+        const startPointer = angleTo(e.clientX, e.clientY);
+        const startRotation = element.rotation || 0;
+        handle.setPointerCapture(e.pointerId);
+        div.classList.add('rotating');
+
+        const move = (ev) => {
+            let r = startRotation + angleTo(ev.clientX, ev.clientY) - startPointer;
+            r = ((r % 360) + 360) % 360;
+            const square = Math.round(r / 90) * 90;
+            if (Math.abs(r - square) < 4) r = square % 360;
+            element.rotation = Math.round(r);
+            img.style.transform = imageTransform(element);
+            handle.setAttribute('aria-valuenow', String(element.rotation));
+        };
+        const end = (ev) => {
+            if (handle.hasPointerCapture(ev.pointerId)) handle.releasePointerCapture(ev.pointerId);
+            handle.removeEventListener('pointermove', move);
+            handle.removeEventListener('pointerup', end);
+            handle.removeEventListener('pointercancel', end);
+            div.classList.remove('rotating');
+        };
+        handle.addEventListener('pointermove', move);
+        handle.addEventListener('pointerup', end);
+        handle.addEventListener('pointercancel', end);
+    });
+
+    // Keyboard: arrows turn it by 1° (Shift: 15°).
+    handle.tabIndex = 0;
+    handle.addEventListener('keydown', (e) => {
+        const step = e.shiftKey ? 15 : 1;
+        let delta = 0;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowUp') delta = step;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') delta = -step;
+        if (!delta) return;
+        e.preventDefault();
+        element.rotation = ((((element.rotation || 0) + delta) % 360) + 360) % 360;
+        img.style.transform = imageTransform(element);
+        handle.setAttribute('aria-valuenow', String(element.rotation));
     });
 }
 
@@ -1427,6 +1478,8 @@ function initInteract(div, element) {
     interact(div)
         .draggable({
             inertia: false,
+            // The rotate grip turns the image; it must not move it.
+            ignoreFrom: '.rotate-handle',
             // No restrictRect modifier.
             //
             // There used to be one, with endOnly:true, running ALONGSIDE the
@@ -1791,14 +1844,6 @@ function deleteElement(id) {
         // Set the product directly — there are no `.product-choice` cards on this page.
         window.currentProduct = s.product;
 
-        // Toggle sleeve buttons based on whether the product has sleeve images
-        try {
-            var lsBtn = document.getElementById('leftSleeveBtn');
-            var rsBtn = document.getElementById('rightSleeveBtn');
-            if (lsBtn) lsBtn.style.display = s.product.leftSleeveImagePath ? '' : 'none';
-            if (rsBtn) rsBtn.style.display = s.product.rightSleeveImagePath ? '' : 'none';
-        } catch (e) {}
-
         // Restore primitives BEFORE calling render functions that read them.
         // The VIEW is deliberately not restored: it used to be assigned here
         // directly, which bypassed switchView() and so never moved the .active
@@ -1807,6 +1852,9 @@ function deleteElement(id) {
         // the view already marked active. The studio now always opens on the
         // front, which is also what customers expect.
         currentView = 'front';
+
+        // Only the views this product has
+        try { refreshViewButtons(); } catch (e) {}
         if (s.colorHex) currentColorHex = s.colorHex;
 
         // Restore design elements per view

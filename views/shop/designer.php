@@ -271,20 +271,9 @@ ob_start(); ?>
                             <div class="upload-editor-content">
                                 <button class="upload-editor-close" data-on-click="hideImageEditor">&times;</button>
                                 <h2 style="margin-bottom:18px;"><?= t('studio.image_edit.title') ?></h2>
-                                <div style="margin-bottom:12px;">
-                                    <div class="studio-field-caption"><?= t('studio.image_edit.size') ?></div>
-                                    <div style="display:flex; gap:8px; align-items:center; margin-top:2px;">
-                                        <input id="imgEditWidth" type="number" min="0.1" step="0.01" style="width:60px;" data-on-change="updateImageSize" data-args='["width"]'> in ×
-                                        <input id="imgEditHeight" type="number" min="0.1" step="0.01" style="width:60px;" data-on-change="updateImageSize" data-args='["height"]'> in
-                                    </div>
-                                </div>
-                                <div style="margin-bottom:10px; display:flex; align-items:center; gap:10px;">
-                                    <label style="font-size:13px;"><?= t('studio.image_edit.color') ?></label>
-                                    <input id="imgEditColor" type="color" data-on-change="updateImageColor">
-                                </div>
-                                <div style="margin-bottom:10px; display:flex; align-items:center; gap:10px;">
-                                    <!-- Background remover removed for customers -->
-                                </div>
+                                <?php // Size and rotation are set on the artwork itself: the
+                                      // square corner grip resizes it, the round one rotates it
+                                      // (pages/designer/studio.js). ?>
                                 <?= View::script('/js/pages/designer/image-editor.js') ?>
                                 <hr style="margin:12px 0;">
                                 <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
@@ -295,11 +284,6 @@ ob_start(); ?>
                                     <button class="img-edit-btn" data-on-click="cropImage"><?= t('studio.image_edit.crop') ?></button>
                                 </div>
                                 <!-- Save Design button moved to main panel below -->
-                                <div style="margin-bottom:10px;">
-                                    <label style="font-size:13px;"><?= t('studio.image_edit.rotation') ?></label>
-                                    <input id="imgEditRotation" type="range" min="0" max="360" value="0" style="width:140px; vertical-align:middle;" data-on-input="updateImageRotation">
-                                    <input id="imgEditRotationVal" type="number" min="0" max="360" value="0" style="width:48px;" data-on-input="updateImageRotation">
-                                </div>
                                 <div style="display:flex; gap:10px; margin-top:10px;">
                                     <button type="button" class="btn btn-block btn-secondary" data-on-click="resetImageEdit"><?= t('studio.image_edit.reset') ?></button>
                                 </div>

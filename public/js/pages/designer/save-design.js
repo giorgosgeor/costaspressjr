@@ -694,41 +694,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-function updateImageSize(type) {
-    if (!selectedElement) return;
-    const el = elements[currentView].find(e => e.id === selectedElement);
-    if (!el || el.type !== 'image') return;
-    const width = parseFloat(document.getElementById('imgEditWidth').value);
-    const height = parseFloat(document.getElementById('imgEditHeight').value);
-    if (type === 'width' && width > 0) el.width = width;
-    if (type === 'height' && height > 0) el.height = height;
-    renderElements();
-    showImageEditor(el);
-}
-    function updateImageColor() {
-        if (!selectedElement) return;
-        const el = elements[currentView].find(e => e.id === selectedElement);
-        if (!el || el.type !== 'image') return;
-        const color = document.getElementById('imgEditColor').value;
-        el.color = color;
-        // Optionally apply color filter to the image (if supported)
-        renderElements();
-        showImageEditor(el);
-    }
-
-    // Update image rotation for the selected image
-function updateImageRotation() {
-    if (!selectedElement) return;
-    const el = elements[currentView].find(e => e.id === selectedElement);
-    if (!el || el.type !== 'image') return;
-    let rotation = parseFloat(document.getElementById('imgEditRotation').value);
-    if (isNaN(rotation)) rotation = 0;
-    el.rotation = rotation;
-    document.getElementById('imgEditRotationVal').value = rotation;
-    renderElements();
-    showImageEditor(el);
-}
-
 
 function closeDesignSavedModal() {
     document.getElementById('designSavedModal').style.display = 'none';

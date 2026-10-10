@@ -1,17 +1,6 @@
 /* image-editor.js — from views/shop/designer.php, loaded where the inline script used to run. */
 
                                 // --- Image Editor Action Buttons Implementation ---
-                                let imageEditApplyLive = true;
-                                function toggleImageApply() {
-                                    imageEditApplyLive = document.getElementById('imgEditApplyChanges').checked;
-                                }
-
-                                function applyImageEditIfLive(cb) {
-                                    if (imageEditApplyLive) {
-                                        cb();
-                                    }
-                                }
-
                                 function centerImage() {
                                     if (!selectedElement) return;
                                     const el = elements[currentView].find(e => e.id === selectedElement);
@@ -224,18 +213,3 @@ function resetImageEdit() {
                                     el.bgRemoved = !el.bgRemoved;
                                     renderElements();
                                 }
-
-// Patch image editor controls to respect Apply Changes
-// (Functions must be defined before this patching logic)
-const origUpdateImageSize = updateImageSize;
-updateImageSize = function(type) {
-    applyImageEditIfLive(() => origUpdateImageSize(type));
-}
-const origUpdateImageColor = updateImageColor;
-updateImageColor = function() {
-    applyImageEditIfLive(origUpdateImageColor);
-}
-const origUpdateImageRotation = updateImageRotation;
-updateImageRotation = function() {
-    applyImageEditIfLive(origUpdateImageRotation);
-}
