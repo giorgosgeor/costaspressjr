@@ -116,22 +116,9 @@ class ShopController extends Controller {
         // Get sizes for each product, with each colour's supplier cost in that
         // size (color_costs, in color_ids order): the price box follows the
         // preview colour, the way the cart charges it (CartPricing).
+        $sizes = $this->sizesByProduct(array_column($availableProducts, 'id'), true);
         foreach ($availableProducts as &$product) {
-            $stmt = $this->db->prepare("
-                SELECT ps.*,
-                       GROUP_CONCAT(ac.color_name ORDER BY ac.id) as color_names,
-                       GROUP_CONCAT(ac.color_hex ORDER BY ac.id) as color_hexes,
-                       GROUP_CONCAT(ac.id ORDER BY ac.id) as color_ids,
-                       GROUP_CONCAT(IF(ac.id IS NULL, NULL, COALESCE(pv.unit_price, ? + COALESCE(ps.price_modifier, 0))) ORDER BY ac.id) as color_costs
-                FROM product_sizes ps
-                JOIN product_variants pv ON ps.id = pv.size_id AND pv.is_available = 1
-                LEFT JOIN available_colors ac ON pv.color_id = ac.id
-                WHERE ps.product_id = ? AND ps.is_available = 1
-                GROUP BY ps.id
-                ORDER BY ps.size_order
-            ");
-            $stmt->execute([(float)$product['base_price'], $product['id']]);
-            $product['sizes'] = $stmt->fetchAll();
+            $product['sizes'] = $sizes[(int)$product['id']];
         }
         unset($product);
 
@@ -219,21 +206,9 @@ public function designer(): void {
         $products = $stmt->fetchAll();
 
         // Get sizes and colors for each product
+        $sizes = $this->sizesByProduct(array_column($products, 'id'));
         foreach ($products as &$product) {
-            $stmt = $this->db->prepare("
-                SELECT ps.*, 
-                       GROUP_CONCAT(ac.color_name ORDER BY ac.id) as color_names,
-                       GROUP_CONCAT(ac.color_hex ORDER BY ac.id) as color_hexes,
-                       GROUP_CONCAT(ac.id ORDER BY ac.id) as color_ids
-                FROM product_sizes ps
-                JOIN product_variants pv ON ps.id = pv.size_id AND pv.is_available = 1
-                LEFT JOIN available_colors ac ON pv.color_id = ac.id
-                WHERE ps.product_id = ? AND ps.is_available = 1
-                GROUP BY ps.id
-                ORDER BY ps.size_order
-            ");
-            $stmt->execute([$product['id']]);
-            $product['sizes'] = $stmt->fetchAll();
+            $product['sizes'] = $sizes[(int)$product['id']];
         }
         unset($product);
 
@@ -252,10 +227,9 @@ public function designer(): void {
              ORDER BY p.name");
         $products = $stmt->fetchAll();
         // Get sizes and colors for each product
+        $sizes = $this->sizesByProduct(array_column($products, 'id'));
         foreach ($products as &$product) {
-            $stmt = $this->db->prepare("SELECT ps.*, GROUP_CONCAT(ac.color_name ORDER BY ac.id) as color_names, GROUP_CONCAT(ac.color_hex ORDER BY ac.id) as color_hexes, GROUP_CONCAT(ac.id ORDER BY ac.id) as color_ids FROM product_sizes ps JOIN product_variants pv ON ps.id = pv.size_id AND pv.is_available = 1 LEFT JOIN available_colors ac ON pv.color_id = ac.id WHERE ps.product_id = ? AND ps.is_available = 1 GROUP BY ps.id ORDER BY ps.size_order");
-            $stmt->execute([$product['id']]);
-            $product['sizes'] = $stmt->fetchAll();
+            $product['sizes'] = $sizes[(int)$product['id']];
         }
         unset($product);
         $favoriteProductIds = (new Favorites($this->db))->idsForCurrentUser('product');
@@ -497,5 +471,42 @@ public function designer(): void {
             }
         }
         return $d->format('D, j M');
+    }
+
+    /**
+     * Each product's available sizes, with the colours each size comes in,
+     * keyed by product id: one query for the whole list instead of one per
+     * product (audit P3/P7: 14 products took 185 ms that way). $withCosts
+     * adds color_costs, each colour's supplier cost in that size, in
+     * color_ids order.
+     */
+    private function sizesByProduct(array $productIds, bool $withCosts = false): array {
+        $ids = array_values(array_unique(array_map('intval', $productIds)));
+        if (!$ids) {
+            return [];
+        }
+        $costs = $withCosts
+            ? ', GROUP_CONCAT(IF(ac.id IS NULL, NULL, COALESCE(pv.unit_price, p.base_price + COALESCE(ps.price_modifier, 0))) ORDER BY ac.id) AS color_costs'
+            : '';
+        $stmt = $this->db->prepare("
+            SELECT ps.*,
+                   GROUP_CONCAT(ac.color_name ORDER BY ac.id) AS color_names,
+                   GROUP_CONCAT(ac.color_hex ORDER BY ac.id) AS color_hexes,
+                   GROUP_CONCAT(ac.id ORDER BY ac.id) AS color_ids
+                   $costs
+            FROM product_sizes ps
+            JOIN products p ON p.id = ps.product_id
+            JOIN product_variants pv ON ps.id = pv.size_id AND pv.is_available = 1
+            LEFT JOIN available_colors ac ON pv.color_id = ac.id
+            WHERE ps.product_id IN (" . implode(',', array_fill(0, count($ids), '?')) . ") AND ps.is_available = 1
+            GROUP BY ps.id
+            ORDER BY ps.product_id, ps.size_order, ps.id
+        ");
+        $stmt->execute($ids);
+        $sizes = array_fill_keys($ids, []);
+        foreach ($stmt->fetchAll() as $row) {
+            $sizes[(int)$row['product_id']][] = $row;
+        }
+        return $sizes;
     }
 }

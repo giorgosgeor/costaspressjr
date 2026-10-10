@@ -13,6 +13,47 @@
  *                          tends to land in spam — prefer smtp.
  */
 class Mailer {
+    /** Messages later() has queued, as send() arguments. */
+    private static array $queue = [];
+
+    /**
+     * send(), but once the reply has reached the browser: a slow mail server
+     * (SMTP can take seconds) never holds up a page, and the reply's timing
+     * no longer shows whether an email went out, which would tell a stranger
+     * whether an address has an account (audit S6, P8). On a server that
+     * can't finish a reply early (PHP's built-in server, mod_php) it still
+     * goes, at the end of the request. Nobody waits for the outcome, so
+     * failures are only logged; use send() when the page reports it.
+     */
+    public static function later(string $to, string $subject, string $htmlBody, string $textBody = '', ?string $replyTo = null): void {
+        if (!self::$queue) {
+            register_shutdown_function([self::class, 'sendQueued']);
+        }
+        self::$queue[] = [$to, $subject, $htmlBody, $textBody, $replyTo];
+    }
+
+    /** @internal The shutdown function later() registers. */
+    public static function sendQueued(): void {
+        // The session first, so the visitor's next page isn't kept waiting
+        // on its lock; then the reply itself.
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();       // PHP-FPM
+        } elseif (function_exists('litespeed_finish_request')) {
+            litespeed_finish_request();     // LiteSpeed, common on shared hosting
+        }
+        ignore_user_abort(true);
+        while ($message = array_shift(self::$queue)) {
+            try {
+                self::send(...$message);
+            } catch (Throwable $e) {
+                error_log('[Mailer] queued message failed: ' . $e->getMessage());
+            }
+        }
+    }
+
     /**
      * @param string|null $replyTo where replies go (the contact form sets the
      *                             customer's address); defaults to the sender.

@@ -10,8 +10,95 @@ class CustomDesign {
     // may contain "/" or "..", so a matching path cannot leave that folder.
     private const UPLOAD_PATH_PATTERN = '#^public/images/designs/uploads/[A-Za-z0-9_-]+/[A-Za-z0-9_-][A-Za-z0-9._-]*\.(?i:png|jpe?g|gif|webp)$#';
 
+    // What one user (account or guest) may keep, so nobody can fill the disk
+    // with saved designs (audit S3). Far beyond what a customer needs.
+    public const MAX_DESIGNS_PER_USER = 200;
+    public const MAX_UPLOAD_BYTES_PER_USER = 100 * 1024 * 1024;
+
+    // The studio's fonts (views/shop/designer.php), as it stores them.
+    private const TEXT_FONTS = [
+        'Arial, sans-serif', "'Times New Roman', serif", "'Courier New', monospace", 'Georgia, serif',
+        'Verdana, sans-serif', "'Trebuchet MS', sans-serif", 'Impact, sans-serif', "'Lucida Console', monospace",
+    ];
+
+    /**
+     * A text's font as one of the studio's own, or Arial. It ends up in style
+     * attributes, the admin's order page among them, where any other value
+     * could restyle or cover the page (audit S8). Matched on the first family
+     * name, so plain 'Georgia' is Georgia too.
+     */
+    public static function textFont(mixed $font): string {
+        $family = fn(string $f) => strtolower(trim(explode(',', $f)[0], " '\""));
+        $wanted = $family(is_string($font) ? $font : '');
+        foreach (self::TEXT_FONTS as $known) {
+            if ($family($known) === $wanted) {
+                return $known;
+            }
+        }
+        return self::TEXT_FONTS[0];
+    }
+
+    /** A text's colour as #rrggbb, what the studio's colour picker gives, or black. See textFont(). */
+    public static function textColor(mixed $color): string {
+        return is_string($color) && preg_match('/^#[0-9a-f]{6}$/i', $color) ? strtolower($color) : '#000000';
+    }
+
     public function __construct(PDO $db) {
         $this->db = $db;
+    }
+
+    /** How many designs the user has saved. */
+    public function countFor(int $userId): int {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM custom_designs WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        return (int)$stmt->fetchColumn();
+    }
+
+    /**
+     * Bytes of uploaded artwork the user's designs keep on disk. A file that
+     * several designs share (identical uploads are stored once) counts once.
+     */
+    public function uploadedBytesOf(int $userId): int {
+        $stmt = $this->db->prepare("
+            SELECT COALESCE(SUM(size), 0) FROM (
+                SELECT MAX(u.file_size) AS size
+                FROM custom_design_uploads u
+                JOIN custom_designs cd ON cd.id = u.design_id
+                WHERE cd.user_id = ? AND u.stored_file_path IS NOT NULL
+                GROUP BY u.stored_file_path
+            ) files
+        ");
+        $stmt->execute([$userId]);
+        return (int)$stmt->fetchColumn();
+    }
+
+    /** Bytes of new image data (data URLs) among a design's elements. */
+    public static function incomingBytes(mixed $elements): int {
+        $bytes = 0;
+        foreach (is_array($elements) ? $elements : [] as $element) {
+            $src = is_array($element) ? ($element['src'] ?? null) : null;
+            if (is_string($src) && str_starts_with($src, 'data:image')) {
+                $bytes += intdiv(max(0, strlen($src) - (int)strpos($src, ',') - 1) * 3, 4);
+            }
+        }
+        return $bytes;
+    }
+
+    /**
+     * 'order' when an order was placed with this design, 'cart' when a cart
+     * line uses it, otherwise null. Orders print from the design's own
+     * artwork and previews, and cart lines show them, so a design in use is
+     * never deleted.
+     */
+    public function usedBy(int $designId): ?string {
+        $stmt = $this->db->prepare("SELECT 1 FROM order_items WHERE design_id = ? LIMIT 1");
+        $stmt->execute([$designId]);
+        if ($stmt->fetchColumn()) {
+            return 'order';
+        }
+        $stmt = $this->db->prepare("SELECT 1 FROM cart_items WHERE design_id = ? LIMIT 1");
+        $stmt->execute([$designId]);
+        return $stmt->fetchColumn() ? 'cart' : null;
     }
 
     /**
@@ -264,6 +351,9 @@ class CustomDesign {
             // Read the user's files before this design's rows go: its own
             // images, sent back as paths, are among them.
             $ownedPaths = $this->uploadedPathsOf($userId);
+            $stmt = $this->db->prepare("SELECT stored_file_path FROM custom_design_uploads WHERE design_id = ?");
+            $stmt->execute([$designId]);
+            $oldPaths = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
             // Delete old uploads and texts (we'll re-add them)
             $this->db->prepare("DELETE FROM custom_design_uploads WHERE design_id = ?")->execute([$designId]);
@@ -278,8 +368,14 @@ class CustomDesign {
             foreach ($textElements as $index => $element) {
                 $this->saveTextElement($designId, $element, $index);
             }
-            
+
             $this->db->commit();
+
+            // Images taken out of the design go once nothing uses them. Not
+            // for an ordered design: its old artwork may be what was ordered.
+            if ($this->usedBy($designId) !== 'order') {
+                $this->removeUnreferencedFiles($oldPaths);
+            }
             return true;
             
         } catch (Exception $e) {
@@ -396,9 +492,9 @@ class CustomDesign {
                 $designId,
                 $element['id'] ?? 'element-' . $order,
                 $element['text'] ?? '',
-                $element['fontFamily'] ?? 'Arial, sans-serif',
+                self::textFont($element['fontFamily'] ?? null),
                 $element['fontSize'] ?? 24,
-                $element['color'] ?? '#000000',
+                self::textColor($element['color'] ?? null),
                 isset($element['bold']) && $element['bold'] ? 1 : 0,
                 isset($element['italic']) && $element['italic'] ? 1 : 0,
                 isset($element['underline']) && $element['underline'] ? 1 : 0,
@@ -463,6 +559,14 @@ class CustomDesign {
                     return null;
                 }
             }
+        }
+
+        // Uploads are served publicly: no EXIF saying where and when a photo
+        // was taken (audit S12). Kept as uploaded if stripping left anything
+        // unreadable.
+        $stripped = ImageMetadata::strip($decodedData, $mime);
+        if ($stripped !== $decodedData && is_array(@getimagesizefromstring($stripped))) {
+            $decodedData = $stripped;
         }
 
         // Same bytes as something this user already uploaded? Point at the
@@ -586,66 +690,77 @@ class CustomDesign {
     }
     
     /**
-     * Delete a design and all its associated data (uploads, texts, files)
+     * Delete a design and all its associated data (uploads, texts, files).
+     * Refused (false) for a design an order or a cart still uses; see usedBy().
      */
     public function delete(int $designId): bool {
+        if ($this->usedBy($designId) !== null) {
+            return false;
+        }
+
+        // Its folders: the legacy id-named one and the token-named one. The
+        // token is read, not created: the row is about to go.
+        $stmt = $this->db->prepare("SELECT path_token FROM custom_designs WHERE id = ?");
+        $stmt->execute([$designId]);
+        $token = $stmt->fetchColumn();
+        $folders = [(string)$designId];
+        if (is_string($token) && preg_match('/^[0-9a-f]{32}$/', $token)) {
+            $folders[] = $token;
+        }
+
         $this->db->beginTransaction();
-        
         try {
-            // Get uploads to delete the actual files
             $stmt = $this->db->prepare("SELECT stored_file_path FROM custom_design_uploads WHERE design_id = ?");
             $stmt->execute([$designId]);
-            $uploads = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $paths = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-            // Identical artwork is stored once and shared across the user's
-            // designs, so a file may still belong to a design that is staying.
-            // Only remove it when nothing else points at it — otherwise deleting
-            // one design silently blanks the artwork on the others.
-            $refCount = $this->db->prepare("
-                SELECT COUNT(*) FROM custom_design_uploads
-                WHERE stored_file_path = ? AND design_id <> ?
-            ");
-            foreach ($uploads as $upload) {
-                if (empty($upload['stored_file_path'])) {
-                    continue;
-                }
-                $refCount->execute([$upload['stored_file_path'], $designId]);
-                if ((int)$refCount->fetchColumn() > 0) {
-                    continue;
-                }
-                // Only ever a file inside the uploads folder, whatever the row says.
-                $filePath = self::uploadFileFor($upload['stored_file_path']);
-                if ($filePath !== null) {
-                    unlink($filePath);
-                }
-            }
-            
-            // Try to remove both the legacy id-named folder and the new
-            // token-named folder (whichever happens to exist for this design).
-            foreach ([$this->pathTokenFor($designId), (string)$designId] as $folder) {
-                $designDir = __DIR__ . '/../../' . self::UPLOAD_DIR . '/' . $folder;
-                if (is_dir($designDir)) {
-                    @rmdir($designDir); // Will only remove if empty
-                }
-            }
-            
-            // Delete from custom_design_uploads
             $this->db->prepare("DELETE FROM custom_design_uploads WHERE design_id = ?")->execute([$designId]);
-            
-            // Delete from custom_design_texts
             $this->db->prepare("DELETE FROM custom_design_texts WHERE design_id = ?")->execute([$designId]);
-            
-            // Delete the main design record
-            $stmt = $this->db->prepare("DELETE FROM custom_designs WHERE id = ?");
-            $stmt->execute([$designId]);
-            
+            $this->db->prepare("DELETE FROM custom_designs WHERE id = ?")->execute([$designId]);
+
             $this->db->commit();
-            return true;
-            
         } catch (Exception $e) {
             $this->db->rollBack();
             error_log('CustomDesign delete error: ' . $e->getMessage());
             return false;
+        }
+
+        // Files go only once the rows are gone, so a failed delete leaves the
+        // design whole.
+        $this->removeUnreferencedFiles($paths);
+        foreach ($folders as $folder) {
+            $designDir = __DIR__ . '/../../' . self::UPLOAD_DIR . '/' . $folder;
+            if (is_dir($designDir)) {
+                @rmdir($designDir); // Will only remove if empty
+            }
+            PreviewImages::deleteFolder($folder);
+        }
+        return true;
+    }
+
+    /**
+     * Delete those of $paths that no row uses any more. Identical artwork is
+     * stored once and shared across a user's designs, so a file stays until
+     * the last design using it goes; deleting it earlier would blank the
+     * artwork on the others.
+     */
+    private function removeUnreferencedFiles(array $paths): void {
+        $stillUsed = $this->db->prepare("
+            SELECT 1 FROM custom_design_uploads WHERE stored_file_path = ?
+            UNION ALL
+            SELECT 1 FROM order_item_uploads WHERE stored_file_path = ?
+            LIMIT 1
+        ");
+        foreach (array_unique(array_filter($paths, 'is_string')) as $path) {
+            $stillUsed->execute([$path, $path]);
+            if ($stillUsed->fetchColumn()) {
+                continue;
+            }
+            // Only ever a file inside the uploads folder, whatever the row says.
+            $file = self::uploadFileFor($path);
+            if ($file !== null) {
+                @unlink($file);
+            }
         }
     }
 }

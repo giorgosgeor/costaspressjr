@@ -46,7 +46,7 @@ $traderLine = $trader['name'] === '' ? '' : implode(' · ', array_filter([
             <div class="footer-grid">
                 <div class="footer-section">
                     <a href="/" class="footer-brand">
-                        <img src="/images/logo.png" alt="<?= t('site.brand') ?>">
+                        <img src="/images/logo.webp" width="240" height="160" loading="lazy" decoding="async" alt="<?= t('site.brand') ?>">
                     </a>
                     <p><?= t('footer.tagline') ?></p>
                 </div>
@@ -102,7 +102,7 @@ $traderLine = $trader['name'] === '' ? '' : implode(' · ', array_filter([
     </footer>
     <?php endif; // checkout mode ?>
 
-    <?= View::json('i18n-data', ['locale' => I18n::locale(), 'messages' => I18n::all()]) ?>
+    <?= I18n::clientScript() ?>
     <?= View::script('/js/site/i18n.js') ?>
 <?php // ---- Shop assistant ---------------------------------------------
       // Answers come from ShopAssistant.php, which reads the shop's own FAQ,

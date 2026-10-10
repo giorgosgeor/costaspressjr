@@ -361,6 +361,11 @@ $viewLabels = [
                 </thead>
                 <tbody>
                 <?php foreach ($itemTexts as $tx):
+                    // Customer input, going into style attributes: only the
+                    // studio's fonts and #rrggbb colours (rows saved before
+                    // that was enforced included).
+                    $font  = CustomDesign::textFont($tx['font_family'] ?? null);
+                    $color = CustomDesign::textColor($tx['text_color'] ?? null);
                     $styles = [];
                     if (!empty($tx['is_bold']))      $styles[] = 'Bold';
                     if (!empty($tx['is_italic']))    $styles[] = 'Italic';
@@ -368,9 +373,9 @@ $viewLabels = [
                     $spec = sprintf(
                         "%s | %s %spx | %s | %s | %s | x:%d y:%d",
                         $tx['text_content'] ?? '',
-                        $tx['font_family'] ?? 'Arial',
+                        $font,
                         (int)($tx['font_size'] ?? 24),
-                        $tx['text_color'] ?? '#000000',
+                        $color,
                         $styles ? implode('+', $styles) : 'Regular',
                         $placementLabel($tx['placement'] ?? 'front'),
                         (int)($tx['position_x'] ?? 0), (int)($tx['position_y'] ?? 0)
@@ -378,16 +383,16 @@ $viewLabels = [
                 ?>
                     <tr>
                         <td class="prod-text-value"
-                            style="font-family:<?= htmlspecialchars($tx['font_family'] ?? 'Arial') ?>;
-                                   color:<?= htmlspecialchars($tx['text_color'] ?? '#000') ?>;
+                            style="font-family:<?= htmlspecialchars($font) ?>;
+                                   color:<?= htmlspecialchars($color) ?>;
                                    <?= !empty($tx['is_bold']) ? 'font-weight:700;' : '' ?>
                                    <?= !empty($tx['is_italic']) ? 'font-style:italic;' : '' ?>
                                    <?= !empty($tx['is_underline']) ? 'text-decoration:underline;' : '' ?>"><?= htmlspecialchars($tx['text_content'] ?? '') ?></td>
-                        <td><?= htmlspecialchars($tx['font_family'] ?? 'Arial') ?></td>
+                        <td><?= htmlspecialchars($font) ?></td>
                         <td><?= (int)($tx['font_size'] ?? 24) ?> px</td>
                         <td>
-                            <span class="color-chip" style="background:<?= htmlspecialchars($tx['text_color'] ?? '#000') ?>"></span>
-                            <?= htmlspecialchars($tx['text_color'] ?? '#000000') ?>
+                            <span class="color-chip" style="background:<?= htmlspecialchars($color) ?>"></span>
+                            <?= htmlspecialchars($color) ?>
                         </td>
                         <td><?= $styles ? htmlspecialchars(implode(', ', $styles)) : '—' ?></td>
                         <td><?= htmlspecialchars($placementLabel($tx['placement'] ?? 'front')) ?></td>

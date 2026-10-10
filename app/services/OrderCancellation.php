@@ -90,19 +90,60 @@ class OrderCancellation
      * Null when Stripe can't say — the order page then words it without
      * figures.
      *
+     * With $db, for showing the sums: Stripe's fee never changes, so once
+     * known it is kept on the payment row and later views don't ask Stripe
+     * (audit P8). The cancellation itself passes no $db and reads it all from
+     * Stripe, since a refund made in the Dashboard may not be in the
+     * database yet.
+     *
      * @return ?array{paid:int, fee:int, refund:int}
      */
-    public static function quote(string $piId, bool $keepFee = true): ?array
+    public static function quote(string $piId, bool $keepFee = true, ?PDO $db = null): ?array
     {
-        try {
-            $a = Stripe::paymentAmounts($piId);
-        } catch (Throwable $e) {
-            Log::warning('cancellation quote unavailable', ['pi' => $piId, 'error' => $e->getMessage()]);
-            return null;
+        $a = $db ? self::storedAmounts($db, $piId) : null;
+        if ($a === null) {
+            try {
+                $a = Stripe::paymentAmounts($piId);
+            } catch (Throwable $e) {
+                Log::warning('cancellation quote unavailable', ['pi' => $piId, 'error' => $e->getMessage()]);
+                return null;
+            }
+            if ($db) {
+                try {
+                    $db->prepare("UPDATE order_payments SET stripe_fee_cents = ? WHERE payment_intent_id = ?")->execute([$a['fee'], $piId]);
+                } catch (PDOException $e) {
+                    // stripe_fee_cents missing until the migration runs: ask again next time.
+                }
+            }
         }
         $fee    = $keepFee ? $a['fee'] : 0;
         $refund = $a['amount'] - $fee - $a['refunded'];
         return ['paid' => $a['amount'], 'fee' => $fee, 'refund' => max(0, $refund)];
+    }
+
+    /**
+     * The payment's sums in cents from its row, as quote() wants them, once
+     * its fee has been read from Stripe; null before that.
+     *
+     * @return ?array{amount:int, fee:int, refunded:int}
+     */
+    private static function storedAmounts(PDO $db, string $piId): ?array
+    {
+        try {
+            $stmt = $db->prepare("SELECT amount, refunded_amount, stripe_fee_cents FROM order_payments WHERE payment_intent_id = ? LIMIT 1");
+            $stmt->execute([$piId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return null;
+        }
+        if (!$row || $row['stripe_fee_cents'] === null) {
+            return null;
+        }
+        return [
+            'amount'   => (int)round((float)$row['amount'] * 100),
+            'fee'      => (int)$row['stripe_fee_cents'],
+            'refunded' => (int)round((float)($row['refunded_amount'] ?? 0) * 100),
+        ];
     }
 
     /**

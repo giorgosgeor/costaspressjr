@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?= Csrf::metaTag() ?>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="icon" type="image/png" href="/images/logo-icon.png">
     <title><?= htmlspecialchars($title ?? 'Admin Panel') ?> — Costaspressjr</title>
     <?php // data-* behaviour (replaces inline on* handlers); before any image can fail ?>
     <?= View::script('/js/site/actions.js') ?>
@@ -29,7 +29,7 @@
     ?>
     <nav class="admin-nav">
         <a href="/admin" class="admin-nav-brand">
-            <img src="/images/logo.png" alt="Costaspressjr" style="height:38px; width:auto; object-fit:contain;">
+            <img src="/images/logo.webp" width="240" height="160" alt="Costaspressjr" style="height:38px; width:auto; object-fit:contain;">
             <span class="admin-nav-tag">Admin</span>
         </a>
         <a href="/admin" class="<?= adminNavActive('/admin', $currentPath) ?>">Dashboard</a>

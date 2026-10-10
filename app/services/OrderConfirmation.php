@@ -25,8 +25,10 @@ final class OrderConfirmation
         try {
             I18n::setLocale($locale, false);
             [$subject, $html, $text] = self::compose($db, $orderId, $name);
-            // Replies reach the shop rather than a no-reply sender.
-            return Mailer::send($to, $subject, $html, $text, Business::email() ?: null);
+            // Replies reach the shop rather than a no-reply sender. Sent once
+            // the reply is out, so the confirmation page doesn't wait on SMTP.
+            Mailer::later($to, $subject, $html, $text, Business::email() ?: null);
+            return true;
         } catch (Throwable $e) {
             Log::error('order confirmation email failed', ['order' => $orderId, 'error' => $e->getMessage()]);
             return false;

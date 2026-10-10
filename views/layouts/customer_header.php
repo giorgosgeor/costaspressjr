@@ -19,8 +19,10 @@ $currentLocale   = I18n::locale();
     <meta name="description" content="<?= htmlspecialchars($pageDescription) ?>">
     <meta name="theme-color" content="#15130E">
     <link rel="canonical" href="<?= htmlspecialchars($canonicalUrl) ?>">
-    <link rel="icon" type="image/png" href="/images/logo.png">
-    <link rel="apple-touch-icon" href="/images/logo.png">
+    <?php // Small copies of the logo (logo.png is 81 KB at 540×360): the icon
+          // and the header/footer images are fetched by every first visit. ?>
+    <link rel="icon" type="image/png" href="/images/logo-icon.png">
+    <link rel="apple-touch-icon" href="/images/logo-icon.png">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="<?= t('site.brand') ?>">
     <meta property="og:title" content="<?= htmlspecialchars($pageFullTitle) ?>">
@@ -77,7 +79,7 @@ $currentLocale   = I18n::locale();
     <header class="co-header">
         <div class="container co-header-inner">
             <a href="/" class="co-header-logo">
-                <img src="/images/logo.png" alt="<?= t('site.brand') ?>">
+                <img src="/images/logo.webp" width="240" height="160" alt="<?= t('site.brand') ?>">
             </a>
             <span class="co-header-secure">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="1"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
@@ -93,7 +95,7 @@ $currentLocale   = I18n::locale();
     <header class="site-header">
         <div class="container header-inner">
             <a href="/" class="logo">
-                <img src="/images/logo.png" alt="<?= t('site.brand') ?>">
+                <img src="/images/logo.webp" width="240" height="160" alt="<?= t('site.brand') ?>">
             </a>
 
             <button class="mobile-menu-toggle" type="button" aria-label="<?= t('header.toggle_menu') ?>" aria-expanded="false" aria-controls="primary-nav">

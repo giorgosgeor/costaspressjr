@@ -25,6 +25,11 @@ class CartController extends Controller {
             echo 'Invalid data';
             return;
         }
+        // Counted before any guest row is created, so that is capped too.
+        if (!WriteLimit::allow($this->db, 'cart')) {
+            WriteLimit::refuse();
+            return;
+        }
         // Guests may buy without an account — a guest user row is created on
         // first add-to-cart. Saving DESIGNS still requires a real login.
         $userId = $this->effectiveUserId(true);
@@ -97,6 +102,12 @@ class CartController extends Controller {
         }
         $cartModel = new \Cart($this->db);
         $cartId = $cartModel->getOrCreateCartId($userId);
+        if ($cartModel->lineCount($cartId) >= Cart::MAX_LINES) {
+            http_response_code(409);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => I18n::t('limit.cart_full', ['count' => Cart::MAX_LINES])]);
+            return;
+        }
         // Lookup variant_id
         $variantId = null;
         // Use the user's selection from the modal, fall back to saved design's values
@@ -258,32 +269,9 @@ class CartController extends Controller {
             $countStmt = $this->db->prepare("SELECT COALESCE(SUM(quantity), 0) as total FROM cart_items WHERE cart_id = ?");
             $countStmt->execute([$cartId]);
             $_SESSION['cart_count'] = (int)($countStmt->fetch()['total'] ?? 0);
-            // Handle uploads (base64 or file info in $data['uploads'])
-            if (!empty($data['uploads']) && is_array($data['uploads'])) {
-                $cartModel = new \Cart($this->db);
-                foreach ($data['uploads'] as $upload) {
-                    // Save base64 image to file if needed
-                    if (!empty($upload['base64']) && !empty($upload['original_filename'])) {
-                        $storedPath = $this->saveCartBase64Upload($upload);
-                    } else {
-                        $storedPath = $this->safeExistingCartUploadPath($upload['stored_file_path'] ?? '');
-                    }
-
-                    if (!$storedPath) {
-                        continue;
-                    }
-
-                    $cartModel->addUpload($cartItemId, [
-                        'original_filename' => $upload['original_filename'] ?? '',
-                        'stored_file_path' => $storedPath,
-                        'placement' => $upload['placement'] ?? 'front',
-                        'position_x' => $upload['position_x'] ?? 0,
-                        'position_y' => $upload['position_y'] ?? 0,
-                        'width' => $upload['width'] ?? 80,
-                        'height' => $upload['height'] ?? 80
-                    ]);
-                }
-            }
+            // A cart line's artwork lives in its design (design_id). Image data
+            // sent here is ignored: no page sends any, and accepting it let a
+            // script store ~12 MB per request that nothing ever deleted.
             header('Content-Type: application/json');
             echo json_encode(['success' => true, 'cart_item_id' => $cartItemId]);
         } else {
@@ -443,24 +431,27 @@ class CartController extends Controller {
         $cartId = $cartModel->getOrCreateCartId($userId);
         
         // Verify the cart item belongs to this user's cart
-        $stmt = $this->db->prepare("SELECT id FROM cart_items WHERE id = ? AND cart_id = ?");
+        $stmt = $this->db->prepare("SELECT id, path_token FROM cart_items WHERE id = ? AND cart_id = ?");
         $stmt->execute([$cartItemId, $cartId]);
-        if (!$stmt->fetch()) {
+        $line = $stmt->fetch();
+        if (!$line) {
             http_response_code(404);
             header('Content-Type: application/json');
             echo json_encode(['error' => 'Cart item not found']);
             return;
         }
-        
+
         // Delete related uploads first
         $stmt = $this->db->prepare("DELETE FROM cart_item_uploads WHERE cart_item_id = ?");
         $stmt->execute([$cartItemId]);
-        
+
         // Delete the cart item
         $stmt = $this->db->prepare("DELETE FROM cart_items WHERE id = ?");
         $ok = $stmt->execute([$cartItemId]);
-        
+
         if ($ok) {
+            Cart::deletePreviews($cartItemId, $line['path_token'] ?? null);
+
             // Get updated cart count
             $stmt = $this->db->prepare("SELECT COALESCE(SUM(quantity), 0) as total FROM cart_items WHERE cart_id = ?");
             $stmt->execute([$cartId]);
@@ -525,54 +516,16 @@ class CartController extends Controller {
             echo json_encode(['error' => 'Not authorized']);
             return;
         }
+        if (!WriteLimit::allow($this->db, 'preview')) {
+            WriteLimit::refuse();
+            return;
+        }
 
         // Resolve a per-cart-item folder token. Stored on the row so the
         // folder name is unguessable and stable across saves.
         $folder = $this->cartItemPathToken($cartItemId);
-        $previewDir = public_path('images/designs/previews/' . $folder);
-        if (!is_dir($previewDir)) {
-            mkdir($previewDir, 0755, true);
-        }
+        $previewPaths = PreviewImages::store($folder, (array)$data['previews']);
 
-        $previewPaths = [];
-        $validViews = ['front', 'back', 'left-sleeve', 'right-sleeve', 'front_design'];
-        $allowedImageTypes = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
-
-        foreach ($data['previews'] as $view => $base64Data) {
-            if (!in_array($view, $validViews)) continue;
-            if (empty($base64Data)) continue;
-
-            if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $matches)) {
-                $imageType = $matches[1];
-                if (!in_array(strtolower($imageType), $allowedImageTypes)) continue;
-                $rawData = base64_decode(substr($base64Data, strpos($base64Data, ',') + 1));
-            } else {
-                continue;
-            }
-
-            if ($rawData === false) continue;
-
-            $imageInfo = @getimagesizefromstring($rawData);
-            if ($imageInfo === false) continue;
-
-            $ext = $imageType === 'jpeg' ? 'jpg' : $imageType;
-            $filename = str_replace('-', '_', $view) . '.' . $ext;
-            $fullPath = $previewDir . '/' . $filename;
-            $relativePath = 'images/designs/previews/' . $folder . '/' . $filename;
-            
-            // Delete old previews for this view
-            foreach (['png', 'jpg', 'jpeg', 'webp'] as $oldExt) {
-                $oldFile = $previewDir . '/' . str_replace('-', '_', $view) . '.' . $oldExt;
-                if (file_exists($oldFile)) {
-                    @unlink($oldFile);
-                }
-            }
-            
-            if (file_put_contents($fullPath, $rawData) !== false) {
-                $previewPaths[$view] = $relativePath;
-            }
-        }
-        
         // Update cart_items with preview paths
         if (!empty($previewPaths)) {
             $stmt = $this->db->prepare("UPDATE cart_items SET preview_images = ? WHERE id = ?");
@@ -581,73 +534,6 @@ class CartController extends Controller {
         
         header('Content-Type: application/json');
         echo json_encode(['success' => true, 'previews' => $previewPaths]);
-    }
-
-private function saveCartBase64Upload(array $upload): ?string {
-        $base64 = (string)($upload['base64'] ?? '');
-        if (!preg_match('/^data:image\/(png|jpe?g|gif|webp);base64,/i', $base64, $matches)) {
-            return null;
-        }
-
-        $encoded = substr($base64, strpos($base64, ',') + 1);
-        $decoded = base64_decode($encoded, true);
-        if ($decoded === false || $decoded === '') {
-            return null;
-        }
-
-        if (strlen($decoded) > Upload::DEFAULT_MAX_BYTES) {
-            return null;
-        }
-
-        $imageInfo = @getimagesizefromstring($decoded);
-        if (!is_array($imageInfo) || empty($imageInfo['mime'])) {
-            return null;
-        }
-
-        $mime = strtolower((string)$imageInfo['mime']);
-        $mimeToExt = [
-            'image/jpeg' => 'jpg',
-            'image/png' => 'png',
-            'image/gif' => 'gif',
-            'image/webp' => 'webp',
-        ];
-        if (!isset($mimeToExt[$mime])) {
-            return null;
-        }
-
-        if (function_exists('finfo_open')) {
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            if ($finfo) {
-                // No finfo_close(): a no-op since PHP 8.1 and deprecated in 8.5.
-                $finfoMime = strtolower((string)finfo_buffer($finfo, $decoded));
-                if ($finfoMime !== '' && $finfoMime !== $mime) {
-                    return null;
-                }
-            }
-        }
-
-        $uploadDir = public_path('uploads/cart');
-        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
-            error_log('Could not create cart upload directory.');
-            return null;
-        }
-
-        $filename = bin2hex(random_bytes(16)) . '.' . $mimeToExt[$mime];
-        $fullPath = $uploadDir . DIRECTORY_SEPARATOR . $filename;
-        if (file_put_contents($fullPath, $decoded) === false) {
-            return null;
-        }
-
-        @chmod($fullPath, 0644);
-        return 'uploads/cart/' . $filename;
-    }
-
-    private function safeExistingCartUploadPath(?string $path): string {
-        $path = ltrim((string)$path, '/');
-        if (!preg_match('#^uploads/cart/[A-Za-z0-9._-]+\.(png|jpe?g|gif|webp)$#i', $path)) {
-            return '';
-        }
-        return $path;
     }
 
     /**

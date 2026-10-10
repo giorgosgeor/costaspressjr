@@ -77,6 +77,38 @@ class I18n
         return self::$messages;
     }
 
+    /**
+     * The dictionary for client-side code (window.I18N), as the footer's
+     * script tag: a static file per language, public/js/i18n/<locale>.js,
+     * which the browser caches like any other script, rather than 65 KB of
+     * JSON inside every page (audit P4). Its first line names the hash of the
+     * app/lang JSON it was built from; when the translations change it is
+     * built again (on a developer's machine: commit it with them). Where it
+     * can't be (a read-only server), the dictionary goes inline as before:
+     * heavier, never out of date.
+     */
+    public static function clientScript(): string
+    {
+        $source = __DIR__ . '/../lang/' . self::$locale . '.json';
+        $path   = '/js/i18n/' . self::$locale . '.js';
+        $file   = dirname(__DIR__, 2) . '/public' . $path;
+        $stamp  = '/* app/lang/' . self::$locale . '.json ' . (is_file($source) ? md5_file($source) : '') . ' */';
+
+        $current = is_file($file) && @file_get_contents($file, false, null, 0, strlen($stamp)) === $stamp;
+        if (!$current && is_file($source)) {
+            $js  = $stamp . "\n// Built by I18n::clientScript(); edit app/lang/" . self::$locale . ".json instead.\n"
+                 . 'window.I18N = ' . json_encode(['locale' => self::$locale, 'messages' => self::$messages], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . ";\n";
+            $tmp = $file . '.' . bin2hex(random_bytes(4)) . '.tmp';
+            $current = (is_dir(dirname($file)) || @mkdir(dirname($file), 0755, true))
+                && @file_put_contents($tmp, $js) !== false
+                && @rename($tmp, $file);
+            @unlink($tmp);
+        }
+        return $current
+            ? View::script($path)
+            : View::json('i18n-data', ['locale' => self::$locale, 'messages' => self::$messages]);
+    }
+
     private static function resolveLocale(): string
     {
         // 1. Explicit query parameter wins.

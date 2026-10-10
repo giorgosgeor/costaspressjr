@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($title) ?></title>
-    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="icon" type="image/png" href="/images/logo-icon.png">
     <meta name="robots" content="noindex, nofollow">
     <?php // This page renders standalone, outside the admin layout, so it has to
           // pull in base.css itself — every colour, radius and font below is a

@@ -10,6 +10,8 @@
  *                      payments it still can't settle.
  *   orderCancelled()   a customer cancelled a pending order on the website
  *                      and was refunded minus the fee — so nobody prints it.
+ *   adminSignInPaused() not a payment: an admin's password was right but its
+ *                      two-step codes kept being wrong.
  *
  * Each payment is alerted about at most once per kind (payment_alerts table):
  * the webhook retries for days and the job runs every half hour.
@@ -81,6 +83,31 @@ class PaymentAlert
             );
         } catch (Throwable $e) {
             Log::error('cancellation alert failed', ['order' => $orderId, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Someone typed the right password for an admin account, then got its
+     * two-step code wrong again and again (TwoFactorController). Not about a
+     * payment, but it needs a person just as urgently: the password is out.
+     */
+    public static function adminSignInPaused(PDO $db, string $adminEmail, int $failures): void
+    {
+        try {
+            self::send(
+                $db,
+                'Admin sign-in paused: someone has the password for ' . $adminEmail,
+                'Someone signed in with the correct password for the admin account ' . $adminEmail
+                . ' and then entered ' . $failures . ' wrong two-step codes within 15 minutes, so admin sign-in'
+                . ' for that account is paused for 15 minutes. The password is very likely known to someone'
+                . ' else: change it now with "Forgot password" on the sign-in page.',
+                [[
+                    'Account' => $adminEmail,
+                    'When'    => date('Y-m-d H:i'),
+                ]]
+            );
+        } catch (Throwable $e) {
+            Log::error('admin sign-in alert failed', ['error' => $e->getMessage()]);
         }
     }
 

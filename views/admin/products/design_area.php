@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($title) ?> - Admin</title>
-    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="icon" type="image/png" href="/images/logo-icon.png">
     <meta name="robots" content="noindex, nofollow">
     <?php // Standalone page, outside the admin layout — base.css holds the var()
           // definitions this stylesheet is built on and must load first. ?>

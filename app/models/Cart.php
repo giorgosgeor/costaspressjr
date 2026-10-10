@@ -5,7 +5,30 @@
  * account or session guest — has at most one cart.
  */
 class Cart {
+    // Lines one cart may hold (one per product, size and colour), so a cart
+    // can't be used to fill the disk with previews (audit S3).
+    public const MAX_LINES = 100;
+
     public function __construct(private PDO $db) {
+    }
+
+    public function lineCount(int $cartId): int {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM cart_items WHERE cart_id = ?");
+        $stmt->execute([$cartId]);
+        return (int)$stmt->fetchColumn();
+    }
+
+    /**
+     * Delete a removed line's preview images (CartController::savePreviews):
+     * the token-named folder, or the legacy cart_{id} one. Not for lines that
+     * were ordered: OrderPlacement removes those itself, and the order keeps
+     * pointing at the same files.
+     */
+    public static function deletePreviews(int $cartItemId, ?string $pathToken): void {
+        PreviewImages::deleteFolder('cart_' . $cartItemId);
+        if (is_string($pathToken) && preg_match('/^[0-9a-f]{32}$/', $pathToken)) {
+            PreviewImages::deleteFolder($pathToken);
+        }
     }
 
     /** The user's cart id, creating the cart on first use. */
@@ -17,20 +40,6 @@ class Cart {
         $stmt = $this->db->prepare("INSERT INTO carts (user_id) VALUES (?)");
         $stmt->execute([$userId]);
         return (int)$this->db->lastInsertId();
-    }
-
-    public function addUpload(int $cartItemId, array $upload): bool {
-        $stmt = $this->db->prepare("INSERT INTO cart_item_uploads (cart_item_id, original_filename, stored_file_path, placement, position_x, position_y, width, height) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        return $stmt->execute([
-            $cartItemId,
-            $upload['original_filename'],
-            $upload['stored_file_path'],
-            $upload['placement'] ?? 'front',
-            $upload['position_x'] ?? 0,
-            $upload['position_y'] ?? 0,
-            $upload['width'] ?? 80,
-            $upload['height'] ?? 80
-        ]);
     }
 
     /**
@@ -64,11 +73,21 @@ class Cart {
         // Keep header cart-count badge in sync with the actual cart contents
         $_SESSION['cart_count'] = (int)array_sum(array_column($cartItems, 'quantity'));
 
-        // Fetch uploads for each cart item; decode premade design info
+        // What the lines below look up, for the whole cart at once: one query
+        // each instead of up to three per line (audit P7).
+        $designIds      = array_column($cartItems, 'design_id');
+        $uploadsByLine  = Query::groupedBy($this->db, "SELECT * FROM cart_item_uploads WHERE cart_item_id IN (%s) ORDER BY id", array_column($cartItems, 'id'), 'cart_item_id');
+        $designPreviews = array_column(Query::forIds($this->db, "SELECT id, preview_images, color_id FROM custom_designs WHERE id IN (%s)", $designIds), null, 'id');
+        $frontUploads   = Query::groupedBy($this->db, "
+            SELECT design_id, stored_file_path, position_x, position_y, width, height
+            FROM custom_design_uploads
+            WHERE design_id IN (%s) AND (view_placement = 'front' OR view_placement IS NULL)
+            ORDER BY design_id, layer_order, id
+        ", $designIds, 'design_id');
+
+        // Uploads for each cart item; decode premade design info
         foreach ($cartItems as &$item) {
-            $stmt = $this->db->prepare("SELECT * FROM cart_item_uploads WHERE cart_item_id = ?");
-            $stmt->execute([$item['id']]);
-            $item['uploads'] = $stmt->fetchAll();
+            $item['uploads'] = $uploadsByLine[$item['id']] ?? [];
 
             if (!empty($item['design_data'])) {
                 $dd = json_decode($item['design_data'], true);
@@ -93,9 +112,7 @@ class Cart {
             // Fallback: use custom_designs.preview_images ONLY when the cart item's
             // color matches the design's saved color — otherwise it would show the wrong color.
             if (empty($item['front_preview']) && !empty($item['design_id']) && empty($item['premade_design_image'])) {
-                $pStmt = $this->db->prepare("SELECT preview_images, color_id FROM custom_designs WHERE id = ?");
-                $pStmt->execute([$item['design_id']]);
-                $pRow = $pStmt->fetch(PDO::FETCH_ASSOC);
+                $pRow = $designPreviews[$item['design_id']] ?? null;
                 if ($pRow && !empty($pRow['preview_images']) && $pRow['color_id'] == $item['color_id']) {
                     $decoded = json_decode($pRow['preview_images'], true);
                     if (!empty($decoded['front'])) {
@@ -105,16 +122,9 @@ class Cart {
             }
             // Legacy fallback: overlay custom design upload on product image
             if (empty($item['front_preview']) && !empty($item['design_id']) && empty($item['premade_design_image'])) {
-                $stmt = $this->db->prepare("
-                    SELECT stored_file_path, position_x, position_y, width, height
-                    FROM custom_design_uploads
-                    WHERE design_id = ? AND (view_placement = 'front' OR view_placement IS NULL)
-                    ORDER BY layer_order ASC
-                    LIMIT 1
-                ");
-                $stmt->execute([$item['design_id']]);
-                $customUpload = $stmt->fetch(PDO::FETCH_ASSOC);
+                $customUpload = $frontUploads[$item['design_id']][0] ?? null;   // the bottom layer
                 if ($customUpload) {
+                    unset($customUpload['design_id']);
                     $item['custom_design_overlay'] = $customUpload;
                 }
             }

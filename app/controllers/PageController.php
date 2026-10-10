@@ -169,7 +169,7 @@ class PageController extends Controller {
      * throttles under a "contact" identifier; old rows are pruned there.
      */
     private function isContactRateLimited(): bool {
-        $ipHash = hash('sha256', ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0') . '|costaspressjr');
+        $ipHash = ClientIp::hash();
         try {
             // created_at is MySQL's clock, so the window is measured on it too.
             $stmt = $this->db->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip_hash = ? AND identifier = 'contact' AND created_at > NOW() - INTERVAL 15 MINUTE");

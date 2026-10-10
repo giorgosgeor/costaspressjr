@@ -37,7 +37,12 @@ answers 500 until then).
    the export. Run it again after every update.
 5. First admin: `php database/create_admin.php --email=you@… --username=…`
    (asks for the password). No shell? Export with `--with-admin` instead,
-   after giving that admin a strong password.
+   after giving that admin a strong password. Admins also sign in with a
+   code from an authenticator app (Google Authenticator, Microsoft
+   Authenticator, 2FAS…): the first sign-in sets it up and shows ten
+   recovery codes to keep somewhere safe. Phone and codes both lost:
+   `php database/reset_admin_2fa.php --email=you@…`, or in phpMyAdmin set
+   `totp_secret` and `totp_enabled_at` to NULL on that admin's row.
 
 ## 3. `.env`
 
@@ -52,6 +57,9 @@ Copy `.env.example` to `.env` on the server (never into git) and fill in:
   domain), `CONTACT_EMAIL` (the inbox you read), `ALERT_EMAIL`
 - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`
   (step 4). Leave `STRIPE_ALLOW_TEST_KEYS` empty.
+- Behind Cloudflare or another proxy only: `TRUSTED_PROXIES` and
+  `CLIENT_IP_HEADER` (see `.env.example`). Without them the sign-in limits
+  treat every visitor as one, and a few failed sign-ins lock everyone out.
 - Delivery: `ACS_PICKUP_FEE=3.00` (required). Every order goes to the ACS
   point or Smartpoint locker the customer picks, so the checkout also needs
   active ACS points (/admin/pickup-points, or the sync in step 6).
@@ -91,11 +99,14 @@ Without them verification and password-reset emails land in spam.
 
 ```
 0,30 * * * *  php /path/to/database/reconcile_payments.php >> /path/to/storage/reconcile.log 2>&1
+15 4 * * *    php /path/to/database/cleanup_guests.php --apply >> /path/to/storage/cleanup.log 2>&1
 ```
 
-Use the host's PHP 8.5 binary. It places any paid order the webhook missed
-and emails `ALERT_EMAIL` if something needs a person. With ACS credentials,
-also `php database/sync_acs_points.php` once a day.
+Use the host's PHP 8.5 binary. The first places any paid order the webhook
+missed and emails `ALERT_EMAIL` if something needs a person. The second
+deletes the carts, designs and images of guests (shoppers without an account)
+untouched for 30 days; a guest with an order is never deleted. With ACS
+credentials, also `php database/sync_acs_points.php` once a day.
 
 ## 7. Before telling anyone
 
@@ -112,6 +123,23 @@ also `php database/sync_acs_points.php` once a day.
    should reach `ALERT_EMAIL`. (If the cancel fails with a permissions error,
    the restricted key is missing Balance transactions *read*.)
 6. Send a message from the contact form; it reaches `CONTACT_EMAIL`.
+7. The security headers and compression are on:
+
+   ```
+   curl -s -o /dev/null -D - -H "Accept-Encoding: gzip" https://www.your-domain/
+   ```
+
+   The reply must include `Content-Security-Policy`,
+   `Strict-Transport-Security`, `X-Content-Type-Options: nosniff` and
+   `Content-Encoding: gzip`. `public/.htaccess` sets them, using Apache's
+   mod_headers and mod_deflate. Without mod_headers every page answers 500
+   and the error log says `Invalid command 'Header'`: ask the host to enable
+   it. Without `Content-Encoding: gzip`, ask for mod_deflate.
+8. Speed, now that real visitors can be measured: run PageSpeed Insights
+   (pagespeed.web.dev) on the home page, `/shop/select_product` and
+   `/shop/custom`, and Lighthouse (Chrome DevTools) on `/checkout` with
+   something in your cart. Write down LCP, INP and CLS. Targets: LCP at most
+   2.5 s, INP at most 200 ms, CLS at most 0.1.
 
 ## After launch
 

@@ -94,8 +94,8 @@ $pct = function ($v, $of) { return $of > 0 ? ($v / $of) * 100 : 0; };
                             left:<?= round($pct((float)($tx['position_x'] ?? 0), $refW), 3) ?>%;
                             top:<?= round($pct((float)($tx['position_y'] ?? 0), $refH), 3) ?>%;
                             font-size:<?= round($pct((float)($tx['font_size'] ?? 24), $refW), 3) ?>cqw;
-                            color:<?= htmlspecialchars($tx['text_color'] ?? '#000') ?>;
-                            font-family:<?= htmlspecialchars($tx['font_family'] ?? 'inherit') ?>;
+                            color:<?= htmlspecialchars(CustomDesign::textColor($tx['text_color'] ?? null)) ?>;
+                            font-family:<?= htmlspecialchars(CustomDesign::textFont($tx['font_family'] ?? null)) ?>;
                             white-space:nowrap; line-height:1;"><?= htmlspecialchars($tx['text_content']) ?></div>
                 <?php endforeach; ?>
             </div>

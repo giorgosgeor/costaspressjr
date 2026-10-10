@@ -21,6 +21,7 @@ $checkout = new CheckoutController($db);
 $stripe   = new StripeWebhookController($db);
 $account  = new AccountController($db);
 $auth     = new AuthController($db);
+$twoFactor = new TwoFactorController($db);
 $assistant = new AssistantController($db);
 
 $adminDashboard = new AdminDashboardController($db);
@@ -102,6 +103,11 @@ $router->post('/account/cookie-consent', [$account, 'cookieConsent']);
 // ---- Sign-in ------------------------------------------------------------
 $router->get('/login', [$auth, 'showLogin']);
 $router->post('/login', [$auth, 'login']);
+// An admin's second step: the authenticator code (TwoFactorController).
+$router->get('/login/two-factor', [$twoFactor, 'show']);
+$router->post('/login/two-factor', [$twoFactor, 'verify']);
+$router->get('/login/two-factor/setup', [$twoFactor, 'showSetup']);
+$router->post('/login/two-factor/setup', [$twoFactor, 'completeSetup']);
 $router->get('/register', [$auth, 'showRegister']);
 $router->post('/register', [$auth, 'register']);
 $router->get('/verify-email', [$auth, 'verifyEmail']);

@@ -25,6 +25,34 @@ class Auth {
         session_regenerate_id(true);
         $_SESSION['user_id'] = $userId;
         $_SESSION['user_role'] = $role;
+        $_SESSION['login_at'] = time();
+    }
+
+    /**
+     * Sign this session out if its account changed since it signed in
+     * (audit S7): deleted, its password reset (from any device), or given
+     * another role. A new role means signing in again, so a new admin goes
+     * through two-step sign-in and a demoted one loses access at once.
+     * public/index.php calls this on every request.
+     */
+    public static function refresh(PDO $db): void {
+        if (!self::check()) {
+            return;
+        }
+        try {
+            $stmt = $db->prepare("SELECT role, password_changed_at FROM users WHERE id = ?");
+            $stmt->execute([self::userId()]);
+            $user = $stmt->fetch();
+        } catch (PDOException $e) {
+            return; // password_changed_at missing until the migration runs
+        }
+        // Stored with gmdate() (AuthController::resetPassword), so read back as UTC.
+        $changedAt = $user && $user['password_changed_at'] !== null ? strtotime($user['password_changed_at'] . ' UTC') : 0;
+        if (!$user || $user['role'] !== self::role() || $changedAt > (int)($_SESSION['login_at'] ?? 0)) {
+            // A fresh, empty session: signed out, as after logging out.
+            $_SESSION = [];
+            session_regenerate_id(true);
+        }
     }
 
     public static function logout(): void {

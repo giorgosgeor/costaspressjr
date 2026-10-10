@@ -30,37 +30,35 @@ class AccountController extends Controller {
         $stmt->execute([$userId]);
         $savedDesigns = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Load uploads for each design
+        // Each design's images and texts: one query each for all the designs,
+        // not two per design (audit P7).
+        $designIds = array_column($savedDesigns, 'id');
+        try {
+            $designUploads = Query::groupedBy($this->db, "
+                SELECT design_id, stored_file_path, view_placement, position_x, position_y,
+                       width, height, rotation, layer_order
+                FROM custom_design_uploads
+                WHERE design_id IN (%s)
+                ORDER BY design_id, layer_order, id
+            ", $designIds, 'design_id');
+        } catch (PDOException $e) {
+            $designUploads = [];
+        }
+        try {
+            $designTexts = Query::groupedBy($this->db, "
+                SELECT design_id, text_content, font_family, font_size, text_color,
+                       is_bold, is_italic, is_underline, view_placement,
+                       position_x, position_y, layer_order
+                FROM custom_design_texts
+                WHERE design_id IN (%s)
+                ORDER BY design_id, layer_order, id
+            ", $designIds, 'design_id');
+        } catch (PDOException $e) {
+            $designTexts = [];
+        }
         foreach ($savedDesigns as &$design) {
-            try {
-                $uploadStmt = $this->db->prepare("
-                    SELECT stored_file_path, view_placement, position_x, position_y, 
-                           width, height, rotation, layer_order
-                    FROM custom_design_uploads 
-                    WHERE design_id = ? 
-                    ORDER BY layer_order
-                ");
-                $uploadStmt->execute([$design['id']]);
-                $design['uploads'] = $uploadStmt->fetchAll(PDO::FETCH_ASSOC);
-            } catch (PDOException $e) {
-                $design['uploads'] = [];
-            }
-            
-            // Load text elements for each design
-            try {
-                $textStmt = $this->db->prepare("
-                    SELECT text_content, font_family, font_size, text_color,
-                           is_bold, is_italic, is_underline, view_placement,
-                           position_x, position_y, layer_order
-                    FROM custom_design_texts 
-                    WHERE design_id = ? 
-                    ORDER BY layer_order
-                ");
-                $textStmt->execute([$design['id']]);
-                $design['texts'] = $textStmt->fetchAll(PDO::FETCH_ASSOC);
-            } catch (PDOException $e) {
-                $design['texts'] = [];
-            }
+            $design['uploads'] = $designUploads[$design['id']] ?? [];
+            $design['texts']   = $designTexts[$design['id']] ?? [];
         }
         unset($design); // break reference
         
@@ -155,6 +153,8 @@ class AccountController extends Controller {
         $stmt->execute([$orderId]);
         $orderItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // The designs' own previews, for items without one: one query (audit P7).
+        $designPreviews = array_column(Query::forIds($this->db, "SELECT id, preview_images FROM custom_designs WHERE id IN (%s)", array_column($orderItems, 'design_id')), null, 'id');
         foreach ($orderItems as &$item) {
             $item['front_preview'] = null;
             if (!empty($item['preview_images'])) {
@@ -162,9 +162,7 @@ class AccountController extends Controller {
                 if (!empty($decoded['front'])) $item['front_preview'] = $decoded['front'];
             }
             if (empty($item['front_preview']) && !empty($item['design_id'])) {
-                $pStmt = $this->db->prepare("SELECT preview_images FROM custom_designs WHERE id = ?");
-                $pStmt->execute([$item['design_id']]);
-                $pRow = $pStmt->fetch(PDO::FETCH_ASSOC);
+                $pRow = $designPreviews[$item['design_id']] ?? null;
                 if ($pRow && !empty($pRow['preview_images'])) {
                     $decoded = json_decode($pRow['preview_images'], true);
                     if (!empty($decoded['front'])) $item['front_preview'] = $decoded['front'];
@@ -186,7 +184,7 @@ class AccountController extends Controller {
         // without figures).
         $hasPremade = OrderCancellation::hasPremade($this->db, $orderId);
         $canCancel  = OrderCancellation::canCancel($order);
-        $quote      = $canCancel ? OrderCancellation::quote((string)$order['payment_intent_id'], !$hasPremade) : null;
+        $quote      = $canCancel ? OrderCancellation::quote((string)$order['payment_intent_id'], !$hasPremade, $this->db) : null;
 
         $this->render('account/order', [
             'order'      => $order,

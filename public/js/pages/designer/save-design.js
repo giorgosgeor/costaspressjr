@@ -462,7 +462,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('designSavedModal').style.display = 'flex';
                     generateAndSavePreviews(parsed.id);
                 } else {
-                    UI.error('Session expired. Please log in and try again.');
+                    // The server's own reason when it gives one (a limit, say).
+                    UI.error((parsed && parsed.error) || 'Session expired. Please log in and try again.');
                 }
             }
         };
@@ -576,7 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     closeSaveDesignModal();
                     document.getElementById('designSavedModal').style.display = 'flex';
                 } else {
-                    UI.error(window.I18N.t('checkout.errors.generic'));
+                    UI.error((parsed && parsed.error) || window.I18N.t('checkout.errors.generic'));
                     btn.disabled = false; btn.textContent = window.I18N.t('studio.save_modal.save_new');
                 }
             } catch(e) {

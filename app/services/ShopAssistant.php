@@ -731,6 +731,39 @@ final class ShopAssistant
     // ------------------------------------------------------------------
 
     /**
+     * The shop-wide and per-visitor limits on model calls (audit S10). The
+     * session budget in answerWithLlm() is dodged by starting a new session
+     * for each question; these are not. LLM_DAILY_LIMIT calls a day for the
+     * whole shop (300 if unset), and 30 an hour per IP so one visitor can't
+     * use up the day. Counted in write_log. Calls cost quota or money, so
+     * without the database there are none.
+     */
+    private function llmAllowed(): bool
+    {
+        if (!$this->db instanceof PDO) {
+            return false;
+        }
+        try {
+            $daily = (int)(Env::get('LLM_DAILY_LIMIT', '') ?: 300);
+            $today = (int)$this->db->query("SELECT COUNT(*) FROM write_log WHERE kind = 'llm' AND created_at > NOW() - INTERVAL 1 DAY")->fetchColumn();
+            if ($today >= $daily) {
+                return false;
+            }
+            $ipHash = ClientIp::hash();
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM write_log WHERE ip_hash = ? AND kind = 'llm' AND created_at > NOW() - INTERVAL 1 HOUR");
+            $stmt->execute([$ipHash]);
+            if ((int)$stmt->fetchColumn() >= 30) {
+                return false;
+            }
+            $this->db->prepare("INSERT INTO write_log (ip_hash, kind) VALUES (?, 'llm')")->execute([$ipHash]);
+            return true;
+        } catch (PDOException $e) {
+            error_log('Assistant model limit check failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Ask the configured LLM, grounded in this shop's own knowledge.
      *
      * Returns null whenever the model is not configured, fails, or produces
@@ -763,11 +796,17 @@ final class ShopAssistant
             $calls = [];
         }
         $calls = array_values(array_filter($calls, static fn($t) => is_int($t) && $t > $now - $window));
-        if (count($calls) >= 12) {
+        if (count($calls) >= 12 || !$this->llmAllowed()) {
             return null;
         }
         $calls[] = $now;
         $_SESSION['assistant_llm_calls'] = $calls;
+        // The model can take seconds, and nothing below writes the session:
+        // release it now, or every other page this visitor opens meanwhile
+        // waits on the session's lock (audit P8).
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
 
         $answer = $client->complete($this->systemPrompt(), $question);
         if ($answer === null) {

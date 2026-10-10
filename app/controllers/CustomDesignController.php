@@ -20,9 +20,20 @@ class CustomDesignController extends Controller {
         //  - cart_flow: the internal save that backs Add to Cart (cart items
         //    reference a design row). Guests may buy without an account, so
         //    this path runs under the session's guest user row.
+        if (!Auth::check() && empty($data['cart_flow'])) {
+            header('Content-Type: application/json');
+            http_response_code(401);
+            echo json_encode(['requireLogin' => true, 'redirect' => '/login']);
+            return;
+        }
+        // Counted before any guest row is created, so that is capped too.
+        if (!WriteLimit::allow($this->db, 'design')) {
+            WriteLimit::refuse();
+            return;
+        }
         if (Auth::check()) {
             $userId = Auth::userId();
-        } elseif (!empty($data['cart_flow'])) {
+        } else {
             $userId = Auth::effectiveUserId($this->db, true);
             if (!$userId) {
                 header('Content-Type: application/json');
@@ -30,13 +41,11 @@ class CustomDesignController extends Controller {
                 echo json_encode(['error' => 'Could not start a shopping session. Please try again.']);
                 return;
             }
-        } else {
-            header('Content-Type: application/json');
-            http_response_code(401);
-            echo json_encode(['requireLogin' => true, 'redirect' => '/login']);
-            return;
         }
         $customDesignModel = new \CustomDesign($this->db);
+        if ($this->refuseOverStorage($customDesignModel, $userId, $data, true)) {
+            return;
+        }
         $designId = $customDesignModel->save($data, $userId);
         if ($designId) {
             header('Content-Type: application/json');
@@ -76,7 +85,14 @@ class CustomDesignController extends Controller {
             echo 'Not authorized to update this design';
             return;
         }
-        
+        if (!WriteLimit::allow($this->db, 'design')) {
+            WriteLimit::refuse();
+            return;
+        }
+        if ($this->refuseOverStorage($customDesignModel, $userId, $data, false)) {
+            return;
+        }
+
         $success = $customDesignModel->update($data, $userId);
         if ($success) {
             header('Content-Type: application/json');
@@ -126,59 +142,19 @@ class CustomDesignController extends Controller {
             return;
         }
 
+        if (!WriteLimit::allow($this->db, 'preview')) {
+            WriteLimit::refuse();
+            return;
+        }
+
         $customDesignModel = new \CustomDesign($this->db);
 
         // Folder name is the design's random path_token, falling back to the
         // legacy {designId} folder for installs that haven't run the token
         // migration yet (pathTokenFor handles that).
         $folder = $customDesignModel->getPathToken((int)$designId);
-        $previewDir = public_path('images/designs/previews/' . $folder);
-        if (!is_dir($previewDir)) {
-            mkdir($previewDir, 0755, true);
-        }
+        $previewPaths = PreviewImages::store($folder, (array)$data['previews']);
 
-        $previewPaths = [];
-        $validViews = ['front', 'back', 'left-sleeve', 'right-sleeve', 'front_design'];
-        $allowedImageTypes = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
-
-        foreach ($data['previews'] as $view => $base64Data) {
-            if (!in_array($view, $validViews)) continue;
-            if (empty($base64Data)) continue;
-
-            // Parse base64
-            if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $matches)) {
-                $imageType = $matches[1];
-                // Validate image type against whitelist
-                if (!in_array(strtolower($imageType), $allowedImageTypes)) continue;
-                $rawData = base64_decode(substr($base64Data, strpos($base64Data, ',') + 1));
-            } else {
-                continue;
-            }
-
-            if ($rawData === false) continue;
-
-            // Validate that decoded data is actually an image
-            $imageInfo = @getimagesizefromstring($rawData);
-            if ($imageInfo === false) continue;
-
-            $ext = $imageType === 'jpeg' ? 'jpg' : $imageType;
-            $filename = str_replace('-', '_', $view) . '.' . $ext;
-            $fullPath = $previewDir . '/' . $filename;
-            $relativePath = 'images/designs/previews/' . $folder . '/' . $filename;
-
-            // Delete old preview for this view if exists
-            foreach (['png', 'jpg', 'jpeg', 'webp'] as $oldExt) {
-                $oldFile = $previewDir . '/' . str_replace('-', '_', $view) . '.' . $oldExt;
-                if (file_exists($oldFile)) {
-                    @unlink($oldFile);
-                }
-            }
-
-            if (file_put_contents($fullPath, $rawData) !== false) {
-                $previewPaths[$view] = $relativePath;
-            }
-        }
-        
         // Update custom_designs with preview paths
         if (!empty($previewPaths)) {
             $stmt = $this->db->prepare("UPDATE custom_designs SET preview_images = ? WHERE id = ?");
@@ -218,7 +194,14 @@ class CustomDesignController extends Controller {
             echo 'Not authorized to delete this design';
             return;
         }
-        
+        // An ordered design is kept for printing; one in the cart, for the cart.
+        $usedBy = $customDesignModel->usedBy((int)$data['design_id']);
+        if ($usedBy !== null) {
+            http_response_code(409);
+            echo I18n::t($usedBy === 'order' ? 'account.delete_in_order' : 'account.delete_in_cart');
+            return;
+        }
+
         $success = $customDesignModel->delete((int)$data['design_id']);
         if ($success) {
             header('Content-Type: application/json');
@@ -227,5 +210,27 @@ class CustomDesignController extends Controller {
             http_response_code(500);
             echo 'Failed to delete design.';
         }
+    }
+
+    /**
+     * Refuse, with a 413 the studio shows as a message, a save that would take
+     * the user past what one person may keep: MAX_DESIGNS_PER_USER designs
+     * ($isNew only) or MAX_UPLOAD_BYTES_PER_USER of uploaded images. Only new
+     * image data counts, as if none of it were stored yet; a save without any
+     * (text, or images already uploaded) is never refused for space.
+     */
+    private function refuseOverStorage(CustomDesign $model, int $userId, array $data, bool $isNew): bool {
+        $incoming = CustomDesign::incomingBytes($data['elements'] ?? []);
+        if ($isNew && $model->countFor($userId) >= CustomDesign::MAX_DESIGNS_PER_USER) {
+            $error = I18n::t('limit.too_many_designs', ['count' => CustomDesign::MAX_DESIGNS_PER_USER]);
+        } elseif ($incoming > 0 && $model->uploadedBytesOf($userId) + $incoming > CustomDesign::MAX_UPLOAD_BYTES_PER_USER) {
+            $error = I18n::t('limit.storage_full', ['mb' => intdiv(CustomDesign::MAX_UPLOAD_BYTES_PER_USER, 1024 * 1024)]);
+        } else {
+            return false;
+        }
+        http_response_code(413);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => $error]);
+        return true;
     }
 }

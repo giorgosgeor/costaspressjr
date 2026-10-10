@@ -43,32 +43,33 @@
 </IfModule>
 
 # Security headers. HSTS is only sent over HTTPS (production).
-<IfModule mod_headers.c>
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "DENY"
-    Header set Referrer-Policy "strict-origin-when-cross-origin"
-    # geolocation=(self): the checkout asks for the browser's location to list
-    # the nearest ACS pickup points. () would refuse it before any prompt.
-    Header set Permissions-Policy "geolocation=(self), microphone=(), camera=()"
-    # Direct TLS (HTTPS) or TLS at a proxy (FORWARDED_HTTPS); "set" means a
-    # request matching both still gets one header.
-    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
-    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=FORWARDED_HTTPS
-    # Payment happens on Stripe's own hosted Checkout page: the checkout
-    # sends the browser there by navigation, which this policy doesn't limit,
-    # so no Stripe script, frame or connection is needed on these pages.
-    # Everything else is our own: the fonts (/fonts/), interact.js and Leaflet
-    # (/js/vendor/) are self-hosted, so no visitor's IP address goes to Google
-    # or a CDN, and no third party can change a script the checkout runs.
-    # The one exception is the ACS pickup map's tiles, from
-    # tile.openstreetmap.org (named in the Privacy Policy).
-    # script-src has no 'unsafe-inline': templates carry no inline <script>
-    # or on* handlers (page data travels in <script type="application/json">,
-    # behaviour in data-* attributes - see public/js/site/actions.js), so a
-    # script injected into a page is refused. Keep it that way: a new inline
-    # script will simply not run. style-src still allows inline styles.
-    Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self';"
-</IfModule>
+# Deliberately not inside <IfModule mod_headers.c>: without the module these
+# lines stop Apache serving the site (500, "Invalid command 'Header'" in the
+# error log) instead of quietly serving it without its protection.
+Header set X-Content-Type-Options "nosniff"
+Header set X-Frame-Options "DENY"
+Header set Referrer-Policy "strict-origin-when-cross-origin"
+# geolocation=(self): the checkout asks for the browser's location to list
+# the nearest ACS pickup points. () would refuse it before any prompt.
+Header set Permissions-Policy "geolocation=(self), microphone=(), camera=()"
+# Direct TLS (HTTPS) or TLS at a proxy (FORWARDED_HTTPS); "set" means a
+# request matching both still gets one header.
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=FORWARDED_HTTPS
+# Payment happens on Stripe's own hosted Checkout page: the checkout
+# sends the browser there by navigation, which this policy doesn't limit,
+# so no Stripe script, frame or connection is needed on these pages.
+# Everything else is our own: the fonts (/fonts/), interact.js and Leaflet
+# (/js/vendor/) are self-hosted, so no visitor's IP address goes to Google
+# or a CDN, and no third party can change a script the checkout runs.
+# The one exception is the ACS pickup map's tiles, from
+# tile.openstreetmap.org (named in the Privacy Policy).
+# script-src has no 'unsafe-inline': templates carry no inline <script>
+# or on* handlers (page data travels in <script type="application/json">,
+# behaviour in data-* attributes - see public/js/site/actions.js), so a
+# script injected into a page is refused. Keep it that way: a new inline
+# script will simply not run. style-src still allows inline styles.
+Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self';"
 
 # Older Apache mime.types files don't know woff2; without a type the
 # font caching rules below wouldn't apply to it.

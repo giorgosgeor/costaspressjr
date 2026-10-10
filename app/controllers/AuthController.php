@@ -6,6 +6,10 @@ class AuthController extends Controller {
     private const MAX_ATTEMPTS_PER_USER = 5;
     private const WINDOW_SECONDS        = 900;
 
+    // A bcrypt hash at PHP 8.5's default cost (12) of a random password
+    // nobody knows: login() checks it when the account doesn't exist.
+    private const DUMMY_HASH = '$2y$12$mLM0WsYjZStSmABCVPr7UeqFU4loeoUJJn.CO8ZSQGX5LQtw/ItnG';
+
     // A confirmation link works for an hour, like a password-reset link.
     // Resend issues a fresh one; earlier unexpired links keep working.
     private const VERIFICATION_TTL_HOURS = 1;
@@ -36,14 +40,31 @@ class AuthController extends Controller {
         $stmt->execute([$identifier, $identifier]);
         $user = $stmt->fetch();
 
-        if (!$user || !password_verify($password, $user['password_hash'])) {
+        // An unknown account is checked against a dummy hash, so the reply
+        // takes as long as for a real one and doesn't reveal which exist (S6).
+        if (!password_verify($password, $user ? $user['password_hash'] : self::DUMMY_HASH) || !$user) {
             $this->recordFailedAttempt($identifier);
             $error = 'Invalid credentials';
             $this->render('auth/login', ['redirect' => $redirect, 'error' => $error]);
             return;
         }
 
+        // Older hashes (a lower cost) move to the current default, so every
+        // account's check takes the same time.
+        if (password_needs_rehash($user['password_hash'], PASSWORD_DEFAULT)) {
+            $this->db->prepare("UPDATE users SET password_hash = ? WHERE id = ?")
+                ->execute([password_hash($password, PASSWORD_DEFAULT), $user['id']]);
+        }
+
         $this->clearAttempts([$user['email'], $user['username']]);
+
+        // An admin also needs the code from an authenticator app (audit S5);
+        // TwoFactorController signs them in once that is right.
+        if ($user['role'] === 'admin') {
+            TwoFactorController::begin((int)$user['id']);
+            header('Location: /login/two-factor');
+            exit;
+        }
 
         Auth::login($user['id'], $user['role']);
         // Ensure user has a cart, then pull in anything they added as a guest
@@ -51,9 +72,7 @@ class AuthController extends Controller {
         $cartModel->getOrCreateCartId($user['id']);
         $this->mergeGuestCart((int)$user['id']);
 
-        if ($user['role'] === 'admin') {
-            header('Location: /admin');
-        } elseif ($redirect) {
+        if ($redirect) {
             header('Location: ' . $redirect);
         } else {
             header('Location: /');
@@ -62,9 +81,9 @@ class AuthController extends Controller {
     }
 
     private function ipHash(): string {
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-        // Hashing the IP means operators don't store raw PII in the attempts table.
-        return hash('sha256', $ip . '|costaspressjr');
+        // Hashing the IP means operators don't store raw PII in the attempts
+        // table. The visitor's own IP, also behind a proxy (ClientIp).
+        return ClientIp::hash();
     }
 
     /**
@@ -209,6 +228,12 @@ class AuthController extends Controller {
         $phone    = trim((string)($_POST['phone'] ?? ''));
 
         $error = $this->validateRegistration($username, $email, $password);
+        // Each registration emails the address given, so it is throttled like
+        // "forgot password": otherwise the form sends mail to anyone, and
+        // can be used to check addresses in bulk (audit S6).
+        if ($error === null && $this->isMailRateLimited('register', $email)) {
+            $error = 'Too many attempts. Please try again in a few minutes.';
+        }
         if ($error !== null) {
             $this->render('auth/register', ['username' => $username, 'email' => $email, 'phone' => $phone, 'error' => $error]);
             return;
@@ -276,7 +301,7 @@ class AuthController extends Controller {
                   . "<p>This link expires in " . $validFor . ". If you didn't create an account, you can ignore this message.</p>";
             $text = "Hi $username,\n\nWelcome to Costaspressjr! Confirm your email by opening this link:\n$link\n\nThis link expires in " . $validFor . ".";
 
-            Mailer::send($email, 'Confirm your Costaspressjr email', $html, $text);
+            Mailer::later($email, 'Confirm your Costaspressjr email', $html, $text);
         } catch (Throwable $e) {
             error_log('Email verification send failed: ' . $e->getMessage());
         }
@@ -468,7 +493,8 @@ class AuthController extends Controller {
                       . "<p>If you didn't request this, you can ignore this email.</p>";
                 $text = "Hi {$user['username']},\n\nReset your password here (valid 1 hour):\n$link\n\nIf you didn't request this, ignore this email.";
 
-                Mailer::send($email, 'Reset your password', $html, $text);
+                // After the reply: its timing must not show that the address has an account.
+                Mailer::later($email, 'Reset your password', $html, $text);
             } catch (Throwable $e) {
                 error_log('Password reset send failed: ' . $e->getMessage());
             }
@@ -525,7 +551,9 @@ class AuthController extends Controller {
         $this->db->beginTransaction();
         try {
             $newHash = password_hash($password, PASSWORD_DEFAULT);
-            $this->db->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$newHash, $row['user_id']]);
+            // password_changed_at signs out every session from before the reset
+            // (Auth::refresh). PHP's clock, like the sessions' login time.
+            $this->db->prepare("UPDATE users SET password_hash = ?, password_changed_at = ? WHERE id = ?")->execute([$newHash, gmdate('Y-m-d H:i:s'), $row['user_id']]);
             $this->db->prepare("UPDATE password_resets SET consumed_at = UTC_TIMESTAMP() WHERE id = ?")->execute([$row['id']]);
             $this->db->commit();
         } catch (PDOException $e) {

@@ -63,22 +63,31 @@ class AdminOrderController extends AdminController {
         $stmt->execute([$orderId]);
         $orderItems = $stmt->fetchAll();
 
-        // For each item, fetch uploads, designs, texts, and preview images
+        // Each item's uploads, design data and texts, and its design's own
+        // artwork and texts: one query each for the whole order, not up to
+        // five per item (audit P7).
+        $itemIds   = array_column($orderItems, 'id');
+        $designIds = array_column($orderItems, 'design_id');
+        $uploadsByItem = Query::groupedBy($this->db, "SELECT * FROM order_item_uploads WHERE order_item_id IN (%s) ORDER BY order_item_id, id", $itemIds, 'order_item_id');
+        $designByItem  = Query::groupedBy($this->db, "SELECT * FROM order_item_designs WHERE order_item_id IN (%s) ORDER BY order_item_id, id", $itemIds, 'order_item_id');
+        $textsByItem   = Query::groupedBy($this->db, "SELECT * FROM order_item_texts WHERE order_item_id IN (%s) ORDER BY order_item_id, id", $itemIds, 'order_item_id');
+        $designUploads = Query::groupedBy($this->db, "
+            SELECT design_id, id, original_filename, stored_file_path,
+                   view_placement AS placement,
+                   position_x, position_y, width, height
+            FROM custom_design_uploads WHERE design_id IN (%s) ORDER BY design_id, layer_order, id
+        ", $designIds, 'design_id');
+        $designTexts   = Query::groupedBy($this->db, "
+            SELECT design_id, id, text_content, font_family, font_size, text_color,
+                   is_bold, is_italic, is_underline,
+                   view_placement AS placement, position_x, position_y
+            FROM custom_design_texts WHERE design_id IN (%s) ORDER BY design_id, layer_order, id
+        ", $designIds, 'design_id');
+
         foreach ($orderItems as &$item) {
-            // Uploads
-            $stmt = $this->db->prepare("SELECT * FROM order_item_uploads WHERE order_item_id = ? ORDER BY id");
-            $stmt->execute([$item['id']]);
-            $item['uploads'] = $stmt->fetchAll();
-
-            // Design data
-            $stmt = $this->db->prepare("SELECT * FROM order_item_designs WHERE order_item_id = ?");
-            $stmt->execute([$item['id']]);
-            $item['design'] = $stmt->fetch();
-
-            // Text elements
-            $stmt = $this->db->prepare("SELECT * FROM order_item_texts WHERE order_item_id = ? ORDER BY id");
-            $stmt->execute([$item['id']]);
-            $item['texts'] = $stmt->fetchAll();
+            $item['uploads'] = $uploadsByItem[$item['id']] ?? [];
+            $item['design']  = $designByItem[$item['id']][0] ?? false;
+            $item['texts']   = $textsByItem[$item['id']] ?? [];
 
             // Fall back to the DESIGN's own artwork and text when the per-order
             // copies are absent. Checkout copies cart_item_uploads into
@@ -88,25 +97,11 @@ class AdminOrderController extends AdminController {
             // this the admin has no way to obtain the artwork to print.
             if (!empty($item['design_id'])) {
                 if (empty($item['uploads'])) {
-                    $stmt = $this->db->prepare("
-                        SELECT id, original_filename, stored_file_path,
-                               view_placement AS placement,
-                               position_x, position_y, width, height
-                        FROM custom_design_uploads WHERE design_id = ? ORDER BY layer_order, id
-                    ");
-                    $stmt->execute([$item['design_id']]);
-                    $item['uploads'] = $stmt->fetchAll();
+                    $item['uploads'] = $designUploads[$item['design_id']] ?? [];
                     $item['uploads_from_design'] = !empty($item['uploads']);
                 }
                 if (empty($item['texts'])) {
-                    $stmt = $this->db->prepare("
-                        SELECT id, text_content, font_family, font_size, text_color,
-                               is_bold, is_italic, is_underline,
-                               view_placement AS placement, position_x, position_y
-                        FROM custom_design_texts WHERE design_id = ? ORDER BY layer_order, id
-                    ");
-                    $stmt->execute([$item['design_id']]);
-                    $item['texts'] = $stmt->fetchAll();
+                    $item['texts'] = $designTexts[$item['design_id']] ?? [];
                     $item['texts_from_design'] = !empty($item['texts']);
                 }
             }

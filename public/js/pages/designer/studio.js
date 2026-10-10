@@ -1124,7 +1124,8 @@ function showTextEditor() {
 
     // Reset all form fields to defaults
     document.getElementById('textContent').value = '';
-    document.getElementById('fontFamily').value = 'Arial';
+    // An option's own value: plain 'Arial' matches none, which left the font blank.
+    document.getElementById('fontFamily').value = 'Arial, sans-serif';
     document.getElementById('fontSize').value = 24;
     document.getElementById('fontSizeDisplay').textContent = '24px';
     document.getElementById('textColor').value = '#000000';

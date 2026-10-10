@@ -38,6 +38,9 @@ session_set_cookie_params([
     'httponly' => true,
     'samesite' => 'Lax',
 ]);
+// Only session ids this server issued: one chosen by someone else (fixation)
+// is replaced by a new id instead of being adopted.
+ini_set('session.use_strict_mode', '1');
 session_start();
 
 Asset::setPublicRoot(__DIR__);
@@ -49,6 +52,7 @@ if ($reqPath !== '/stripe/webhook') {
 }
 
 $db = require __DIR__ . '/../app/config/database.php';
+Auth::refresh($db);
 
 $router = new Router();
 require __DIR__ . '/../app/routes.php';
