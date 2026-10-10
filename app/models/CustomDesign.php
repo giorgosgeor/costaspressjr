@@ -5,8 +5,59 @@ class CustomDesign {
     // Directory for storing design uploads
     private const UPLOAD_DIR = 'public/images/designs/uploads';
     
+    // The only shape of stored_file_path the server ever writes:
+    // public/images/designs/uploads/<folder>/<file>.<image type>. Neither part
+    // may contain "/" or "..", so a matching path cannot leave that folder.
+    private const UPLOAD_PATH_PATTERN = '#^public/images/designs/uploads/[A-Za-z0-9_-]+/[A-Za-z0-9_-][A-Za-z0-9._-]*\.(?i:png|jpe?g|gif|webp)$#';
+
     public function __construct(PDO $db) {
         $this->db = $db;
+    }
+
+    /**
+     * Absolute path of the artwork file a stored_file_path names, or null when
+     * the path is not one the server writes, or resolves (through a symlink,
+     * say) to anything other than a file inside the uploads folder. Every
+     * piece of code that reads or deletes a stored path goes through this, so
+     * a path saved by a customer can never reach .env, the code or the product
+     * photos.
+     */
+    public static function uploadFileFor(?string $storedPath): ?string {
+        if (!is_string($storedPath) || !preg_match(self::UPLOAD_PATH_PATTERN, $storedPath)) {
+            return null;
+        }
+        $root = realpath(dirname(__DIR__, 2) . '/' . self::UPLOAD_DIR);
+        $full = realpath(dirname(__DIR__, 2) . '/' . $storedPath);
+        if ($root === false || $full === false || !is_file($full)) {
+            return null;
+        }
+        return str_starts_with($full, $root . DIRECTORY_SEPARATOR) ? $full : null;
+    }
+
+    /**
+     * Artwork paths this user has already uploaded, as a set. When a saved
+     * design is re-saved, the studio sends its existing images back as paths
+     * rather than image data; only paths in this set may be kept.
+     */
+    private function uploadedPathsOf(int $userId): array {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT DISTINCT u.stored_file_path
+                FROM custom_design_uploads u
+                JOIN custom_designs cd ON cd.id = u.design_id
+                WHERE cd.user_id = ? AND u.stored_file_path IS NOT NULL
+            ");
+            $stmt->execute([$userId]);
+        } catch (PDOException $e) {
+            return [];
+        }
+        $paths = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $path) {
+            if (preg_match(self::UPLOAD_PATH_PATTERN, $path)) {
+                $paths[$path] = true;
+            }
+        }
+        return $paths;
     }
 
     /**
@@ -125,8 +176,9 @@ class CustomDesign {
             $designId = (int)$this->db->lastInsertId();
             
             // Process and save image elements
+            $ownedPaths = $this->uploadedPathsOf($userId);
             foreach ($imageElements as $index => $element) {
-                $this->saveImageElement($designId, $element, $index);
+                $this->saveImageElement($designId, $element, $index, $ownedPaths);
             }
             
             // Save text elements
@@ -209,13 +261,17 @@ class CustomDesign {
                 throw new Exception('Failed to update design: ' . print_r($stmt->errorInfo(), true));
             }
             
+            // Read the user's files before this design's rows go: its own
+            // images, sent back as paths, are among them.
+            $ownedPaths = $this->uploadedPathsOf($userId);
+
             // Delete old uploads and texts (we'll re-add them)
             $this->db->prepare("DELETE FROM custom_design_uploads WHERE design_id = ?")->execute([$designId]);
             $this->db->prepare("DELETE FROM custom_design_texts WHERE design_id = ?")->execute([$designId]);
             
             // Process and save image elements
             foreach ($imageElements as $index => $element) {
-                $this->saveImageElement($designId, $element, $index);
+                $this->saveImageElement($designId, $element, $index, $ownedPaths);
             }
             
             // Save text elements
@@ -236,40 +292,43 @@ class CustomDesign {
     /**
      * Save an image element - extract base64 to file and store metadata
      */
-    private function saveImageElement(int $designId, array $element, int $order): void {
+    private function saveImageElement(int $designId, array $element, int $order, array $ownedPaths): void {
         $storedFilePath = null;
         $fileSize = 0;
         $mimeType = 'image/png';
         $fileHash = null;
+        $src = is_string($element['src'] ?? null) ? $element['src'] : '';
 
         // Extract and save base64 image to file
-        if (!empty($element['src']) && strpos($element['src'], 'data:image') === 0) {
-            $result = $this->saveBase64Image($element['src'], $designId, $element['id'] ?? 'element-' . $order);
+        if ($src !== '' && strpos($src, 'data:image') === 0) {
+            $result = $this->saveBase64Image($src, $designId, $element['id'] ?? 'element-' . $order);
             if ($result) {
                 $storedFilePath = $result['path'];
                 $fileSize = $result['size'];
                 $mimeType = $result['mime_type'];
                 $fileHash = $result['hash'] ?? null;
             }
-        } elseif (!empty($element['src'])) {
-            // Existing file path (not base64) - preserve it
-            $srcPath = $element['src'];
-            // Remove leading slash if present for storage
-            if (strpos($srcPath, '/') === 0) {
-                $srcPath = substr($srcPath, 1);
-            }
+        } elseif ($src !== '') {
+            // A path instead of image data: the studio sends these when a saved
+            // design is saved again. Keep it only if this user already uploaded
+            // that very file. Any other path is dropped before the filesystem
+            // is touched; delete() would otherwise unlink whatever it named.
+            $srcPath = ltrim($src, '/');
             // If it doesn't start with public/, add it for consistency with save
             if (strpos($srcPath, 'public/') !== 0 && strpos($srcPath, 'images/') === 0) {
                 $srcPath = 'public/' . $srcPath;
             }
+            if (!isset($ownedPaths[$srcPath])) {
+                error_log('CustomDesign: dropped an image path not uploaded by the owner of design ' . $designId);
+                return;
+            }
             $storedFilePath = $srcPath;
-            
-            // Try to get file size from actual file
-            $fullPath = __DIR__ . '/../../' . $storedFilePath;
-            if (file_exists($fullPath)) {
+
+            // Size and hash from the file itself, so a re-saved design still
+            // participates in dedup rather than becoming an unmatched row.
+            $fullPath = self::uploadFileFor($storedFilePath);
+            if ($fullPath !== null) {
                 $fileSize = filesize($fullPath);
-                // Hash it too, so a re-saved design still participates in
-                // dedup rather than becoming an unmatched row.
                 $fileHash = hash_file('sha256', $fullPath);
             }
         }
@@ -474,7 +533,7 @@ class CustomDesign {
             ");
             $stmt->execute([$designId, $contentHash]);
             foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $path) {
-                if (is_file(__DIR__ . '/../../' . $path)) {
+                if (self::uploadFileFor($path) !== null) {
                     return $path;
                 }
             }
@@ -554,8 +613,9 @@ class CustomDesign {
                 if ((int)$refCount->fetchColumn() > 0) {
                     continue;
                 }
-                $filePath = __DIR__ . '/../../' . $upload['stored_file_path'];
-                if (file_exists($filePath)) {
+                // Only ever a file inside the uploads folder, whatever the row says.
+                $filePath = self::uploadFileFor($upload['stored_file_path']);
+                if ($filePath !== null) {
                     unlink($filePath);
                 }
             }

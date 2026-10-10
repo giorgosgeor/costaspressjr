@@ -19,6 +19,7 @@
  */
 
 require_once __DIR__ . '/../app/core/Env.php';
+require_once __DIR__ . '/../app/models/CustomDesign.php';
 Env::load(__DIR__ . '/../.env');
 $pdo = require __DIR__ . '/../app/config/database.php';
 
@@ -61,10 +62,11 @@ foreach ($groups as $g) {
     $rowsQ->execute([$g['user_id'], $g['file_hash']]);
     $rows = $rowsQ->fetchAll(PDO::FETCH_ASSOC);
 
-    // Keep the oldest file that actually exists on disk.
+    // Keep the oldest file that actually exists in the uploads folder. A row
+    // naming any other file is never chosen, so nothing is repointed at it.
     $keep = null;
     foreach ($rows as $r) {
-        if (is_file(__DIR__ . '/../' . $r['stored_file_path'])) { $keep = $r['stored_file_path']; break; }
+        if (CustomDesign::uploadFileFor($r['stored_file_path']) !== null) { $keep = $r['stored_file_path']; break; }
     }
     if ($keep === null) {
         echo "user {$g['user_id']} hash " . substr($g['file_hash'], 0, 12) . "… — no surviving file, skipping.\n";
@@ -102,13 +104,16 @@ foreach ($groups as $g) {
             echo "    keeping file (still referenced elsewhere): " . basename($path) . "\n";
             continue;
         }
-        $full = __DIR__ . '/../' . $path;
-        if (is_file($full)) {
-            $totalBytes += filesize($full);
-            if ($apply) @unlink($full);
-            $totalDeleted++;
-            echo "    " . ($apply ? "deleted  " : "would delete  ") . basename($path) . "\n";
+        // Only ever a file inside the uploads folder, whatever the row says.
+        $full = CustomDesign::uploadFileFor($path);
+        if ($full === null) {
+            echo "    not deleting (missing, or outside the uploads folder): " . basename((string)$path) . "\n";
+            continue;
         }
+        $totalBytes += filesize($full);
+        if ($apply) @unlink($full);
+        $totalDeleted++;
+        echo "    " . ($apply ? "deleted  " : "would delete  ") . basename($path) . "\n";
     }
     $totalRepointed += $repointedHere;
 }

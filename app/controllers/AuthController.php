@@ -32,7 +32,7 @@ class AuthController extends Controller {
             return;
         }
 
-        $stmt = $this->db->prepare("SELECT id, password_hash, role FROM users WHERE email = ? OR username = ?");
+        $stmt = $this->db->prepare("SELECT id, email, username, password_hash, role FROM users WHERE email = ? OR username = ?");
         $stmt->execute([$identifier, $identifier]);
         $user = $stmt->fetch();
 
@@ -43,7 +43,7 @@ class AuthController extends Controller {
             return;
         }
 
-        $this->clearAttempts($identifier);
+        $this->clearAttempts([$user['email'], $user['username']]);
 
         Auth::login($user['id'], $user['role']);
         // Ensure user has a cart, then pull in anything they added as a guest
@@ -103,10 +103,24 @@ class AuthController extends Controller {
         }
     }
 
-    private function clearAttempts(string $identifier): void {
+    /**
+     * After a successful sign-in, forget the failed attempts against this
+     * account (typed as its email or its username), so earlier typos don't
+     * count against its next sign-in. Nothing more. Never rows matched by IP:
+     * signing in to one's own account used to wipe that IP's attempts against
+     * every other account too, allowing unlimited guessing. And never the
+     * forgot:/resend: or contact throttles that share this table.
+     */
+    private function clearAttempts(array $identifiers): void {
+        $keys = array_values(array_unique(array_filter(
+            array_map(fn($s) => mb_strtolower(trim((string)$s)), $identifiers),
+            fn($s) => $s !== ''
+        )));
+        if (!$keys) return;
         try {
-            $stmt = $this->db->prepare("DELETE FROM login_attempts WHERE identifier = ? OR ip_hash = ?");
-            $stmt->execute([mb_strtolower($identifier), $this->ipHash()]);
+            $in = implode(',', array_fill(0, count($keys), '?'));
+            $stmt = $this->db->prepare("DELETE FROM login_attempts WHERE identifier IN ($in) AND identifier <> 'contact' AND identifier NOT LIKE '%:%'");
+            $stmt->execute($keys);
         } catch (PDOException $e) {
             error_log('Login attempt cleanup failed: ' . $e->getMessage());
         }
@@ -175,7 +189,11 @@ class AuthController extends Controller {
     private function safeRedirect(string $url): string {
         $url = trim($url);
         if ($url === '' || $url[0] !== '/' || str_starts_with($url, '//')) return '';
-        // Strip query-string fragments that look like protocol injection
+        // Browsers read "\" as "/", so "/\evil.example" is "//evil.example".
+        if (str_contains($url, '\\')) return '';
+        // Control characters and anything else outside printable ASCII (browsers
+        // drop tabs and newlines, so "/\t/evil.example" is "//evil.example" too),
+        // and colons that look like protocol injection.
         if (preg_match('/[^\x20-\x7E]|:/', $url)) return '';
         return $url;
     }
