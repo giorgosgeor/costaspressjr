@@ -87,9 +87,9 @@ class PageController extends Controller {
         // Taking the best category and rounding DOWN to a multiple of five
         // keeps the "up to" claim true even after the tier table is edited.
         $bulkSaving = 0.0;
-        foreach (['tshirt', 'hoodie'] as $cat) {
+        foreach (Pricing::categories() as $cat) {
             $m1   = Pricing::marginFor($cat, 1);
-            $m100 = Pricing::marginFor($cat, 100);
+            $m100 = Pricing::marginFor($cat, PHP_INT_MAX);   // the top band
             if ($m100 < 1.0) {
                 $bulkSaving = max($bulkSaving, 1 - (1 - $m1) / (1 - $m100));
             }

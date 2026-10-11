@@ -53,21 +53,38 @@ final class Pricing
             [50,  99,            0.30],
             [100, PHP_INT_MAX,   0.25],
         ],
+        'polo' => [
+            [0,   4,             0.60],
+            [5,   14,            0.55],
+            [15,  29,            0.50],
+            [30,  49,            0.45],
+            [50,  99,            0.40],
+            [100, PHP_INT_MAX,   0.35],
+        ],
+        'zip_hoodie' => [
+            [0,   4,             0.40],
+            [5,   14,            0.35],
+            [15,  29,            0.30],
+            [30,  49,            0.30],
+            [50,  PHP_INT_MAX,   0.25],
+        ],
     ];
 
     /**
      * Explicit slug/keyword → category overrides. Anything not matched here
-     * or by the hoodie keyword falls through to the 'tshirt' tier table
-     * (that covers tees, tanks, v-necks, polos, long-sleeves, and — until
-     * you decide otherwise — jackets and mugs). Edit this map to re-assign
-     * a product to a different margin table.
+     * or by the keywords in categoryFor() falls through to the 'tshirt' tier
+     * table (that covers tees, tanks, v-necks, long-sleeves, and — until you
+     * decide otherwise — jackets and mugs). Edit this map to re-assign a
+     * product to a different margin table.
      */
     private const CATEGORY_OVERRIDES = [
-        // 'polo-t-shirt' => 'hoodie',   // example override by slug
+        // 'tank-top' => 'polo',   // example override by slug
     ];
 
     /**
-     * Resolve which margin table a product uses from its slug/name.
+     * Resolve which margin table a product uses from its slug/name: every
+     * polo → 'polo', every zip hoodie → 'zip_hoodie', every other hoodie →
+     * 'hoodie', the rest → 'tshirt'.
      */
     public static function categoryFor(string $slug, string $name = ''): string
     {
@@ -77,12 +94,41 @@ final class Pricing
         }
 
         $haystack = strtolower($slug . ' ' . $name);
-        if (strpos($haystack, 'hoodie') !== false) {
-            return 'hoodie';
+        if (str_contains($haystack, 'hoodie')) {
+            return str_contains($haystack, 'zip') ? 'zip_hoodie' : 'hoodie';
         }
-        // Tops (tee/tank/v-neck/polo/long-sleeve) and everything else default
-        // to the T-shirt margin table.
+        if (str_contains($haystack, 'polo')) {
+            return 'polo';
+        }
+        // Tops (tee/tank/v-neck/long-sleeve) and everything else default to
+        // the T-shirt margin table.
         return 'tshirt';
+    }
+
+    /** Every category with a margin table. */
+    public static function categories(): array
+    {
+        return array_keys(self::TIERS);
+    }
+
+    /**
+     * The quantities at which a category's per-unit price drops: 1, then each
+     * band where the margin changes. Neighbouring bands with the same margin
+     * are one price, so they count once (zip hoodies: 15–29 and 30–49).
+     *
+     * @return int[]
+     */
+    public static function priceBreaks(string $category): array
+    {
+        $breaks = [];
+        $last = null;
+        foreach (self::TIERS[$category] ?? self::TIERS['tshirt'] as [$min, , $margin]) {
+            if ($margin !== $last) {
+                $breaks[] = max(1, $min);
+                $last = $margin;
+            }
+        }
+        return $breaks;
     }
 
     /**
@@ -143,7 +189,7 @@ final class Pricing
      * garment price — they are not subject to the margin.
      *
      * @param float  $supplierCost   blank garment cost stored in the DB
-     * @param string $category       'tshirt' | 'hoodie' (see categoryFor)
+     * @param string $category       'tshirt' | 'hoodie' | 'polo' | 'zip_hoodie' (see categoryFor)
      * @param int    $quantity       units ordered of this line (drives the tier)
      * @param float  $extraPrintCost flat euro cost of print add-ons
      */

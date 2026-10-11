@@ -21,9 +21,15 @@
 (function (global) {
     'use strict';
 
-    // Tier start quantities, mirroring Pricing::TIERS. Both categories use the
-    // same quantity bands; only the margin differs.
-    var BANDS = [1, 5, 15, 30, 50, 100];
+    // Fallback band starts if window.Pricing is missing; otherwise each
+    // product uses its own category's price breaks (Pricing.priceBreaks),
+    // since the categories' bands differ (zip hoodies stop at 50+).
+    var DEFAULT_BANDS = [1, 5, 15, 30, 50, 100];
+
+    function bandsFor(cfg) {
+        if (!global.Pricing || !global.Pricing.priceBreaks) return DEFAULT_BANDS;
+        return global.Pricing.priceBreaks(global.Pricing.categoryFor(cfg.productSlug, cfg.productName));
+    }
 
     function money(n) {
         return '€' + (Math.round(n * 100) / 100).toFixed(2);
@@ -56,16 +62,16 @@
              + cfg.designPrice;
     }
 
-    function bandFor(qty) {
-        var band = BANDS[0];
-        for (var i = 0; i < BANDS.length; i++) {
-            if (qty >= BANDS[i]) band = BANDS[i];
+    function bandFor(bands, qty) {
+        var band = bands[0];
+        for (var i = 0; i < bands.length; i++) {
+            if (qty >= bands[i]) band = bands[i];
         }
         return band;
     }
 
-    function bandLabel(start, i) {
-        var next = BANDS[i + 1];
+    function bandLabel(bands, start, i) {
+        var next = bands[i + 1];
         if (!next) return start + '+';
         return next - 1 === start ? String(start) : start + '–' + (next - 1);
     }
@@ -74,23 +80,24 @@
         var cfg = readConfig(el);
         var qty = cfg.quantity;
         var unit = unitAt(cfg, qty);
-        var active = bandFor(qty);
+        var bands = bandsFor(cfg);
+        var active = bandFor(bands, qty);
 
         var rows = '';
-        for (var i = 0; i < BANDS.length; i++) {
-            var start = BANDS[i];
+        for (var i = 0; i < bands.length; i++) {
+            var start = bands[i];
             var isActive = start === active;
             rows += '<tr class="price-tier-row' + (isActive ? ' is-active' : '') + '">'
-                  + '<td>' + bandLabel(start, i) + '</td>'
+                  + '<td>' + bandLabel(bands, start, i) + '</td>'
                   + '<td>' + money(unitAt(cfg, start)) + '</td>'
                   + '</tr>';
         }
 
         // What would the next band save on the CURRENT quantity's per-unit price?
         var hint = '';
-        var idx = BANDS.indexOf(active);
-        if (idx > -1 && idx < BANDS.length - 1) {
-            var nextStart = BANDS[idx + 1];
+        var idx = bands.indexOf(active);
+        if (idx > -1 && idx < bands.length - 1) {
+            var nextStart = bands[idx + 1];
             var nextUnit = unitAt(cfg, nextStart);
             var perUnitSaving = unit - nextUnit;
             if (perUnitSaving > 0.005) {

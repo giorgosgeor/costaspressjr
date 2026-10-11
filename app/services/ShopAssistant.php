@@ -360,9 +360,9 @@ final class ShopAssistant
         }
 
         $best = 0.0;
-        foreach (['tshirt', 'hoodie'] as $cat) {
+        foreach (Pricing::categories() as $cat) {
             $m1   = Pricing::marginFor($cat, 1);
-            $m100 = Pricing::marginFor($cat, 100);
+            $m100 = Pricing::marginFor($cat, PHP_INT_MAX);   // the top band
             if ($m100 < 1.0) {
                 $best = max($best, 1 - (1 - $m1) / (1 - $m100));
             }

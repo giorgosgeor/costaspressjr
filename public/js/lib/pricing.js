@@ -28,13 +28,41 @@
         hoodie: [
             [0, 4, 0.45], [5, 14, 0.42], [15, 29, 0.38],
             [30, 49, 0.35], [50, 99, 0.30], [100, Infinity, 0.25]
+        ],
+        polo: [
+            [0, 4, 0.60], [5, 14, 0.55], [15, 29, 0.50],
+            [30, 49, 0.45], [50, 99, 0.40], [100, Infinity, 0.35]
+        ],
+        zip_hoodie: [
+            [0, 4, 0.40], [5, 14, 0.35], [15, 29, 0.30],
+            [30, 49, 0.30], [50, Infinity, 0.25]
         ]
     };
 
+    // Every polo → polo, every zip hoodie → zip_hoodie, every other hoodie →
+    // hoodie, the rest → tshirt. Mirrors Pricing::categoryFor().
     function categoryFor(slug, name) {
         var haystack = ((slug || '') + ' ' + (name || '')).toLowerCase();
-        if (haystack.indexOf('hoodie') !== -1) return 'hoodie';
+        if (haystack.indexOf('hoodie') !== -1) {
+            return haystack.indexOf('zip') !== -1 ? 'zip_hoodie' : 'hoodie';
+        }
+        if (haystack.indexOf('polo') !== -1) return 'polo';
         return 'tshirt';
+    }
+
+    // The quantities at which a category's per-unit price drops: 1, then each
+    // band where the margin changes (neighbouring bands with the same margin
+    // are one price). Mirrors Pricing::priceBreaks().
+    function priceBreaks(category) {
+        var tiers = TIERS[category] || TIERS.tshirt;
+        var breaks = [], last = null;
+        for (var i = 0; i < tiers.length; i++) {
+            if (tiers[i][2] !== last) {
+                breaks.push(Math.max(1, tiers[i][0]));
+                last = tiers[i][2];
+            }
+        }
+        return breaks;
     }
 
     function marginFor(category, quantity) {
@@ -122,6 +150,7 @@
         FRONT_AND_BACK_EXTRA: FRONT_AND_BACK_EXTRA,
         SLEEVE_EXTRA: SLEEVE_EXTRA,
         categoryFor: categoryFor,
+        priceBreaks: priceBreaks,
         marginFor: marginFor,
         unitPrice: unitPrice,
         variantCost: variantCost,

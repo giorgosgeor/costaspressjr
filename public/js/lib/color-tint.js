@@ -4,18 +4,25 @@
  *
  * Every product photo is a neutral grey garment, which makes it a map of
  * light and shadow. A colour is laid onto it with one lookup table per
- * channel, from the photo's grey to the garment's colour:
+ * channel, from the photo's grey to the garment's colour. The work is done in
+ * OKLab, a colour space where lightness and hue are independent, so a fold
+ * makes a garment darker or lighter without turning it another colour:
  *
  *  - The photo's midtone becomes the colour itself, so a navy shirt is navy
  *    and black is black, not dark grey. (The CSS filter chains this replaces,
  *    sepia + hue-rotate + saturate + brightness, could only shift the grey
  *    photo, so dark colours came out grey and others looked like a coloured
  *    highlight over it.)
- *  - The photo's folds and seams carry over as differences in perceived
- *    lightness (CIE L*), the same depth for every colour, as in real product
- *    photography, where dark garments are lit to show their folds.
+ *  - The photo's folds and seams carry over as differences in lightness, the
+ *    same depth for every colour, as in real product photography, where dark
+ *    garments are lit to show their folds. On strongly saturated colours the
+ *    highlights lift half as much: real red cotton stays red where the light
+ *    falls, it doesn't go pink.
  *  - Chroma follows lightness toward black and white, as real fabric does,
- *    and no fabric is quite black or white (L* 6..95).
+ *    and no fabric is quite black or white. A shade the screen can't show
+ *    loses chroma, never hue.
+ *  - A colour more saturated than any dyed fabric (a pure screen red, #ff0000)
+ *    is shown a little deeper, the way such a garment photographs.
  *  - The brightest pixels, the white neck label and glints, keep the photo's
  *    own grey instead of being coloured.
  *
@@ -28,10 +35,14 @@
     'use strict';
 
     var SAMPLES = 64;           // points per table; the browser interpolates between them
-    var FOLD_DEPTH = 0.85;      // share of the photo's L* contrast carried over
-    var L_MIN = 6, L_MAX = 95;  // darkest and lightest fabric
+    var FOLD_DEPTH = 0.85;      // share of the photo's lightness contrast carried over
+    var L_MIN = 0.19, L_MAX = 0.96;     // darkest and lightest fabric (OKLab L; L* 6 and 95)
     var MID_GREY = 0.46;        // the grey photos' midtone (sRGB)
-    var KEEP_FROM = 80, KEEP_TO = 92;   // L* range over which the photo's own grey takes over
+    var KEEP_FROM = 0.83, KEEP_TO = 0.93;   // lightness over which the photo's own grey takes over
+    var SOFT_LIFT = 0.5;        // how much less the highlights lift on the most saturated colours
+    var SAT_FULL = 0.25;        // OKLab chroma counted as fully saturated (pure red is 0.26)
+    var DYE_CHROMA = 0.22;      // chroma beyond what dyed fabric reaches...
+    var DEEPEN = 0.06;          // ...is shown up to this much darker
 
     function normalizeHex(hex) {
         hex = String(hex || '').trim().toLowerCase();
@@ -47,27 +58,50 @@
         c = Math.max(0, Math.min(1, c));
         return c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
     }
-    function labF(t) { return t > 216 / 24389 ? Math.cbrt(t) : (24389 / 27 * t + 16) / 116; }
-    function labFInv(t) { var t3 = t * t * t; return t3 > 216 / 24389 ? t3 : (116 * t - 16) / (24389 / 27); }
 
-    /** sRGB 0..1 to CIE Lab (D65). */
-    function rgbToLab(r, g, b) {
+    /** sRGB 0..1 to OKLab. (Math.pow rather than Math.cbrt, to match PHP's **.) */
+    function rgbToOklab(r, g, b) {
         r = toLinear(r); g = toLinear(g); b = toLinear(b);
-        var x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047;
-        var y =  0.2126 * r + 0.7152 * g + 0.0722 * b;
-        var z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
-        return [116 * labF(y) - 16, 500 * (labF(x) - labF(y)), 200 * (labF(y) - labF(z))];
+        var l = Math.pow(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b, 1 / 3);
+        var m = Math.pow(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b, 1 / 3);
+        var s = Math.pow(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b, 1 / 3);
+        return [
+            0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+            1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+            0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+        ];
     }
 
-    /** CIE Lab to sRGB 0..1, each channel clamped. */
-    function labToRgb(l, a, b) {
-        var fy = (l + 16) / 116, fx = fy + a / 500, fz = fy - b / 200;
-        var x = 0.95047 * labFInv(fx), y = labFInv(fy), z = 1.08883 * labFInv(fz);
+    /** OKLab to linear sRGB, unclamped. */
+    function oklabToLinear(l, a, b) {
+        var lc = Math.pow(l + 0.3963377774 * a + 0.2158037573 * b, 3);
+        var mc = Math.pow(l - 0.1055613458 * a - 0.0638541728 * b, 3);
+        var sc = Math.pow(l - 0.0894841775 * a - 1.2914855480 * b, 3);
         return [
-            toSrgb( 3.2406 * x - 1.5372 * y - 0.4986 * z),
-            toSrgb(-0.9689 * x + 1.8758 * y + 0.0415 * z),
-            toSrgb( 0.0557 * x - 0.2040 * y + 1.0570 * z)
+             4.0767416621 * lc - 3.3077115913 * mc + 0.2309699292 * sc,
+            -1.2684380046 * lc + 2.6097574011 * mc - 0.3413193965 * sc,
+            -0.0041960863 * lc - 0.7034186147 * mc + 1.7076147010 * sc
         ];
+    }
+
+    function fits(c) { return Math.min(c[0], c[1], c[2]) >= -1e-6 && Math.max(c[0], c[1], c[2]) <= 1 + 1e-6; }
+
+    /**
+     * OKLab to sRGB 0..1. A colour the screen can't show loses chroma, keeping
+     * its lightness and hue, until it fits (clipping each channel shifted hue:
+     * red highlights went salmon).
+     */
+    function oklabToRgb(l, a, b) {
+        var rgb = oklabToLinear(l, a, b);
+        if (!fits(rgb)) {
+            var lo = 0, hi = 1;
+            for (var i = 0; i < 16; i++) {
+                var mid = (lo + hi) / 2;
+                if (fits(oklabToLinear(l, a * mid, b * mid))) lo = mid; else hi = mid;
+            }
+            rgb = oklabToLinear(l, a * lo, b * lo);
+        }
+        return [toSrgb(rgb[0]), toSrgb(rgb[1]), toSrgb(rgb[2])];
     }
 
     var cache = {};
@@ -77,20 +111,25 @@
         hex = normalizeHex(hex);
         if (!hex) return null;
         if (cache[hex]) return cache[hex];
-        var lab = rgbToLab(parseInt(hex.substr(1, 2), 16) / 255, parseInt(hex.substr(3, 2), 16) / 255, parseInt(hex.substr(5, 2), 16) / 255);
-        var lA = Math.max(L_MIN, Math.min(L_MAX, lab[0]));
-        var lMid = rgbToLab(MID_GREY, MID_GREY, MID_GREY)[0];
+        var lab = rgbToOklab(parseInt(hex.substr(1, 2), 16) / 255, parseInt(hex.substr(3, 2), 16) / 255, parseInt(hex.substr(5, 2), 16) / 255);
+        var c = Math.sqrt(lab[1] * lab[1] + lab[2] * lab[2]);
+        var sat = Math.min(1, c / SAT_FULL);
+        var x = Math.max(0, Math.min(1, (c - DYE_CHROMA) / (SAT_FULL - DYE_CHROMA)));
+        var lA = Math.max(L_MIN, Math.min(L_MAX, lab[0])) - DEEPEN * x * x * (3 - 2 * x);
+        var lMid = rgbToOklab(MID_GREY, MID_GREY, MID_GREY)[0];
         var out = [[], [], []];
         for (var i = 0; i < SAMPLES; i++) {
             var grey = i / (SAMPLES - 1);
-            var lGrey = rgbToLab(grey, grey, grey)[0];
-            var l = Math.max(0, Math.min(100, lA + FOLD_DEPTH * (lGrey - lMid)));
-            var chroma = l < lA ? l / lA : (100 - l) / (100 - lA);
-            var rgb = labToRgb(l, lab[1] * chroma, lab[2] * chroma);
-            var x = Math.max(0, Math.min(1, (lGrey - KEEP_FROM) / (KEEP_TO - KEEP_FROM)));
-            var keep = x * x * (3 - 2 * x);
-            for (var c = 0; c < 3; c++) {
-                out[c].push(Math.round((rgb[c] * (1 - keep) + grey * keep) * 10000) / 10000);
+            var lGrey = rgbToOklab(grey, grey, grey)[0];
+            var d = FOLD_DEPTH * (lGrey - lMid);
+            if (d > 0) d *= 1 - SOFT_LIFT * sat;
+            var l = Math.max(0, Math.min(1, lA + d));
+            var chroma = l < lA ? l / lA : (1 - l) / (1 - lA);
+            var rgb = oklabToRgb(l, lab[1] * chroma, lab[2] * chroma);
+            var k = Math.max(0, Math.min(1, (lGrey - KEEP_FROM) / (KEEP_TO - KEEP_FROM)));
+            var keep = k * k * (3 - 2 * k);
+            for (var ch = 0; ch < 3; ch++) {
+                out[ch].push(Math.round((rgb[ch] * (1 - keep) + grey * keep) * 10000) / 10000);
             }
         }
         cache[hex] = out;

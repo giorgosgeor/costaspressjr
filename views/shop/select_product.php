@@ -91,7 +91,7 @@
           $cost      = (float)$product['base_price'];
           $category  = Pricing::categoryFor($product['slug'] ?? '', $product['name'] ?? '');
           $tiers     = [];
-          foreach ([1, 5, 15, 30, 50, 100] as $tq) {
+          foreach (Pricing::priceBreaks($category) as $tq) {
               $tiers[] = [
                   'qty'   => $tq === 1 ? t('shop.select.qty_min') : $tq . '+',
                   'price' => Pricing::unitPrice($cost, $category, $tq),
