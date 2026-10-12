@@ -110,10 +110,12 @@ $visibleCount = 8;
                 <?php foreach ($featuredProducts as $i => $product): ?>
                 <?php // `hidden` rather than a CSS class: an off-screen card
                       // should be out of the tab order and out of the
-                      // accessibility tree too, not merely invisible. ?>
-                <div class="product-card featured-product<?= $i >= $visibleCount ? ' is-extra' : '' ?>"
-                     <?= $i >= $visibleCount ? 'hidden' : '' ?>
-                     data-product-id="<?= (int)$product['id'] ?>" role="link" tabindex="0" aria-label="<?= htmlspecialchars($product['name']) ?>">
+                      // accessibility tree too, not merely invisible. Still a
+                      // real link while hidden, so crawlers reach every product. ?>
+                <a href="<?= e(product_path((int)$product['id'], $product['slug'])) ?>"
+                   class="product-card featured-product<?= $i >= $visibleCount ? ' is-extra' : '' ?>"
+                   <?= $i >= $visibleCount ? 'hidden' : '' ?>
+                   aria-label="<?= htmlspecialchars($product['name']) ?>">
                     <div class="product-image">
                         <img src="/<?= htmlspecialchars($product['image_path'] ?? '') ?>" alt="<?= htmlspecialchars($product['name']) ?>" loading="lazy" data-fallback="/images/placeholder.svg">
                         <?php if (!$product['active']): ?>
@@ -127,7 +129,7 @@ $visibleCount = 8;
                             €<?= number_format($product['retail_price'] ?? $product['base_price'], 2) ?>
                         </p>
                     </div>
-                </div>
+                </a>
                 <?php endforeach; ?>
             <?php else: ?>
                 <div class="no-products">

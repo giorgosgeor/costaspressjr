@@ -6,7 +6,7 @@
 <section class="section product-detail-section">
     <div class="container">
         <?php
-            $crumbs = [[t('header.nav.home', false), '/'], [t('header.nav.shop', false), '/shop'], [(string)($product['name'] ?? t('studio.title', false)), null]];
+            $crumbs = [[t('header.nav.home', false), '/'], [t('header.nav.shop', false), '/shop'], [t('shop.select.breadcrumb', false), '/shop/select_product'], [(string)($product['name'] ?? t('studio.title', false)), null]];
             require View::path('partials/breadcrumb');
         ?>
         <div class="custom-product-grid">

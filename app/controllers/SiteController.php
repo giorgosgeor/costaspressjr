@@ -79,8 +79,15 @@ class SiteController extends Controller {
             ['path' => '/shop/select_product', 'changefreq' => 'weekly', 'priority' => '0.8'],
         ];
         try {
-            foreach ($this->db->query("SELECT id FROM products WHERE active = 1 ORDER BY id")->fetchAll(PDO::FETCH_COLUMN) as $id) {
-                $urls[] = ['path' => '/product/' . (int)$id, 'changefreq' => 'weekly', 'priority' => '0.6'];
+            // The products the shop lists (with a mockup image), at their own
+            // pages' addresses.
+            $products = $this->db->query("
+                SELECT id, slug FROM products
+                WHERE active = 1 AND image_path IS NOT NULL AND image_path <> ''
+                ORDER BY id
+            ")->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($products as $p) {
+                $urls[] = ['path' => product_path((int)$p['id'], $p['slug']), 'changefreq' => 'weekly', 'priority' => '0.6'];
             }
             foreach ($this->db->query("SELECT id FROM premade_designs WHERE active = 1 ORDER BY id")->fetchAll(PDO::FETCH_COLUMN) as $id) {
                 $urls[] = ['path' => '/shop/design/' . (int)$id, 'changefreq' => 'weekly', 'priority' => '0.6'];

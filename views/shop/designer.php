@@ -283,6 +283,16 @@ ob_start(); ?>
                                     <button class="img-edit-btn" data-on-click="duplicateImage"><?= t('studio.image_edit.duplicate') ?></button>
                                     <button class="img-edit-btn" data-on-click="cropImage"><?= t('studio.image_edit.crop') ?></button>
                                 </div>
+                                <?php // The customer's choice, per upload: the shop removes the
+                                      // background before printing (bgRemoved → custom_design_uploads
+                                      // .bg_removed, flagged on the admin's order page). ?>
+                                <div class="popup-check bg-removal-option">
+                                    <input id="bgRemovalRequest" type="checkbox" data-on-change="setBgRemoval" data-args='["$this"]'>
+                                    <label for="bgRemovalRequest">
+                                        <?= t('studio.image_edit.bg_removal') ?>
+                                        <span class="popup-note"><?= t('studio.image_edit.bg_removal_note') ?></span>
+                                    </label>
+                                </div>
                                 <!-- Save Design button moved to main panel below -->
                                 <div style="display:flex; gap:10px; margin-top:10px;">
                                     <button type="button" class="btn btn-block btn-secondary" data-on-click="resetImageEdit"><?= t('studio.image_edit.reset') ?></button>

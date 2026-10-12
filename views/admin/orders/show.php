@@ -305,7 +305,10 @@ $viewLabels = [
 
         <?php if ($itemUploads): ?>
         <div class="prod-block">
-            <div class="prod-block-title">Customer artwork <span class="prod-count"><?= count($itemUploads) ?></span></div>
+            <?php $bgRemovals = count(array_filter($itemUploads, fn($u) => !empty($u['bg_removed']))); ?>
+            <div class="prod-block-title">Customer artwork <span class="prod-count"><?= count($itemUploads) ?></span>
+                <?php if ($bgRemovals): ?><span class="prod-bg-count">✂ Background removal: <?= $bgRemovals ?></span><?php endif; ?>
+            </div>
             <div class="prod-uploads">
                 <?php foreach ($itemUploads as $up):
                     $raw = (string)($up['stored_file_path'] ?? '');
@@ -327,6 +330,13 @@ $viewLabels = [
                     </div>
                     <div class="prod-meta">
                         <div class="prod-filename" title="<?= htmlspecialchars($orig) ?>"><?= htmlspecialchars($orig) ?></div>
+                        <?php // Ticked by the customer in the studio ("Remove the background for me"). ?>
+                        <?php if (!empty($up['bg_removed'])): ?>
+                        <div class="prod-bg-flag">
+                            ✂ Remove the background before printing — the customer asked us to.
+                            <a href="/admin/tools/bg-remover" target="_blank" rel="noopener">Background remover</a>
+                        </div>
+                        <?php endif; ?>
                         <dl class="prod-specs">
                             <dt>Placement</dt><dd><?= htmlspecialchars($placementLabel($up['placement'] ?? 'front')) ?></dd>
                             <?php if ($dim): ?>

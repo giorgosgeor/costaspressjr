@@ -784,6 +784,8 @@
     "studio.image_edit.crop": "Crop",
     "studio.image_edit.rotation": "Drag to rotate",
     "studio.image_edit.reset": "Reset To Original",
+    "studio.image_edit.bg_removal": "Remove the background for me",
+    "studio.image_edit.bg_removal_note": "Our team removes it before printing. The preview shows your image as you uploaded it.",
     "studio.cart.title": "Add to Cart",
     "studio.cart.added": "Added to cart",
     "studio.cart.go_to_cart": "Go to cart",

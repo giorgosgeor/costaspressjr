@@ -58,31 +58,5 @@ document.getElementById('sizeOptions').addEventListener('change', function(e) {
     }
 });
 
-// Product card selection logic
-const productCards = document.querySelectorAll('.product-list-card');
-document.querySelector('.product-list-grid').addEventListener('click', function(e) {
-  // The favourite heart lives inside the card but must not select the product.
-  // lib/favorites.js already stops this in the capture phase; this keeps the card's
-  // own handler honest if that script ever fails to load.
-  if (e.target.closest('.fav-btn')) return;
-  const card = e.target.closest('.product-list-card');
-  if (card) {
-    const prodId = card.getAttribute('data-product-id');
-    if (prodId) {
-      // Send product ID to backend via POST, then redirect
-      fetch('/shop/set_selected_product', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: prodId })
-      }).then(res => {
-        if (res.ok) {
-          window.location.href = '/shop/custom_product';
-        } else {
-          UI.error(window.I18N ? window.I18N.t('shop.select.failed_select') : 'Failed to select product');
-        }
-      });
-    } else {
-      console.warn('No product ID found on card:', card);
-    }
-  }
-});
+// Opening a product needs no script: each card's name is a link to the
+// product's page (/product/{id}-{slug}), stretched over the card in CSS.

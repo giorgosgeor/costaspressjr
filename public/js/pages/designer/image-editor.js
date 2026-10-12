@@ -206,10 +206,13 @@ function resetImageEdit() {
 
 
 
-                                function removeImageBg() {
+                                // "Remove the background for me": the shop does it by hand
+                                // before printing, so this only records the choice on the
+                                // image (saved as custom_design_uploads.bg_removed); the
+                                // artwork and the preview stay as uploaded.
+                                function setBgRemoval(checkbox) {
                                     if (!selectedElement) return;
                                     const el = elements[currentView].find(e => e.id === selectedElement);
                                     if (!el || el.type !== 'image') return;
-                                    el.bgRemoved = !el.bgRemoved;
-                                    renderElements();
+                                    el.bgRemoved = !!checkbox.checked;
                                 }

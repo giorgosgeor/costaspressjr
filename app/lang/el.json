@@ -784,6 +784,8 @@
     "studio.image_edit.crop": "Περικοπή",
     "studio.image_edit.rotation": "Σύρετε για περιστροφή",
     "studio.image_edit.reset": "Επαναφορά",
+    "studio.image_edit.bg_removal": "Αφαιρέστε το φόντο για μένα",
+    "studio.image_edit.bg_removal_note": "Η ομάδα μας το αφαιρεί πριν την εκτύπωση. Η προεπισκόπηση δείχνει την εικόνα όπως την ανεβάσατε.",
     "studio.cart.title": "Προσθήκη στο Καλάθι",
     "studio.cart.added": "Προστέθηκε στο καλάθι",
     "studio.cart.go_to_cart": "Μετάβαση στο καλάθι",

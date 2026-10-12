@@ -247,10 +247,9 @@
                 <?php foreach ($favorites as $fav):
                     $img  = ltrim((string)($fav['image_path'] ?? ''), '/');
                     if (strpos($img, 'public/') === 0) $img = substr($img, 7);
-                    // Products open the customiser via the picker; designs have their own page.
                     $href = $fav['kind'] === 'design'
                         ? '/shop/design/' . (int)$fav['item_id']
-                        : '/shop/select_product';
+                        : product_path((int)$fav['item_id'], $fav['slug']);
                 ?>
                 <div class="favorite-card<?= empty($fav['active']) ? ' is-inactive' : '' ?>">
                     <button class="favorite-remove" type="button"

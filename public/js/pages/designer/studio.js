@@ -123,6 +123,9 @@ function afterElementAdded() {
     function showImageEditor(el) {
         if (!el) return;
         document.getElementById('imageEditorPanel').style.display = 'flex';
+        // This image's own background-removal choice (image-editor.js).
+        const bgBox = document.getElementById('bgRemovalRequest');
+        if (bgBox) bgBox.checked = !!el.bgRemoved;
     }
 
     // Hide the image editor panel
@@ -1040,6 +1043,9 @@ function handleImageUpload(e) {
                                         y: 50,
                                         width: 80,
                                         height: 80,
+                                        // "Remove the background for me" starts ticked: the shop
+                                        // does it unless the customer unticks it (image-editor.js).
+                                        bgRemoved: true,
                                         view: currentView
                                     };
                                     // Store original for reset
@@ -1257,8 +1263,6 @@ function renderElements() {
             if (element.color && element.color !== '#ffffff' && element.color !== '#fff') {
                 overlay = `<div style='position:absolute;top:0;left:0;width:100%;height:100%;background:${element.color};opacity:0.35;pointer-events:none;mix-blend-mode:multiply;'></div>`;
             }
-            let opacity = element.bgRemoved ? 0.5 : 1;
-
             // Ensure image src is valid
             let imgSrc = element.src || '';
             if (imgSrc && imgSrc.startsWith('public/')) {
@@ -1270,7 +1274,7 @@ function renderElements() {
             const rotateLabel = window.I18N ? window.I18N.t('studio.image_edit.rotation') : 'Drag to rotate';
             div.innerHTML = `
                 <div style="position:relative;width:100%;height:100%;">
-                  <img src="${imgSrc}" style="${imgStyle};opacity:${opacity};">
+                  <img src="${imgSrc}" style="${imgStyle}">
                   ${overlay}
                 </div>
                 <div class="resize-handle"></div>

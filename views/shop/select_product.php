@@ -17,8 +17,8 @@
         <!-- Vestigial preview column. renderProduct() fills it with the FIRST
              product on load, so before the customer picks anything the page
              showed a stray product name and an empty "Select size" dropdown
-             above the grid. Clicking a card posts the choice and navigates
-             away, so this is never actually used — hidden rather than deleted
+             above the grid. Each card links to the product's own page, so
+             this is never actually used — hidden rather than deleted
              because the render/JS below still references these nodes. -->
         <div class="product-select-layout" style="display:none;">
             <div class="product-preview-column">
@@ -99,6 +99,7 @@
           }
           $retailOne  = $tiers[0]['price'];
           $retailBulk = $tiers[count($tiers) - 1]['price'];
+          $href       = product_path((int)$product['id'], $product['slug']);
         ?>
           <div class="product-list-card"
                data-product-id="<?= $product['id'] ?>"
@@ -145,7 +146,9 @@
                 }
               ?>
             </div>
-            <div class="product-name"><?= htmlspecialchars($product['name']) ?></div>
+            <?php // The card holds buttons, so it can't be one big <a>: the name is
+                  // the link, stretched over the card in select-product.css. ?>
+            <a href="<?= e($href) ?>" class="product-name product-link"><?= htmlspecialchars($product['name']) ?></a>
             <div class="product-desc">
               <?= htmlspecialchars($product['description'] ?? '') ?>
             </div>
@@ -159,7 +162,7 @@
             ]) ?></div>
             <?php endif; ?>
             <div class="pricing-link-wrap">
-              <a href="#" class="pricing-link" tabindex="0"><?= t('shop.select.pricing_details') ?></a>
+              <a href="<?= e($href) ?>" class="pricing-link"><?= t('shop.select.pricing_details') ?></a>
               <div class="pricing-popup">
                 <div class="pricing-popup-title"><?= t('shop.select.pricing_title') ?></div>
                 <table class="pricing-table">

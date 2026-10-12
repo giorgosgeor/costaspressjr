@@ -460,7 +460,8 @@ class CustomDesign {
                 $element['rotation'] ?? 0,
                 isset($element['flipped']) && $element['flipped'] ? 1 : 0,
                 $element['color'] ?? null,
-                isset($element['bgRemoved']) && $element['bgRemoved'] ? 1 : 0,
+                // Background removal is on unless the customer unticked it.
+                !array_key_exists('bgRemoved', $element) || $element['bgRemoved'] ? 1 : 0,
                 $element['layer_order'] ?? $order
             ]);
         } catch (PDOException $e) {

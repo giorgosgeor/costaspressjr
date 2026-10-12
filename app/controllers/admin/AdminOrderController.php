@@ -74,7 +74,7 @@ class AdminOrderController extends AdminController {
         $designUploads = Query::groupedBy($this->db, "
             SELECT design_id, id, original_filename, stored_file_path,
                    view_placement AS placement,
-                   position_x, position_y, width, height
+                   position_x, position_y, width, height, bg_removed
             FROM custom_design_uploads WHERE design_id IN (%s) ORDER BY design_id, layer_order, id
         ", $designIds, 'design_id');
         $designTexts   = Query::groupedBy($this->db, "

@@ -74,7 +74,13 @@ foreach ($pdo->query("SELECT id, color_name FROM available_colors") as $row) {
 // can't resolve would quietly take that colour off the product. Stop first.
 $unknown = [];
 foreach ($prices as $ref => $p) {
-    foreach (array_merge($p['colors'] ?? [], ...array_values($p['size_colors'] ?? [])) as $c) {
+    foreach (array_keys($p['colors_from'] ?? []) as $srcRef) {
+        if (!isset($prices[$srcRef])) {
+            fwrite(STDERR, "$ref: colors_from names $srcRef, which isn't in supplier_prices.php.\n");
+            exit(1);
+        }
+    }
+    foreach (array_merge($p['colors'] ?? [], ...array_values($p['colors_from'] ?? []), ...array_values($p['size_colors'] ?? [])) as $c) {
         if (!isset($colorIdByName[strtolower(trim($c))])) $unknown[$c][] = $ref;
     }
 }
@@ -133,6 +139,13 @@ function variantPrice(array $p, bool $sizeIsBig, bool $colorIsWhite): ?float {
     return $white ?? $norm;
 }
 
+/** Whether a model comes in this size in this colour (its sizes and size_colors). */
+function offersSize(array $p, string $sizeName, string $colorName): bool {
+    if (!in_array($sizeName, $p['sizes'] ?? [], true)) return false;
+    $only = $p['size_colors'][$sizeName] ?? null;
+    return $only === null || in_array($colorName, $only, true);
+}
+
 function sizeOrder(string $sizeName): int {
     static $order = [
         'one size'=>1,'one-size'=>1,'os'=>1,
@@ -159,6 +172,22 @@ try {
         if ($basePrice === null) {
             $summary['unmapped'][] = "$ref ({$name}): no white or norm price";
             continue;
+        }
+
+        // colors_from: colour name → the sister model it is sized and priced
+        // as. A colour named twice keeps its first source.
+        $borrowed = [];
+        foreach ($p['colors_from'] ?? [] as $srcRef => $names) {
+            foreach ($names as $c) {
+                if (in_array($c, $colors ?? [], true) || isset($borrowed[$c])) {
+                    $summary['unmapped'][] = "$ref: colors_from lists $c, which it already has; kept the first";
+                    continue;
+                }
+                $borrowed[$c] = $srcRef;
+                // base_price is the "from" price, so a cheaper sister colour lowers it.
+                $price = variantPrice($prices[$srcRef], false, isWhiteColor($c));
+                if ($price !== null && $price < $basePrice) $basePrice = $price;
+            }
         }
 
         // Non-supplier keys (e.g. JACKET) don't get a supplier_ref written.
@@ -255,7 +284,7 @@ try {
         if ($verbose && $st->rowCount()) echo "    - retired {$st->rowCount()} size(s) not in the spec\n";
 
         // ── 3. Seed colour associations ───────────────────────────────
-        $colorList = $colors ?: array_keys($colorIdByName);
+        $colorList = array_merge($colors ?: array_keys($colorIdByName), array_keys($borrowed));
         $usedColorIds = [];
         foreach ($colorList as $colorName) {
             $key = strtolower(trim($colorName));
@@ -303,14 +332,22 @@ try {
 
         // ── 4. Seed variants for every offered (size, colour) combo ───
         $keepVariantIds = [];
+        $borrowedSizes = array_fill_keys(array_keys($borrowed), 0);
         foreach ($sizeIdByName as $sizeName => $sizeId) {
             $sizeIsBig = isBigSize($sizeName);
             foreach ($usedColorIds as $colorName => $colorId) {
                 if (isset($sizeColors[$sizeName]) && !isset($sizeColors[$sizeName][$colorName])) {
                     continue;
                 }
+                // A sister model's colour: only in sizes that model makes, at its price.
+                $spec = $p;
+                if (isset($borrowed[$colorName])) {
+                    $spec = $prices[$borrowed[$colorName]];
+                    if (!offersSize($spec, $sizeName, $colorName)) continue;
+                    $borrowedSizes[$colorName]++;
+                }
                 $colorIsWhite = isWhiteColor($colorName);
-                $unitPrice = variantPrice($p, $sizeIsBig, $colorIsWhite);
+                $unitPrice = variantPrice($spec, $sizeIsBig, $colorIsWhite);
 
                 $st = $pdo->prepare("SELECT id FROM product_variants WHERE product_id=? AND size_id=? AND color_id=?");
                 $st->execute([$productId, $sizeId, $colorId]);
@@ -328,8 +365,14 @@ try {
                 $summary['variants_priced']++;
                 $keepVariantIds[] = $variantId;
                 if ($verbose && $unitPrice !== null) {
-                    echo sprintf("    · variant #%d  %-8s / %-12s → %.2f\n", $variantId, $sizeName, $colorName, $unitPrice);
+                    echo sprintf("    · variant #%d  %-8s / %-12s → %.2f%s\n", $variantId, $sizeName, $colorName, $unitPrice,
+                        isset($borrowed[$colorName]) ? "  (as {$borrowed[$colorName]})" : '');
                 }
+            }
+        }
+        foreach ($borrowedSizes as $colorName => $count) {
+            if ($count === 0) {
+                $summary['unmapped'][] = "$ref: $colorName ({$borrowed[$colorName]}) shares no size with it, so isn't offered";
             }
         }
 

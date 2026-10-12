@@ -23,6 +23,10 @@
  * size_colors = optional: sizes offered in only SOME of those colours, e.g.
  *               ['4XL' => ['White', 'Black']]. Every other size comes in
  *               every colour.
+ * colors_from = optional: colours this product also comes in that are a
+ *               sister model's garment, charged at that model's price, e.g.
+ *               ['#32b' => ['Burgundy']]. Each comes in the sizes both models
+ *               offer (and the sister's size_colors still apply).
  * active      = optional: false hides the product from the shop.
  * size_chart  = image under /images/size-charts/ to use as the size guide.
  *
@@ -30,13 +34,15 @@
  * isn't listed here is marked unavailable (never deleted — past orders and
  * saved designs still point at it).
  *
- * Per (size, color) the variant unit_price is picked as:
+ * Per (size, color) the variant unit_price is picked as (from the sister
+ * model's keys for a colors_from colour):
  *   sizeBig & colorWhite → big
  *   sizeBig & !colorWhite → cbig ?? big
  *   !sizeBig & colorWhite → white ?? norm
  *   !sizeBig & !colorWhite → color ?? norm
  *
- * products.base_price = white ?? norm.
+ * products.base_price = white ?? norm, or a colors_from colour's price where
+ * that is lower: it is the "from" price the shop shows.
  */
 
 // The generic palette the shop started with. Only products that aren't in
@@ -154,6 +160,12 @@ return [
     '#32'   => ['name' => 'Hoodie (No Hood)',              'slug' => 'hoodie-no-hood',                'norm'  => 13.83,
                 'sizes'  => ['S','M','L','XL','2XL'],
                 'colors' => ['White', 'Black', 'Navy Blue', 'Royal Blue', 'Heather Grey', 'Pumpkin Orange'],
+                // The owner's extra colours (2026-10-11), each at its model's price.
+                'colors_from' => [
+                    '#32b' => ['Burgundy'],
+                    '#32a' => ['Yellow Fizz', 'Pure Orange', 'Bottle Green'],
+                    '#002' => ['Khaki', 'Red', 'Kelly Green', 'Light Blue'],
+                ],
                 'size_chart' => '/images/size-charts/hoodie-nohood.png'],
 
     // B&C King Crew Neck
@@ -194,6 +206,11 @@ return [
                 'colors' => ['White', 'Black', 'Heather Grey', 'Navy Blue', 'Royal Blue', 'Red'],
                 'size_colors' => [
                     '5XL' => ['Black', 'Heather Grey', 'Navy Blue'],
+                ],
+                // The owner's extra colours (2026-10-11), each at its model's price.
+                'colors_from' => [
+                    '#29a' => ['Pure Orange', 'Dark Cherry', 'Khaki', 'Sky Blue'],
+                    '#29b' => ['Blue Fog', 'Orange', 'Apple Green'],
                 ],
                 'size_chart' => '/images/size-charts/hoodie-zip.png'],
 

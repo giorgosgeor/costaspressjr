@@ -93,7 +93,7 @@ class CartPricing {
         return null;
     }
 
-    /** Which margin table (tshirt|hoodie) a product uses. */
+    /** Which margin table (see Pricing::categoryFor) a product uses. */
     private function priceCategoryFor(?int $productId): string {
         if (empty($productId)) return 'tshirt';
         $stmt = $this->db->prepare("SELECT slug, name FROM products WHERE id = ? LIMIT 1");

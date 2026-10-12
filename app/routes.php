@@ -67,10 +67,13 @@ $router->get('/shop/premade', [$shop, 'premade']);
 $router->get('/shop/premade/anime', [$shop, 'anime']);
 $router->get('/shop/design', [$shop, 'premadeDesign']);
 $router->get('/shop/select_product', [$shop, 'selectProduct']);
-$router->post('/shop/set_selected_product', [$shop, 'setSelectedProduct']);
 $router->get('/shop/custom', [$shop, 'designer']);
 $router->get('/shop/custom_product/shop_custom', [$shop, 'designer']);
-$router->get('/shop/custom_product', [$shop, 'customProduct']);
+// Each product has its own page now (/product/{id}-{slug}); this address
+// showed whichever product the session held.
+$router->get('/shop/custom_product', function () {
+    header('Location: /shop/select_product', true, 301);
+});
 $router->get('/product', [$shop, 'product']);
 $router->get('/api/product-variants', [$shop, 'productVariants']);
 

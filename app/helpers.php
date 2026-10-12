@@ -79,3 +79,16 @@ function web_path(?string $path): string
     if (strpos($path, 'public/') === 0) $path = substr($path, 7);
     return ($path !== '' && $path[0] !== '/') ? '/' . $path : $path;
 }
+
+/**
+ * A product's page: product_path(91, 'hoodie-with-hood-zip') →
+ * "/product/91-hoodie-with-hood-zip". The id finds the product; the slug is
+ * there for people and search engines. Saving a product in the admin
+ * rewrites its slug from the name, so ShopController::product() redirects
+ * any outdated slug to the current one instead of trusting it.
+ */
+function product_path(int $id, ?string $slug): string
+{
+    $slug = (string)$slug;
+    return '/product/' . $id . ($slug !== '' ? '-' . $slug : '');
+}

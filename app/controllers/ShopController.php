@@ -237,37 +237,44 @@ public function designer(): void {
         $this->render('shop/select_product', ['products' => $products, 'favoriteProductIds' => $favoriteProductIds]);
     }
 
-    // Set selected product ID in session
-    public function setSelectedProduct(): void {
-        $input = json_decode(file_get_contents('php://input'), true);
-        $id = $input['product_id'] ?? null;
-        if ($id) {
-            $_SESSION['selected_product_id'] = $id;
-            echo json_encode(['success' => true]);
-        } else {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'No product ID']);
-        }
-    }
-
-    // Removed duplicate declaration
-    public function customProduct(): void {
-        $id = $_SESSION['selected_product_id'] ?? null;
-        if (!$id) {
-            // Direct hit without picking a product first — send them to the
-            // picker rather than a bare 400.
-            header('Location: /shop/select_product');
+    /**
+     * GET /product/{id}-{slug}: a product's own page, where the shopper picks
+     * colour and size before designing. It used to be /shop/custom_product,
+     * which read the product from the session (a POST stored it when a card
+     * was clicked): one address for every product, so none of them could be
+     * indexed, shared, bookmarked or opened in a new tab.
+     *
+     * The id finds the product (see product_path()). Any other spelling of the
+     * address, such as no slug or a slug from before the product was renamed,
+     * is redirected (301) to the current one, so links and search engines all
+     * end up on a single URL.
+     */
+    public function product(?string $param = null): void {
+        if ($param === null) {
+            header('Location: /shop/select_product', true, 301);
             return;
         }
-        // Get product details
+        if (!preg_match('/^(\d+)(?:-|$)/', $param, $m)) {
+            $this->notFound();
+            return;
+        }
+        $id = (int)$m[1];
+
         $stmt = $this->db->prepare("SELECT * FROM products WHERE id = ? AND active = 1");
         $stmt->execute([$id]);
         $product = $stmt->fetch();
         if (!$product) {
-            http_response_code(404);
-            echo "Product not found";
+            $this->notFound();
             return;
         }
+
+        $path = product_path($id, $product['slug']);
+        if ('/product/' . $param !== $path) {
+            $query = (string)($_SERVER['QUERY_STRING'] ?? '');
+            header('Location: ' . $path . ($query !== '' ? '?' . $query : ''), true, 301);
+            return;
+        }
+
         // Get all available colors for this product
         $stmt = $this->db->prepare("
             SELECT ac.id, ac.color_name AS name, ac.color_hex AS hex
@@ -336,61 +343,6 @@ public function designer(): void {
         );
 
         $this->render('shop/custom_product', ['product' => $product, 'colors' => $colors, 'sizes' => $sizes, 'colorSizeMatrix' => $colorSizeMatrix, 'variantCosts' => $variantCosts, 'thumbnails' => $thumbnails, 'deliveryEstimate' => $deliveryEstimate, 'retailPrice' => $retailPrice]);
-    }
-
-    public function product(?int $id = null): void {
-        if (!$id) {
-            header('Location: /shop');
-            exit;
-        }
-
-        // Get product details
-        $stmt = $this->db->prepare("SELECT * FROM products WHERE id = ? AND active = 1");
-        $stmt->execute([$id]);
-        $product = $stmt->fetch();
-
-        if (!$product) {
-            http_response_code(404);
-            echo "Product not found";
-            return;
-        }
-
-        // Get product variants. product_variants only stores colour/size as FKs,
-        // so resolve them here - the view renders swatches and a size dropdown and
-        // needs the hex and the size name, not the ids.
-        $stmt = $this->db->prepare("
-            SELECT pv.id, pv.product_id, pv.stock_quantity, pv.is_available,
-                   ac.color_hex     AS color,
-                   ac.color_name    AS color_name,
-                   ps.size_name     AS size,
-                   ps.size_order,
-                   COALESCE(ps.price_modifier, 0) AS price_modifier,
-                   COALESCE(pv.unit_price, p.base_price + COALESCE(ps.price_modifier, 0)) AS supplier_cost
-            FROM product_variants pv
-            JOIN products p               ON p.id = pv.product_id
-            LEFT JOIN available_colors ac ON ac.id = pv.color_id
-            LEFT JOIN product_sizes   ps ON ps.id = pv.size_id
-            WHERE pv.product_id = ?
-              AND pv.is_available = 1
-              AND ps.is_available = 1
-              AND ac.color_hex IS NOT NULL
-              AND ps.size_name IS NOT NULL
-            ORDER BY ps.size_order, ac.id
-        ");
-        $stmt->execute([$id]);
-        $variants = $stmt->fetchAll();
-
-        // Attach customer-facing prices. supplier_cost mirrors the exact
-        // expression resolveSupplierCost() uses at add-to-cart, so the price
-        // shown per size equals the price charged for qty 1.
-        $category = Pricing::categoryFor($product['slug'] ?? '', $product['name'] ?? '');
-        $product['retail_price'] = Pricing::unitPrice((float)$product['base_price'], $category, 1);
-        foreach ($variants as &$v) {
-            $v['retail_price'] = Pricing::unitPrice((float)$v['supplier_cost'], $category, 1);
-        }
-        unset($v);
-
-        $this->render('shop/product', ['product' => $product, 'variants' => $variants]);
     }
 
     /**

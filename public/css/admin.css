@@ -754,6 +754,25 @@
     white-space: nowrap;
 }
 
+/* The customer asked the shop to remove this upload's background. */
+.prod-bg-flag {
+    margin: 0 0 8px;
+    padding: 6px 10px;
+    background: var(--spot-yellow);
+    border: 1px solid var(--border);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ink, #1a1a1f);
+}
+.prod-bg-flag a { margin-left: 4px; color: inherit; text-decoration: underline; }
+.prod-bg-count {
+    margin-left: 8px;
+    padding: 1px 8px;
+    background: var(--spot-yellow);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
 .prod-specs {
     display: grid;
     grid-template-columns: auto 1fr;

@@ -21,6 +21,14 @@
     color: #fff;
 }
 
+/* "Remove the background for me", under the image tools: the hint on its own line. */
+.bg-removal-option {
+    text-align: left;
+}
+.bg-removal-option .popup-note {
+    display: block;
+}
+
 /* Modern Upload Modal Buttons */
 .upload-editor-close {
     position: absolute;

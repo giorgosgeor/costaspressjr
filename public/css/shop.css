@@ -909,6 +909,7 @@
     transform: translate(-3px, -3px);
     box-shadow: 6px 6px 0 var(--ink);
     color: var(--ink);
+    text-decoration: none;   /* a card that is a link: no a:hover underline */
 }
 
 .product-image {
