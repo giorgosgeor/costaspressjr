@@ -3,8 +3,15 @@ $pageTitle       = $title ?? t('site.brand', false);
 $brandFull       = t('site.full_title', false);
 $pageFullTitle   = $pageTitle === t('site.brand', false) ? $brandFull : ($pageTitle . ' · ' . t('site.brand', false));
 $pageDescription = $metaDescription ?? t('site.meta_description', false);
-$canonicalUrl    = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'www.costaspressjr.com') . ($_SERVER['REQUEST_URI'] ?? '/');
+// REQUEST_URI is the page's address without its language prefix (I18n::route).
+// The canonical names this page in this language on the real domain
+// (APP_URL), without a query string: ?utm_source=… and friends are the
+// same page, not new ones.
+$pagePath        = (string)strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
+$canonicalUrl    = app_url(I18n::url($pagePath));
 $currentLocale   = I18n::locale();
+// The language switcher opens this same page in the other language.
+$switchTo        = rawurlencode($_SERVER['REQUEST_URI'] ?? '/');
 ?>
 <!DOCTYPE html>
 <html lang="<?= htmlspecialchars($currentLocale) ?>">
@@ -19,20 +26,36 @@ $currentLocale   = I18n::locale();
     <meta name="description" content="<?= htmlspecialchars($pageDescription) ?>">
     <meta name="theme-color" content="#15130E">
     <link rel="canonical" href="<?= htmlspecialchars($canonicalUrl) ?>">
+    <?php // Every language's copy of this page, for search engines. x-default
+          // is the English page: it is also where anyone whose language we
+          // don't have lands. Not on noindex pages or error pages. ?>
+    <?php if (empty($noindex) && http_response_code() === 200): ?>
+    <?php foreach (I18n::SUPPORTED as $altLocale): ?>
+    <link rel="alternate" hreflang="<?= $altLocale ?>" href="<?= htmlspecialchars(app_url(I18n::url($pagePath, $altLocale))) ?>">
+    <?php endforeach; ?>
+    <link rel="alternate" hreflang="x-default" href="<?= htmlspecialchars(app_url($pagePath)) ?>">
+    <?php endif; ?>
     <?php // Small copies of the logo (logo.png is 81 KB at 540×360): the icon
           // and the header/footer images are fetched by every first visit. ?>
     <link rel="icon" type="image/png" href="/images/logo-icon.png">
     <link rel="apple-touch-icon" href="/images/logo-icon.png">
+    <?php // What a shared link shows. The image must be a full address (Facebook,
+          // WhatsApp and LinkedIn ignore a bare path): the page's own share card
+          // ($ogImage, see ShareCard) or the branded one. ?>
+    <?php $ogImageUrl = app_url($ogImage ?? ShareCard::DEFAULT); ?>
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="<?= t('site.brand') ?>">
+    <meta property="og:locale" content="<?= $currentLocale === 'el' ? 'el_GR' : 'en_GB' ?>">
     <meta property="og:title" content="<?= htmlspecialchars($pageFullTitle) ?>">
     <meta property="og:description" content="<?= htmlspecialchars($pageDescription) ?>">
     <meta property="og:url" content="<?= htmlspecialchars($canonicalUrl) ?>">
-    <meta property="og:image" content="/images/og-card.png">
+    <meta property="og:image" content="<?= htmlspecialchars($ogImageUrl) ?>">
+    <meta property="og:image:width" content="<?= ShareCard::WIDTH ?>">
+    <meta property="og:image:height" content="<?= ShareCard::HEIGHT ?>">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="<?= htmlspecialchars($pageFullTitle) ?>">
     <meta name="twitter:description" content="<?= htmlspecialchars($pageDescription) ?>">
-    <meta name="twitter:image" content="/images/og-card.png">
+    <meta name="twitter:image" content="<?= htmlspecialchars($ogImageUrl) ?>">
     <?php // Geologica is self-hosted (studio.css). Preloading the files every page
           // needs saves a round trip before text can render in it. ?>
     <link rel="preload" href="/fonts/geologica/geologica-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -139,9 +162,9 @@ $currentLocale   = I18n::locale();
                         <a href="/register" class="btn btn-sm"><?= t('header.register') ?></a>
                     <?php endif; ?>
                     <div class="lang-switcher" role="group" aria-label="Language">
-                        <a href="/lang/en" class="<?= $currentLocale === 'en' ? 'active' : '' ?>" hreflang="en">EN</a>
+                        <a href="/lang/en?to=<?= $switchTo ?>" class="<?= $currentLocale === 'en' ? 'active' : '' ?>" hreflang="en">EN</a>
                         <span class="sep" aria-hidden="true"></span>
-                        <a href="/lang/el" class="<?= $currentLocale === 'el' ? 'active' : '' ?>" hreflang="el">GR</a>
+                        <a href="/lang/el?to=<?= $switchTo ?>" class="<?= $currentLocale === 'el' ? 'active' : '' ?>" hreflang="el">GR</a>
                     </div>
                 </div>
             </nav>
@@ -160,9 +183,9 @@ $currentLocale   = I18n::locale();
                 }
                 ?>
                 <div class="lang-switcher" role="group" aria-label="Language">
-                    <a href="/lang/en" class="<?= $currentLocale === 'en' ? 'active' : '' ?>" title="<?= t('lang.switch_to_english') ?>" hreflang="en">EN</a>
+                    <a href="/lang/en?to=<?= $switchTo ?>" class="<?= $currentLocale === 'en' ? 'active' : '' ?>" title="<?= t('lang.switch_to_english') ?>" hreflang="en">EN</a>
                     <span class="sep" aria-hidden="true"></span>
-                    <a href="/lang/el" class="<?= $currentLocale === 'el' ? 'active' : '' ?>" title="<?= t('lang.switch_to_greek') ?>" hreflang="el">GR</a>
+                    <a href="/lang/el?to=<?= $switchTo ?>" class="<?= $currentLocale === 'el' ? 'active' : '' ?>" title="<?= t('lang.switch_to_greek') ?>" hreflang="el">GR</a>
                 </div>
 
                 <a href="/cart" class="icon-link cart-link" aria-label="<?= htmlspecialchars($cartAria) ?>">

@@ -271,7 +271,7 @@ class AuthController extends Controller {
 
         $this->sendVerificationEmail($userId, $email, $username);
 
-        header('Location: ' . ($redirect !== '' ? $redirect : '/home'));
+        header('Location: ' . ($redirect !== '' ? $redirect : '/'));
         exit;
     }
 

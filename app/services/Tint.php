@@ -39,6 +39,23 @@ class Tint
         return preg_match('/^#[0-9a-f]{6}$/', $hex) ? $hex : '';
     }
 
+    /**
+     * Whether a garment shows white: the colour White, or no colour at all
+     * (the photos then show white, studio.css). A white garment sits on black,
+     * any other colour on #ECECEC (color-tint.js isWhite / backdropFor).
+     */
+    public static function isWhite(?string $hex): bool
+    {
+        $hex = self::normalizeHex($hex);
+        return $hex === '' || $hex === '#ffffff';
+    }
+
+    /** Classes for the element holding a garment photo in this colour (studio.css .garment-stage). */
+    public static function stageClass(?string $hex): string
+    {
+        return self::isWhite($hex) ? 'garment-stage' : 'garment-stage is-coloured';
+    }
+
     /** CSS filter for a garment in this colour; "none" for anything that isn't a colour. */
     public static function filterFor(?string $hex): string
     {

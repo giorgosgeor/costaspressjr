@@ -20,7 +20,7 @@ ob_start(); ?>
 
         <!-- Design Preview - HTML based for reliability -->
         <div id="cartDesignPreview" class="popup-stage">
-            <div id="cartPreviewContainer" class="studio-cart-preview">
+            <div id="cartPreviewContainer" class="studio-cart-preview garment-stage">
                 <img id="cartPreviewProduct" src="" alt="Product">
                 <div id="cartPreviewDesignArea"></div>
             </div>
@@ -160,7 +160,7 @@ ob_start(); ?>
                     <span class="view-current-label" id="viewCurrentLabel" aria-live="polite"><?= t('studio.view.front') ?></span>
                 </div>
 
-                <div class="mockup-container" id="mockupContainer">
+                <div class="mockup-container garment-stage" id="mockupContainer">
                     <!-- Product image -->
                     <!-- Hidden until a product is chosen: an empty src renders a
                          broken-image icon next to its alt text. -->

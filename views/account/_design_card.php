@@ -70,7 +70,7 @@ $refH = $metaDAH ?: $phpEditorDAH;
 $pct = function ($v, $of) { return $of > 0 ? ($v / $of) * 100 : 0; };
 ?>
 <div class="design-card" data-design-id="<?= $design['id'] ?>">
-    <div class="design-card-image" style="position:relative; background:#fff; overflow:hidden;">
+    <div class="design-card-image <?= Tint::stageClass($colorHex) ?>" style="position:relative; overflow:hidden;">
         <?php if (!empty($design['product_image'])): ?>
             <img src="/<?= htmlspecialchars(ltrim($design['product_image'], '/')) ?>"
                  alt="<?= htmlspecialchars($design['product_name'] ?? '') ?>" loading="lazy"

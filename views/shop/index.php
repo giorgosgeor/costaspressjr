@@ -1,4 +1,4 @@
-<?php $title = t('shop.landing.title', false); ?>
+<?php $title = t('seo.shop.title', false); $metaDescription = t('seo.shop.description', false); ?>
 <?php require View::path('layouts/customer_header'); ?>
 
 <section class="section shop-landing-section">

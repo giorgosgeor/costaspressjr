@@ -1,5 +1,6 @@
 <?php
-$title    = t('shop.anime.title', false);
+$title           = t('seo.anime.title', false);
+$metaDescription = t('seo.anime.description', false);
 $extraCss = ['/css/pages/anime.css'];
 require View::path('layouts/customer_header');
 
@@ -115,14 +116,14 @@ $designCount = count($designs ?? []);
                                     <span class="an-card-no">No.<?= $number ?></span>
                                     <span class="an-card-jp" lang="ja">アニメ</span>
                                 </span>
-                                <span class="an-card-art">
+                                <span class="an-card-art garment-stage">
                                     <?php if (!empty($design['product_image_path'])): ?>
                                     <img src="/<?= htmlspecialchars($design['product_image_path']) ?>" alt="" class="an-card-garment" loading="lazy">
                                     <?php else: ?>
                                     <span class="an-card-missing"><?= t('shop.anime.no_product_image') ?></span>
                                     <?php endif; ?>
                                     <?php if (!empty($design['image_path'])): ?>
-                                    <img src="/<?= htmlspecialchars($design['image_path']) ?>" alt="" class="an-card-print"
+                                    <img src="/<?= htmlspecialchars($design['image_path']) ?>" alt="<?= $name ?>" class="an-card-print"
                                          style="left:<?= $frontLeft ?>%;top:<?= $frontTop ?>%;width:<?= $frontW ?>%;">
                                     <?php endif; ?>
                                 </span>
@@ -139,7 +140,7 @@ $designCount = count($designs ?? []);
                                     <span class="an-card-no">No.<?= $number ?></span>
                                     <span class="an-card-jp" lang="ja">うら</span>
                                 </span>
-                                <span class="an-card-art">
+                                <span class="an-card-art garment-stage">
                                     <img src="/<?= htmlspecialchars($design['product_back_image_path']) ?>" alt="" class="an-card-garment" loading="lazy">
                                     <img src="/<?= htmlspecialchars($design['back_image_path']) ?>" alt="" class="an-card-print"
                                          style="left:<?= $backLeft ?>%;top:<?= $backTop ?>%;width:<?= $backW ?>%;">

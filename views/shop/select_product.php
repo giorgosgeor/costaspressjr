@@ -1,14 +1,26 @@
-<?php $title = t('shop.select.title', false); ?>
-<?php $pageCss[] = '/css/pages/select-product.css'; require View::path('layouts/customer_header'); ?>
+<?php
+// Every garment, or with $family (a ProductFamily key) that family's own
+// landing page, /shop/hoodies: its title, description, heading and intro.
+$title           = t($family !== null ? "seo.family.$family.title" : 'seo.select.title', false);
+$metaDescription = t($family !== null ? "seo.family.$family.description" : 'seo.select.description', false);
+$pageCss[] = '/css/pages/select-product.css';
+require View::path('layouts/customer_header');
+?>
 
 <section class="section select-product-section">
     <div class="container">
         <?php
-            $crumbs  = [[t('header.nav.home', false), '/'], [t('header.nav.shop', false), '/shop'], [t('shop.select.breadcrumb', false), null]];
-            $heading = t('shop.select.title', false);
+            $crumbs  = [[t('header.nav.home', false), '/'], [t('header.nav.shop', false), '/shop'], [t('shop.select.breadcrumb', false), '/shop/select_product']];
+            if ($family !== null) {
+                $crumbs[] = [t("seo.family.$family.h1", false), null];
+            }
+            $heading = t($family !== null ? "seo.family.$family.h1" : 'shop.select.title', false);
             $lead    = t('shop.select.subtitle', false);
             require View::path('partials/page_head');
         ?>
+        <?php if ($family !== null): ?>
+        <p class="picker-intro"><?= t("seo.family.$family.intro") ?></p>
+        <?php endif; ?>
         <?php if (empty($products)): ?>
             <div class="no-products-message">
                 <p><?= t('shop.select.no_products') ?></p>
@@ -35,42 +47,16 @@
             </div>
         </div>
 
-        <?php
-          // Garment family, derived from the product name. There is no category
-          // column, and adding one would mean a migration plus admin UI for a
-          // list of 19 — this keeps the filter honest and self-maintaining.
-          $familyOf = function (string $name): string {
-              $n = strtolower($name);
-              if (str_contains($n, 'hood') || str_contains($n, 'sweat')) return 'hoodie';
-              if (str_contains($n, 'polo'))                              return 'polo';
-              if (str_contains($n, 'tank'))                              return 'tank';
-              if (str_contains($n, 'v-neck'))                            return 'vneck';
-              if (str_contains($n, 'long sleeve'))                       return 'longsleeve';
-              if (str_contains($n, 'cap'))                               return 'cap';
-              if (str_contains($n, 'shirt'))                             return 'tshirt';
-              return 'other';
-          };
-          $familyLabels = [
-              'tshirt'     => t('shop.select.family.tshirt'),
-              'longsleeve' => t('shop.select.family.longsleeve'),
-              'tank'       => t('shop.select.family.tank'),
-              'vneck'      => t('shop.select.family.vneck'),
-              'polo'       => t('shop.select.family.polo'),
-              'hoodie'     => t('shop.select.family.hoodie'),
-              'cap'        => t('shop.select.family.cap'),
-              'other'      => t('shop.select.family.other'),
-          ];
-          // Only offer filters for families that actually have products.
-          $present = [];
-          foreach ($products as $p) { $present[$familyOf($p['name'] ?? '')] = true; }
-        ?>
         <div class="picker-toolbar">
-          <div class="picker-filters" role="group" aria-label="<?= t('shop.select.filter_label') ?>">
-            <button type="button" class="picker-chip is-active" data-family="all"><?= t('shop.select.family.all') ?></button>
-            <?php foreach ($familyLabels as $key => $label): if (empty($present[$key])) continue; ?>
-            <button type="button" class="picker-chip" data-family="<?= $key ?>"><?= $label ?></button>
+          <?php // Each garment family has its own page (ProductFamily), so the
+                // filters are links: shareable, and how search engines find them.
+                // $families lists those with something in them. ?>
+          <nav class="picker-filters" aria-label="<?= t('shop.select.filter_label') ?>">
+            <a href="/shop/select_product" class="picker-chip<?= $family === null ? ' is-active' : '' ?>"<?= $family === null ? ' aria-current="page"' : '' ?>><?= t('shop.select.family.all') ?></a>
+            <?php foreach ($families as $key): ?>
+            <a href="<?= e(ProductFamily::path($key)) ?>" class="picker-chip<?= $family === $key ? ' is-active' : '' ?>"<?= $family === $key ? ' aria-current="page"' : '' ?>><?= t("shop.select.family.$key") ?></a>
             <?php endforeach; ?>
-          </div>
+          </nav>
           <label class="picker-sort">
             <span><?= t('shop.select.sort_label') ?></span>
             <select id="pickerSort">
@@ -103,7 +89,6 @@
         ?>
           <div class="product-list-card"
                data-product-id="<?= $product['id'] ?>"
-               data-family="<?= $familyOf($product['name'] ?? '') ?>"
                data-name="<?= htmlspecialchars($product['name'] ?? '') ?>"
                data-price="<?= number_format($retailOne, 2, '.', '') ?>">
             <?php $isFav = in_array((int)$product['id'], $favoriteProductIds ?? [], true); ?>
@@ -116,7 +101,7 @@
                     title="<?= $isFav ? t('favorites.remove') : t('favorites.add') ?>">
                 <svg width="18" height="18" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1z"/></svg>
             </button>
-            <img src="/<?= htmlspecialchars($product['image_path']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" loading="lazy">
+            <span class="product-list-media garment-stage"><img src="/<?= htmlspecialchars($product['image_path']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" width="1024" height="1024" loading="lazy"></span>
             <div class="color-preview-row">
               <?php
                 // Collect all unique color hexes for this product across all sizes

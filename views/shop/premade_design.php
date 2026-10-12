@@ -1,5 +1,17 @@
-<?php $title = htmlspecialchars($design['name']) . ' - ' . htmlspecialchars($design['section_name']); ?>
+<?php
+// The layout escapes the title; escaping it here too printed &amp;amp;.
+// $priceRange is null while the design comes on no garment.
+$seoVars = ['name' => $design['name'], 'section' => $design['section_name'], 'price' => money($priceRange[0] ?? 0)];
+$title   = $priceRange === null ? $design['name'] . ' - ' . $design['section_name'] : I18n::t('seo.design.title', $seoVars);
+$metaDescription = $priceRange === null ? null : I18n::t('seo.design.description', $seoVars);
+$ogImage = ShareCard::urlFor($design['image_path']);
+?>
 <?php $pageCss[] = '/css/pages/premade-design.css'; $shopScripts = true; require View::path('layouts/customer_header'); ?>
+<?php if ($priceRange !== null):   // a pre-made design: 14 days to return it
+    $ld = ['name' => $design['name'], 'description' => $metaDescription, 'sku' => 'D' . (int)$design['id'],
+           'image' => $design['image_path'], 'price' => $priceRange[0], 'highPrice' => $priceRange[1], 'returnable' => true];
+    require View::path('partials/product_jsonld');
+endif; ?>
 
 <!-- Interact.js for drag & resize (only loaded for non-fixed designs) -->
 <?php if (empty($design['is_fixed'])): ?>
@@ -13,7 +25,9 @@
                 [t('header.nav.home', false), '/'],
                 [t('header.nav.shop', false), '/shop'],
                 [t('view_design.breadcrumb.premade', false), '/shop/premade'],
-                [(string)$design['section_name'], '/shop/premade/' . $design['section_slug']],
+                // Only the anime section has a page of its own (routes.php); any
+                // other section's designs are reached from /shop/premade.
+                [(string)$design['section_name'], $design['section_slug'] === 'anime' ? '/shop/premade/anime' : '/shop/premade'],
                 [(string)$design['name'], null],
             ];
             require View::path('partials/breadcrumb');
@@ -35,13 +49,13 @@
                     <span class="side-current-label" id="sideCurrentLabel" aria-live="polite"><?= t('studio.view.front') ?></span>
                 </div>
                 
-                <div class="mockup-container" id="mockupContainer">
+                <div class="mockup-container garment-stage" id="mockupContainer">
                     <!-- Color overlay layer -->
                     <div class="color-overlay" id="colorOverlay"></div>
                     
                     <!-- Product image -->
                     <img src="/<?= htmlspecialchars($availableProducts[0]['image_path'] ?? '') ?>" 
-                         alt="Product" 
+                         alt="<?= htmlspecialchars($availableProducts[0]['name'] ?? '') ?>" width="1024" height="1024" fetchpriority="high"
                          class="mockup-product" 
                          id="mockupProduct"
                          data-front="<?= htmlspecialchars($availableProducts[0]['image_path'] ?? '') ?>"
@@ -132,9 +146,9 @@
                              data-pos-back-x="<?= (float)($product['design_pos_back_x'] ?? 0) ?>"
                              data-pos-back-y="<?= (float)($product['design_pos_back_y'] ?? 0) ?>"
                              data-pos-back-size="<?= (float)($product['design_pos_back_size'] ?? 55) ?>">
-                            <div class="product-option-image">
+                            <div class="product-option-image garment-stage">
                                 <?php if (!empty($product['image_path'])): ?>
-                                    <img src="/<?= htmlspecialchars($product['image_path']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" loading="lazy">
+                                    <img src="/<?= htmlspecialchars($product['image_path']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" width="1024" height="1024" loading="lazy">
                                 <?php else: ?>
                                     <div class="no-image-small"><?= t('view_design.no_image') ?></div>
                                 <?php endif; ?>
@@ -291,7 +305,7 @@ ob_start(); ?>
 
         <!-- Preview -->
         <div class="confirm-preview-row">
-            <div class="confirm-mockup-wrap">
+            <div class="confirm-mockup-wrap garment-stage">
                 <img id="confirmProductImg" src="" alt="" class="confirm-product-img">
                 <img id="confirmDesignImg" src="" alt="" class="confirm-design-img" style="display:none">
             </div>

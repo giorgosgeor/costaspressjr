@@ -51,6 +51,14 @@ class SiteController extends Controller {
         echo "User-agent: *\n";
         foreach ($private as $path) {
             echo "Disallow: $path\n";
+            // The page's copies in the other languages (/el/account) too.
+            if (I18n::isPagePath(rtrim($path, '/'))) {
+                foreach (I18n::SUPPORTED as $locale) {
+                    if ($locale !== I18n::DEFAULT_LOCALE) {
+                        echo 'Disallow: ' . I18n::url($path, $locale) . "\n";
+                    }
+                }
+            }
         }
         echo "Allow: /\n\nSitemap: " . app_url('/sitemap.xml') . "\n";
     }
@@ -80,14 +88,22 @@ class SiteController extends Controller {
         ];
         try {
             // The products the shop lists (with a mockup image), at their own
-            // pages' addresses.
+            // pages' addresses, and the garment families they make up
+            // (/shop/hoodies, ProductFamily).
             $products = $this->db->query("
-                SELECT id, slug FROM products
+                SELECT id, slug, name FROM products
                 WHERE active = 1 AND image_path IS NOT NULL AND image_path <> ''
                 ORDER BY id
             ")->fetchAll(PDO::FETCH_ASSOC);
+            $families = [];
             foreach ($products as $p) {
                 $urls[] = ['path' => product_path((int)$p['id'], $p['slug']), 'changefreq' => 'weekly', 'priority' => '0.6'];
+                $families[ProductFamily::of($p['name'])] = true;
+            }
+            foreach (array_keys(ProductFamily::PAGES) as $family) {
+                if (isset($families[$family])) {
+                    $urls[] = ['path' => ProductFamily::path($family), 'changefreq' => 'weekly', 'priority' => '0.8'];
+                }
             }
             foreach ($this->db->query("SELECT id FROM premade_designs WHERE active = 1 ORDER BY id")->fetchAll(PDO::FETCH_COLUMN) as $id) {
                 $urls[] = ['path' => '/shop/design/' . (int)$id, 'changefreq' => 'weekly', 'priority' => '0.6'];
@@ -96,15 +112,24 @@ class SiteController extends Controller {
             // The pages above are still worth listing.
         }
 
+        // Each page once per language (/about, /el/about), each entry naming
+        // all its copies, as the pages' own hreflang links do.
+        $xml = static fn(string $path): string => htmlspecialchars($base . $path, ENT_XML1);
         header('Content-Type: application/xml; charset=utf-8');
         echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' . "\n";
         foreach ($urls as $u) {
-            echo "  <url>\n";
-            echo "    <loc>" . htmlspecialchars($base . $u['path'], ENT_XML1) . "</loc>\n";
-            echo "    <changefreq>" . $u['changefreq'] . "</changefreq>\n";
-            echo "    <priority>" . $u['priority'] . "</priority>\n";
-            echo "  </url>\n";
+            foreach (I18n::SUPPORTED as $locale) {
+                echo "  <url>\n";
+                echo "    <loc>" . $xml(I18n::url($u['path'], $locale)) . "</loc>\n";
+                foreach (I18n::SUPPORTED as $alt) {
+                    echo '    <xhtml:link rel="alternate" hreflang="' . $alt . '" href="' . $xml(I18n::url($u['path'], $alt)) . '"/>' . "\n";
+                }
+                echo '    <xhtml:link rel="alternate" hreflang="x-default" href="' . $xml($u['path']) . '"/>' . "\n";
+                echo "    <changefreq>" . $u['changefreq'] . "</changefreq>\n";
+                echo "    <priority>" . $u['priority'] . "</priority>\n";
+                echo "  </url>\n";
+            }
         }
         echo '</urlset>' . "\n";
     }

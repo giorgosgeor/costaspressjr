@@ -226,6 +226,8 @@ function applyProductColorFilter(imgElement, hex) {
     // drifted and never saw the solved overrides for deep reds.
     imgElement.style.filter = window.CostasTint.filterFor(hex);
     imgElement.dataset.tintHex = hex;   // for the canvas preview below
+    // On black when the garment is white, on grey otherwise (.garment-stage).
+    window.CostasTint.stage(imgElement.closest('.garment-stage'), hex);
 }
 
 function _getCartFrontElements() {
@@ -466,6 +468,11 @@ async function saveAccountCartPreview(cartItemId, designId) {
         offscreen.width  = size;
         offscreen.height = size;
         const ctx = offscreen.getContext('2d');
+
+        // 0. The background as the page shows it: black behind a white
+        //    garment, grey behind any other colour (.garment-stage).
+        ctx.fillStyle = window.CostasTint.backdropFor(productImg ? productImg.dataset.tintHex : '');
+        ctx.fillRect(0, 0, size, size);
 
         // 1. Draw shirt in the currently-selected colour (not ctx.filter: Safari has none)
         if (productImg && productImg.complete && productImg.naturalWidth) {

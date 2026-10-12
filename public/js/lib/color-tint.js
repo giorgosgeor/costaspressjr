@@ -205,5 +205,26 @@
         ctx.drawImage(off, x, y);
     }
 
-    global.CostasTint = { filterFor: filterFor, drawImage: drawImage, tables: tables, normalizeHex: normalizeHex };
+    /**
+     * What a garment photo sits on: black behind a white garment, and where
+     * no colour is given (the photos then show white, studio.css); #ECECEC
+     * behind a garment in any other colour. The CSS is .garment-stage and
+     * .is-coloured in studio.css; Tint::isWhite() and Tint::stageClass() are
+     * the server's twins.
+     */
+    var BACKDROP_WHITE = '#000000', BACKDROP_COLOUR = '#ececec';
+    function isWhite(hex) {
+        hex = normalizeHex(hex);
+        return !hex || hex === '#ffffff';
+    }
+    function backdropFor(hex) { return isWhite(hex) ? BACKDROP_WHITE : BACKDROP_COLOUR; }
+    /** Give a .garment-stage element the backdrop for the colour it now shows. */
+    function stage(el, hex) {
+        if (el) el.classList.toggle('is-coloured', !isWhite(hex));
+    }
+
+    global.CostasTint = {
+        filterFor: filterFor, drawImage: drawImage, tables: tables, normalizeHex: normalizeHex,
+        isWhite: isWhite, backdropFor: backdropFor, stage: stage
+    };
 })(window);

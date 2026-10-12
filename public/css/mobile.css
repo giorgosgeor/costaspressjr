@@ -557,6 +557,6 @@
    ============================================================ */
 @media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
     .hero { padding: var(--space-4) 0; }
-    .hero h1 { font-size: clamp(1.8rem, 5vh, 2.6rem); }
+    .hero .hero-title { font-size: clamp(1.8rem, 5vh, 2.6rem); }
     .main-nav { max-height: calc(100dvh - 60px); }
 }

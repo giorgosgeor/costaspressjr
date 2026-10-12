@@ -2,6 +2,7 @@
 $title        = t('info.sizing.title', false);
 $infoTitle    = t('info.sizing.title', false);
 $infoSubtitle = t('info.sizing.subtitle', false);
+$metaDescription = t('seo.sizing.description', false);
 $infoUpdated  = '2026-10-08';
 ob_start();
 ?>

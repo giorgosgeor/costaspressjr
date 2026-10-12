@@ -1,7 +1,9 @@
 <?php
 /**
  * Clean up the product photos for tinting (ProductPhoto): smooth the fabric's
- * compression noise and redraw the stepped cut-out outline. New admin uploads
+ * compression noise, shade flatly lit photos towards their sides, and redraw
+ * the stepped cut-out outline. After a change to that recipe, run --redo so
+ * every photo is rebuilt from its original. New admin uploads
  * are cleaned as they are saved; run this once for the photos already on the
  * site, and after copying photos in another way (DEPLOY.md step 2). Photos
  * already cleaned are skipped. Each original is kept in

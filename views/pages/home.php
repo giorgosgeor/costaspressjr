@@ -1,10 +1,30 @@
 <?php
-$title = t('site.brand', false);
+$title = t('site.brand', false);   // the layout shows site.full_title for the brand
+$metaDescription = t('seo.home.description', false);
 // The site-wide Studio look is in studio.css (loaded by the layout);
 // pages/home.css adds this page's hero.
 $extraCss = ['/css/pages/home.css'];
 require View::path('layouts/customer_header');
+
+// Who runs the shop and the site itself, for search engines: the name and
+// logo they show beside results. Contact details only where .env has them
+// (Business), so nothing invented is published.
+$business     = Business::details();
+$organization = array_filter([
+    '@type'      => 'Organization',
+    'name'       => t('site.brand', false),
+    'legalName'  => $business['name'],
+    'url'        => app_url('/'),
+    'logo'       => app_url('/images/logo.png'),
+    'email'      => $business['email'],
+    'telephone'  => $business['phone'],
+    'address'    => implode(', ', $business['address']),
+    'areaServed' => ['@type' => 'Country', 'name' => 'Cyprus'],
+    'sameAs'     => array_values(Business::socialLinks()),
+], static fn($v) => $v !== '' && $v !== []);
 ?>
+<?= View::jsonLd($organization) ?>
+<?= View::jsonLd(['@type' => 'WebSite', 'name' => t('site.brand', false), 'url' => app_url(I18n::url('/')), 'inLanguage' => I18n::locale()]) ?>
 
 <?php
 // One home page for everyone.
@@ -31,11 +51,14 @@ $visibleCount = 8;
 <section class="hero">
     <div class="hero-split">
         <div class="hero-content">
-            <p class="hero-badge"><?= t('home.hero.slug') ?></p>
-            <h1>
+            <?php // The page's heading is the small line naming what the shop does
+                  // and where: that is what search engines read as the topic.
+                  // The big slogan under it is the look, set as .hero-title. ?>
+            <h1 class="hero-badge"><?= t('seo.home.h1') ?></h1>
+            <div class="hero-title">
                 <span class="hero-line-1"><?= t('home.hero.line1') ?></span><br>
                 <span class="ink-2"><?= t('home.hero.line2') ?></span>
-            </h1>
+            </div>
             <p class="hero-lead"><?= t('home.hero.lead') ?></p>
             <div class="hero-buttons">
                 <a href="/shop/select_product" class="btn btn-lg"><?= t('home.hero.cta_design') ?></a>
@@ -63,7 +86,7 @@ $visibleCount = 8;
               // The photo is WEBSITE_KEY_INFO/basic_pic.png cut off its white
               // background and trimmed to the subject, as a WebP. ?>
         <div class="hero-visual">
-            <img src="/images/hero/hero-tee.webp" alt="" width="969" height="1122" data-remove-on-error>
+            <img src="/images/hero/hero-tee.webp" alt="" width="969" height="1122" fetchpriority="high" data-remove-on-error>
             <aside class="bulk-card">
                 <span class="bulk-tag"><?= t('home.bulk.tag') ?></span>
                 <h2 class="bulk-title"><?= t('home.bulk.title') ?></h2>
@@ -116,8 +139,8 @@ $visibleCount = 8;
                    class="product-card featured-product<?= $i >= $visibleCount ? ' is-extra' : '' ?>"
                    <?= $i >= $visibleCount ? 'hidden' : '' ?>
                    aria-label="<?= htmlspecialchars($product['name']) ?>">
-                    <div class="product-image">
-                        <img src="/<?= htmlspecialchars($product['image_path'] ?? '') ?>" alt="<?= htmlspecialchars($product['name']) ?>" loading="lazy" data-fallback="/images/placeholder.svg">
+                    <div class="product-image garment-stage">
+                        <img src="/<?= htmlspecialchars($product['image_path'] ?? '') ?>" alt="<?= htmlspecialchars($product['name']) ?>" width="1024" height="1024" loading="lazy" data-fallback="/images/placeholder.svg">
                         <?php if (!$product['active']): ?>
                             <span class="product-badge badge-soldout"><?= t('home.featured.sold_out') ?></span>
                         <?php endif; ?>
@@ -137,6 +160,23 @@ $visibleCount = 8;
                 </div>
             <?php endif; ?>
         </div>
+        <?php // Each garment family's own page (/shop/hoodies), for the families
+              // the grid above has something in. ?>
+        <?php
+        $homeFamilies = [];
+        foreach ($featuredProducts ?? [] as $product) {
+            $homeFamilies[ProductFamily::of($product['name'] ?? '')] = true;
+        }
+        $homeFamilies = array_intersect(array_keys(ProductFamily::PAGES), array_keys($homeFamilies));
+        ?>
+        <?php if ($homeFamilies): ?>
+        <nav class="family-links" aria-label="<?= t('seo.families.heading') ?>">
+            <span class="section-tag"><?= t('seo.families.heading') ?></span>
+            <?php foreach ($homeFamilies as $key): ?>
+            <a href="<?= e(ProductFamily::path($key)) ?>" class="picker-chip"><?= t("shop.select.family.$key") ?></a>
+            <?php endforeach; ?>
+        </nav>
+        <?php endif; ?>
     </div>
 </section>
 

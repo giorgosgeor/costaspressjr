@@ -3,9 +3,10 @@
  * Every URL the shop answers, and the controller method behind it.
  * Required by public/index.php with $router, $db and $wantsJson in scope.
  *
- * A route also matches one extra path segment, passed to the handler as an
- * argument: /product/12 → ShopController::product('12'). Admin controllers
- * read that id themselves (AdminController::getIdFromUrl()).
+ * A route answers its own path only, unless it ends in /{id}: then it also
+ * takes one more path segment, passed to the handler as an argument:
+ * /product/12-t-shirt → ShopController::product('12-t-shirt'). Admin
+ * controllers read that id themselves (AdminController::getIdFromUrl()).
  */
 
 /** @var Router $router */
@@ -37,21 +38,27 @@ $router->get('/sitemap.xml', [$site, 'sitemap']);
 $router->get('/robots.txt', [$site, 'robots']);
 $router->get('/health', [$site, 'health']);
 
-// Language switcher — sets a cookie and redirects back to the referring page.
-foreach (['en', 'el'] as $locale) {
+// Language switcher: /lang/el?to=/about remembers the choice (the lang
+// cookie) and opens the same page in that language, /el/about. ?to is the
+// page's own path, without a language prefix; anything that isn't a plain
+// path on this site (//evil.example, /\evil.example) goes to the home page.
+foreach (I18n::SUPPORTED as $locale) {
     $router->get("/lang/$locale", function () use ($locale) {
         I18n::setLocale($locale);
-        $back = $_SERVER['HTTP_REFERER'] ?? '/';
-        if (!preg_match('#^https?://#i', $back) && $back !== '' && $back[0] !== '/') {
-            $back = '/';
+        $to = (string)($_GET['to'] ?? '/');
+        if (!preg_match('#^/(?!/)[^\\\\:\x00-\x20\x7F-\xFF]*$#', $to)) {
+            $to = '/';
         }
-        header('Location: ' . $back);
+        header('Location: ' . I18n::url($to, $locale));
     });
 }
 
 // ---- Pages --------------------------------------------------------------
 $router->get('/', [$pages, 'index']);
-$router->get('/home', [$pages, 'home']);
+// The home page has one address, /.
+$router->get('/home', function () {
+    header('Location: /', true, 301);
+});
 $router->get('/about', [$pages, 'about']);
 $router->get('/contact', [$pages, 'contact']);
 $router->post('/contact', [$pages, 'sendContact']);
@@ -62,10 +69,10 @@ $router->get('/track-order', [$pages, 'trackOrder']);
 $router->post('/assistant/ask', [$assistant, 'ask']);
 
 // ---- Shop ---------------------------------------------------------------
-$router->get('/shop', [$shop, 'index']);
+$router->get('/shop/{id}', [$shop, 'index']);   // /shop, and /shop/hoodies (ProductFamily)
 $router->get('/shop/premade', [$shop, 'premade']);
 $router->get('/shop/premade/anime', [$shop, 'anime']);
-$router->get('/shop/design', [$shop, 'premadeDesign']);
+$router->get('/shop/design/{id}', [$shop, 'premadeDesign']);
 $router->get('/shop/select_product', [$shop, 'selectProduct']);
 $router->get('/shop/custom', [$shop, 'designer']);
 $router->get('/shop/custom_product/shop_custom', [$shop, 'designer']);
@@ -74,8 +81,8 @@ $router->get('/shop/custom_product/shop_custom', [$shop, 'designer']);
 $router->get('/shop/custom_product', function () {
     header('Location: /shop/select_product', true, 301);
 });
-$router->get('/product', [$shop, 'product']);
-$router->get('/api/product-variants', [$shop, 'productVariants']);
+$router->get('/product/{id}', [$shop, 'product']);
+$router->get('/api/product-variants/{id}', [$shop, 'productVariants']);
 
 // ---- Saved designs ------------------------------------------------------
 $router->post('/custom-design/save', [$designs, 'save']);
@@ -128,21 +135,21 @@ $router->get('/admin/users', [$adminDashboard, 'users']);
 $router->get('/admin/products', [$adminProducts, 'index']);
 $router->get('/admin/products/add', [$adminProducts, 'create']);
 $router->post('/admin/products/add', [$adminProducts, 'store']);
-$router->get('/admin/products/edit', [$adminProducts, 'edit']);
-$router->post('/admin/products/edit', [$adminProducts, 'update']);
-$router->post('/admin/products/delete', [$adminProducts, 'destroy']);
+$router->get('/admin/products/edit/{id}', [$adminProducts, 'edit']);
+$router->post('/admin/products/edit/{id}', [$adminProducts, 'update']);
+$router->post('/admin/products/delete/{id}', [$adminProducts, 'destroy']);
 $router->get('/admin/products/design-area', [$adminProducts, 'designArea']);
 $router->post('/admin/products/design-area/save', [$adminProducts, 'saveDesignArea']);
-$router->get('/admin/api/product', [$adminProducts, 'apiShow']);
+$router->get('/admin/api/product/{id}', [$adminProducts, 'apiShow']);
 
 $router->get('/admin/colors', [$adminColors, 'index']);
 $router->post('/admin/colors/add', [$adminColors, 'store']);
-$router->post('/admin/colors/delete', [$adminColors, 'destroy']);
+$router->post('/admin/colors/delete/{id}', [$adminColors, 'destroy']);
 $router->get('/admin/api/colors', [$adminColors, 'apiIndex']);
 
 $router->get('/admin/orders', [$adminOrders, 'index']);
-$router->get('/admin/orders/view', [$adminOrders, 'show']);
-$router->post('/admin/orders/status', [$adminOrders, 'updateStatus']);
+$router->get('/admin/orders/view/{id}', [$adminOrders, 'show']);
+$router->post('/admin/orders/status/{id}', [$adminOrders, 'updateStatus']);
 
 $router->get('/admin/pickup-points', [$adminPickup, 'index']);
 $router->post('/admin/pickup-points/add', [$adminPickup, 'store']);
@@ -152,11 +159,11 @@ $router->post('/admin/pickup-points/sync', [$adminPickup, 'sync']);
 
 $router->get('/admin/premade', [$adminPremade, 'index']);
 $router->post('/admin/premade/add', [$adminPremade, 'store']);
-$router->post('/admin/premade/edit', [$adminPremade, 'update']);
-$router->post('/admin/premade/delete', [$adminPremade, 'destroy']);
-$router->get('/admin/premade/position', [$adminPremade, 'position']);
-$router->post('/admin/premade/position', [$adminPremade, 'savePosition']);
-$router->get('/admin/api/premade', [$adminPremade, 'apiShow']);
+$router->post('/admin/premade/edit/{id}', [$adminPremade, 'update']);
+$router->post('/admin/premade/delete/{id}', [$adminPremade, 'destroy']);
+$router->get('/admin/premade/position/{id}', [$adminPremade, 'position']);
+$router->post('/admin/premade/position/{id}', [$adminPremade, 'savePosition']);
+$router->get('/admin/api/premade/{id}', [$adminPremade, 'apiShow']);
 
 $router->get('/admin/tools/bg-remover', [$adminTools, 'backgroundRemover']);
 $router->get('/admin/tools/image-cropper', [$adminTools, 'imageCropper']);

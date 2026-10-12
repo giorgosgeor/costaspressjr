@@ -260,7 +260,7 @@
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1z"/></svg>
                     </button>
                     <a href="<?= htmlspecialchars($href) ?>" class="favorite-card-link">
-                        <div class="favorite-card-image">
+                        <div class="favorite-card-image<?= $fav['kind'] === 'product' ? ' garment-stage' : '' ?>">
                             <?php if ($img !== ''): ?>
                                 <img src="/<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($fav['name']) ?>" loading="lazy">
                             <?php else: ?>
@@ -336,7 +336,7 @@ ob_start(); ?>
         <h2 class="popup-title" id="accountCartTitle"><?= t('account.cart_modal.title') ?></h2>
 
         <div id="cartDesignPreview" class="popup-stage">
-            <div id="cartPreviewContainer" class="account-cart-preview">
+            <div id="cartPreviewContainer" class="account-cart-preview garment-stage">
                 <!-- Pre-rendered composite preview (preferred, shown until color changed) -->
                 <img id="cartPreviewImg" src="" alt="Preview" class="account-cart-layer account-cart-composite" style="display:none;">
                 <!-- Colored shirt base -->

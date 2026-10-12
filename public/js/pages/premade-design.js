@@ -266,9 +266,10 @@ function applyColorTint(hexColor) {
     const mockupProduct = document.getElementById('mockupProduct');
     if (!mockupProduct) return;
 
-    // The garment in this colour (lib/color-tint.js, the one formula). The
-    // background stays white for every colour, as in the designer.
+    // The garment in this colour (lib/color-tint.js, the one formula), on
+    // black when it is white and on grey otherwise (.garment-stage).
     mockupProduct.style.filter = window.CostasTint.filterFor(hexColor);
+    window.CostasTint.stage(document.getElementById('mockupContainer'), hexColor);
 }
 
 // ==================== DRAG & RESIZE DESIGN ====================
@@ -495,6 +496,7 @@ function addToCart() {
     const productImg = document.getElementById('mockupProduct');
     document.getElementById('confirmProductImg').src = productImg ? productImg.src : '';
     document.getElementById('confirmProductImg').style.filter = productImg ? productImg.style.filter : '';
+    window.CostasTint.stage(document.querySelector('.confirm-mockup-wrap'), colorRadio.dataset.hex);
     const designEl   = document.getElementById('designElement');
     const designImg  = document.getElementById('mockupDesign');
     const mockup     = document.getElementById('mockupContainer');

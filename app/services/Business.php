@@ -58,6 +58,24 @@ final class Business {
     }
 
     /**
+     * The shop's social profiles that .env names (SOCIAL_FACEBOOK and the
+     * rest), as network => https address: the footer's icons, and the
+     * profiles search engines tie to the shop. None set, none shown, rather
+     * than icons that lead nowhere.
+     * @return array<string,string>
+     */
+    public static function socialLinks(): array {
+        $links = [];
+        foreach (['facebook' => 'SOCIAL_FACEBOOK', 'instagram' => 'SOCIAL_INSTAGRAM', 'x' => 'SOCIAL_X', 'tiktok' => 'SOCIAL_TIKTOK'] as $network => $key) {
+            $url = self::get($key);
+            if (str_starts_with($url, 'https://') && filter_var($url, FILTER_VALIDATE_URL)) {
+                $links[$network] = $url;
+            }
+        }
+        return $links;
+    }
+
+    /**
      * Everything at once, for templates (the controller passes it in).
      * @return array{name:string,address:string[],email:string,phone:string,phoneHref:string,hours:string[],registration:string,vat:string}
      */

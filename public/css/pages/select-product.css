@@ -198,3 +198,11 @@
   color: var(--ink-soft);
   margin-left: 2px;
 }
+
+/* A family page's introduction, under the heading. */
+.picker-intro {
+  max-width: 68ch;
+  margin: 0 0 var(--space-5);
+  color: var(--st-muted, var(--ink-soft));
+  line-height: 1.6;
+}

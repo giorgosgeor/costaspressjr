@@ -1,4 +1,4 @@
-<?php $title = t('shop.premade.title', false); ?>
+<?php $title = t('seo.premade.title', false); $metaDescription = t('seo.premade.description', false); ?>
 <?php require View::path('layouts/customer_header'); ?>
 
 <section class="section shop-section">

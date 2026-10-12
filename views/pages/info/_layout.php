@@ -1,4 +1,5 @@
-<?php require View::path('layouts/customer_header'); ?>
+<?php $metaDescription ??= $infoSubtitle ?? null;   // each info page's own lead line, unless it has a fuller one
+require View::path('layouts/customer_header'); ?>
 
 <section class="info-page">
     <div class="container">

@@ -54,7 +54,7 @@ $totalQty = (int)array_sum(array_column($cartItems, 'quantity'));
                     ?>
                     <li class="co-line">
                         <div class="co-thumb">
-                            <div class="co-thumb-frame">
+                            <div class="co-thumb-frame <?= Tint::stageClass($item['color_hex'] ?? null) ?>">
                                 <img src="<?= htmlspecialchars($image) ?>" alt="" loading="lazy"
                                      <?= $tint !== '' ? 'style="filter: ' . htmlspecialchars($tint) . ';"' : '' ?>
                                      data-fallback="/images/placeholder.png">

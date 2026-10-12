@@ -91,7 +91,7 @@ require View::path('layouts/customer_header');
                 ?>
                 <li class="co-line">
                     <div class="co-thumb">
-                        <div class="co-thumb-frame">
+                        <div class="co-thumb-frame garment-stage">
                             <img src="<?= htmlspecialchars($image) ?>" alt="" loading="lazy" data-fallback="/images/placeholder.png">
                         </div>
                         <span class="co-qty" aria-label="<?= htmlspecialchars(I18n::t('checkout.summary.qty', ['count' => $qty])) ?>"><?= $qty ?></span>

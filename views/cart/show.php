@@ -43,7 +43,7 @@ require View::path('layouts/customer_header');
                     $overlayW    = $posSize * 0.5;
                 ?>
                 <div class="cart-item-card" data-item-id="<?= $item['id'] ?>" data-unit-price="<?= $unitPrice ?>">
-                    <div class="cart-item-image-wrapper">
+                    <div class="cart-item-image-wrapper <?= Tint::stageClass($colorHex) ?>">
                         <?php if (!empty($item['front_preview'])): ?>
                             <?php
                                 $prevPath = $item['front_preview'];

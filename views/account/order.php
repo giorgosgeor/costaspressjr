@@ -114,7 +114,7 @@ $placedOn    = date('d/m/Y', strtotime($order['created_at']));
                     }
                 ?>
                 <article class="od-item">
-                    <div class="od-item-img">
+                    <div class="od-item-img<?= $imgSrc ? ' garment-stage' : '' ?>">
                         <?php if ($imgSrc): ?>
                             <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($item['product_name'] ?? 'Product') ?>" loading="lazy">
                         <?php else: ?>

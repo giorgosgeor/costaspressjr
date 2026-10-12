@@ -60,7 +60,7 @@ which loads data (models, services) and calls
   inline `<script>` and `on*` attributes, so they would silently not run.
   - Page data for scripts: `<?= View::json('product-data', [...]) ?>`, read in
     the script with `JSON.parse(document.getElementById('product-data').textContent)`.
-  - Scripts: `<?= View::script('/js/pages/product.js') ?>`.
+  - Scripts: `<?= View::script('/js/pages/cart.js') ?>`.
   - Behaviour: `data-on-click="fn" data-args='[12]'`, `data-href`,
     `data-confirm`, `data-fallback` … (all listed in `public/js/site/actions.js`).
     `fn` must be a global function in one of the page's scripts.
@@ -69,6 +69,10 @@ which loads data (models, services) and calls
   `mobile.css`, so phone rules win). `$pageCss` loads after `mobile.css`; it
   exists for the stylesheets that started life as inline blocks.
 - **Escape output:** `<?= e($value) ?>`; translations with `<?= t('key') ?>`.
+- **Links are plain paths** (`href="/shop"`, `product_path($id, $slug)`). Greek
+  pages live under `/el/` and get the prefix added on the way out, links and
+  redirects alike (`I18n::route()`, `I18n::localizeLinks()`, called from
+  `public/index.php`). Don't add it yourself.
 - **Includes** use `View::path()`: `require View::path('layouts/customer_header');`
 - Full-screen pop-ups go in `$overlays` (see `views/shop/designer.php`) so the
   footer prints them outside `<main>`, above the sticky header.

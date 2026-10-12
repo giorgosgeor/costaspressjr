@@ -2,6 +2,7 @@
 $title        = t('info.shipping.title', false);
 $infoTitle    = t('info.shipping.title', false);
 $infoSubtitle = t('info.shipping.subtitle', false);
+$metaDescription = t('seo.shipping.description', false);
 $infoUpdated  = '2026-10-09';
 // Every order goes to an ACS point for this fixed fee (Pickup).
 $deliveryFee  = Pickup::acsFee();

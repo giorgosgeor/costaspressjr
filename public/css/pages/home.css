@@ -45,11 +45,20 @@ body.theme-studio .hero .hero-badge {
     font-size: 0.78rem;
     font-weight: 500;
     letter-spacing: 0.14em;
+    line-height: 1.4;
     text-transform: uppercase;
     color: var(--st-label);
+    /* It is the h1 now, a whole phrase: a block that wraps, not shop.css's
+       inline-flex, which kept it on one line and widened the page on phones. */
+    display: block;
 }
 
-body.theme-studio .hero h1 {
+/* The slogan was the page's h1; it is a div now (the h1 is .hero-badge, the
+   line that says what the shop does), so it takes the h1 face itself. */
+body.theme-studio .hero .hero-title {
+    font-family: var(--font-display);
+    text-wrap: balance;
+    text-transform: none;   /* shop.css sets caps; the Studio look undid that for h1s */
     margin: 0;
     max-width: none;
     font-size: clamp(3rem, 6vw, 7rem);
@@ -58,8 +67,8 @@ body.theme-studio .hero h1 {
     font-weight: 300;
     color: var(--st-ink);
 }
-body.theme-studio .hero h1 .hero-line-1 { font-weight: 300; }
-body.theme-studio .hero h1 .ink-2 { font-weight: 700; color: var(--st-red); }
+body.theme-studio .hero .hero-title .hero-line-1 { font-weight: 300; }
+body.theme-studio .hero .hero-title .ink-2 { font-weight: 700; color: var(--st-red); }
 
 body.theme-studio .hero .hero-lead {
     margin: 0;
@@ -186,7 +195,7 @@ body.theme-studio .products-section { background: #FFFFFF; }
 @media (max-width: 900px) {
     body.theme-studio .hero-split { grid-template-columns: minmax(0, 1fr); min-height: 0; }
     body.theme-studio .hero-content { padding: 40px 16px 36px; gap: 22px; }
-    body.theme-studio .hero h1 { font-size: clamp(2.6rem, 11vw, 3.8rem); }
+    body.theme-studio .hero .hero-title { font-size: clamp(2.6rem, 11vw, 3.8rem); }
     body.theme-studio .hero-buttons .hero-link { align-self: flex-start; }
     body.theme-studio .hero-spec { gap: 16px 20px; }
 
@@ -199,3 +208,13 @@ body.theme-studio .products-section { background: #FFFFFF; }
 @media (prefers-reduced-motion: reduce) {
     body.theme-studio .hero-link svg { transition: none; }
 }
+
+/* "Shop by garment": links to each garment family's page, under the grid. */
+.family-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    margin-top: 40px;
+}
+.family-links .section-tag { margin-right: 6px; }

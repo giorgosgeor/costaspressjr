@@ -148,8 +148,10 @@ function applyColorTint(hex) {
     const mockupContainer = document.getElementById('mockupContainer');
     if (!mockupImg) return;
 
-    // The garment in this colour (lib/color-tint.js, the one formula).
+    // The garment in this colour (lib/color-tint.js, the one formula), on
+    // black when it is white and on grey otherwise (.garment-stage).
     mockupImg.style.filter = window.CostasTint.filterFor(hex);
+    window.CostasTint.stage(mockupContainer, hex);
 }
 
 // Load an existing design for editing

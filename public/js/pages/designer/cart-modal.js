@@ -63,8 +63,10 @@ function openAddToCartModal(designId, productId, productName, designName, basePr
 function applyCartProductColorFilter(hex) {
     const productImg = document.getElementById('cartPreviewProduct');
     if (!productImg || !hex) return;
-    // The garment in this colour (lib/color-tint.js, the one formula).
+    // The garment in this colour (lib/color-tint.js, the one formula), on
+    // black when it is white and on grey otherwise (.garment-stage).
     productImg.style.filter = window.CostasTint.filterFor(hex);
+    window.CostasTint.stage(document.getElementById('cartPreviewContainer'), hex);
 }
 
 // Capture the current design into the cart preview using HTML elements

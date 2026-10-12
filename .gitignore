@@ -22,6 +22,8 @@ composer.phar
 public/images/products/
 public/images/designs/uploads/
 public/images/designs/previews/
+# Share cards, made from the photos above (database/make_share_cards.php)
+public/images/share/
 
 # OS
 Thumbs.db

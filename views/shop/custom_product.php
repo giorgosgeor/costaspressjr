@@ -1,19 +1,35 @@
-<?php $title = $product['name'] ?? 'Customize Product'; ?>
+<?php
+// What a search result should say: the garment and its single-piece price.
+$seoVars         = ['name' => $product['name'], 'price' => money($priceRange[0])];
+$title           = I18n::t('seo.product.title', $seoVars);
+$metaDescription = I18n::t('seo.product.description', $seoVars);
+$ogImage         = ShareCard::urlFor($product['image_path']);
+?>
 <?php $pageCss[] = '/css/pages/custom-product.css'; $shopScripts = true; require View::path('layouts/customer_header'); ?>
+<?php // A garment for the customer's own print: custom, so not returnable.
+$ld = ['name' => $product['name'], 'description' => $metaDescription, 'sku' => 'P' . (int)$product['id'],
+       'image' => $product['image_path'], 'price' => $priceRange[0], 'highPrice' => $priceRange[1], 'returnable' => false];
+require View::path('partials/product_jsonld'); ?>
 
 
 
 <section class="section product-detail-section">
     <div class="container">
         <?php
-            $crumbs = [[t('header.nav.home', false), '/'], [t('header.nav.shop', false), '/shop'], [t('shop.select.breadcrumb', false), '/shop/select_product'], [(string)($product['name'] ?? t('studio.title', false)), null]];
+            $crumbs = [[t('header.nav.home', false), '/'], [t('header.nav.shop', false), '/shop'], [t('shop.select.breadcrumb', false), '/shop/select_product']];
+            // Up to the garment family's own page (/shop/hoodies), where there is one.
+            $productFamily = ProductFamily::of($product['name'] ?? '');
+            if (($familyPath = ProductFamily::path($productFamily)) !== null) {
+                $crumbs[] = [t("seo.family.$productFamily.h1", false), $familyPath];
+            }
+            $crumbs[] = [(string)($product['name'] ?? t('studio.title', false)), null];
             require View::path('partials/breadcrumb');
         ?>
         <div class="custom-product-grid">
             <div class="custom-product-gallery" id="customProductGallery">
                 <div id="productThumbnails"></div>
-                <div class="main-image">
-                    <img id="mainProductImage" src="<?= isset($product['image_path']) ? '/' . htmlspecialchars($product['image_path']) : '/images/placeholder.svg' ?>" alt="<?= htmlspecialchars($product['name'] ?? '') ?>">
+                <div class="main-image garment-stage">
+                    <img id="mainProductImage" width="1024" height="1024" fetchpriority="high" src="<?= isset($product['image_path']) ? '/' . htmlspecialchars($product['image_path']) : '/images/placeholder.svg' ?>" alt="<?= htmlspecialchars($product['name'] ?? '') ?>">
                 </div>
             </div>
             <!-- Right: Product Info & Options -->

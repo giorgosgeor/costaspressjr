@@ -76,22 +76,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const thumbContainer = document.getElementById('productThumbnails');
     if (thumbContainer) {
         let thumbHtml = '';
-        // Main/front image
-        if (product.image_path) {
-            thumbHtml += `<img src="/${product.image_path}" data-view="front" style="width:54px;height:54px;object-fit:cover;cursor:pointer;border-radius:6px;border:2px solid #eee;margin-bottom:8px;" title="Front">`;
-        }
-        // Back image
-        if (product.back_image_path) {
-            thumbHtml += `<img src="/${product.back_image_path}" data-view="back" style="width:54px;height:54px;object-fit:cover;cursor:pointer;border-radius:6px;border:2px solid #eee;margin-bottom:8px;" title="Back">`;
-        }
-        // Left sleeve
-        if (product.left_sleeve_image_path) {
-            thumbHtml += `<img src="/${product.left_sleeve_image_path}" data-view="left-sleeve" style="width:54px;height:54px;object-fit:cover;cursor:pointer;border-radius:6px;border:2px solid #eee;margin-bottom:8px;" title="Left Sleeve">`;
-        }
-        // Right sleeve
-        if (product.right_sleeve_image_path) {
-            thumbHtml += `<img src="/${product.right_sleeve_image_path}" data-view="right-sleeve" style="width:54px;height:54px;object-fit:cover;cursor:pointer;border-radius:6px;border:2px solid #eee;margin-bottom:8px;" title="Right Sleeve">`;
-        }
+        // Each view's photo shows white (no colour on it), so it sits on black:
+        // the frame is a .garment-stage, not the photo, which the white
+        // filter would recolour along with any background of its own.
+        const thumb = (path, view, title) =>
+            `<span class="garment-stage" style="display:block;width:54px;height:54px;border-radius:6px;border:2px solid #eee;margin-bottom:8px;overflow:hidden;">`
+            + `<img src="/${path}" data-view="${view}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;display:block;" title="${title}"></span>`;
+        if (product.image_path)             thumbHtml += thumb(product.image_path, 'front', 'Front');
+        if (product.back_image_path)        thumbHtml += thumb(product.back_image_path, 'back', 'Back');
+        if (product.left_sleeve_image_path) thumbHtml += thumb(product.left_sleeve_image_path, 'left-sleeve', 'Left Sleeve');
+        if (product.right_sleeve_image_path) thumbHtml += thumb(product.right_sleeve_image_path, 'right-sleeve', 'Right Sleeve');
         thumbContainer.innerHTML = thumbHtml;
         // Thumbnail hover/preview and click/select logic
         let lastSelectedThumb = null;
@@ -229,8 +223,10 @@ function applyColorTint(hex) {
     if (!hex.startsWith('#')) hex = '#' + hex;
     const img = document.getElementById('mainProductImage');
     if (!img) return;
-    // The garment in this colour (lib/color-tint.js, the one formula).
+    // The garment in this colour (lib/color-tint.js, the one formula), on
+    // black when it is white and on grey otherwise (.garment-stage).
     img.style.filter = window.CostasTint.filterFor(hex);
+    window.CostasTint.stage(img.closest('.garment-stage'), hex);
 }
 
 

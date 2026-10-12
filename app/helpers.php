@@ -70,6 +70,27 @@ function app_url(string $path = ''): string
 }
 
 /**
+ * Where to send a request that came in on another host name than APP_URL's
+ * (costaspressjr.com without the www, a server alias), so search engines see
+ * one copy of the site; null when it is already there. GET and HEAD only: a
+ * redirected form post or webhook would arrive without its body.
+ * public/index.php applies it in production.
+ */
+function canonical_host_redirect(): ?string
+{
+    $want = parse_url((string)Env::get('APP_URL', ''));
+    if (empty($want['host']) || !in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
+        return null;
+    }
+    $host     = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+    $wantHost = strtolower($want['host']) . (isset($want['port']) ? ':' . $want['port'] : '');
+    if ($host === '' || $host === $wantHost) {
+        return null;
+    }
+    return app_url('/' . ltrim((string)($_SERVER['REQUEST_URI'] ?? '/'), '/'));
+}
+
+/**
  * A stored image path as a URL path. Paths are saved as "public/…",
  * "images/…" or "/images/…"; all three come back as "/images/…".
  */

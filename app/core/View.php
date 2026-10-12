@@ -28,6 +28,19 @@ class View {
             . '</script>';
     }
 
+    /**
+     * Structured data for search engines (schema.org JSON-LD):
+     *   <?= View::jsonLd(['@type' => 'Product', 'name' => …]) ?>
+     * The browser never runs it, so the CSP doesn't apply; the same flags as
+     * json() keep any value from closing the tag early.
+     */
+    public static function jsonLd(array $data): string {
+        return '<script type="application/ld+json">'
+            . json_encode(['@context' => 'https://schema.org'] + $data,
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)
+            . '</script>';
+    }
+
     /** A page script tag with a cache-busting version: <?= View::script('/js/pages/cart.js') ?> */
     public static function script(string $path): string {
         return '<script src="' . htmlspecialchars(Asset::url($path), ENT_QUOTES, 'UTF-8') . '"></script>';

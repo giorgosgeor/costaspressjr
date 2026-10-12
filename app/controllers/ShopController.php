@@ -5,9 +5,22 @@
  * premade designs and the design studio.
  */
 class ShopController extends Controller {
-    public function index(): void {
-        // Shop landing page - choose between premade and custom
-        $this->render('shop/index');
+    /**
+     * GET /shop: choose between pre-made designs and your own.
+     * GET /shop/{family}: one garment family's page (/shop/hoodies, see
+     * ProductFamily), the product picker showing that family only.
+     */
+    public function index(?string $slug = null): void {
+        if ($slug === null) {
+            $this->render('shop/index');
+            return;
+        }
+        $family = ProductFamily::fromSlug($slug);
+        if ($family === null) {
+            $this->notFound();
+            return;
+        }
+        $this->selectProduct($family);
     }
 
     public function premade(): void {
@@ -63,11 +76,13 @@ class ShopController extends Controller {
         $this->render('shop/anime', ['designs' => $designs, 'favoriteDesignIds' => $favoriteDesignIds]);
     }
 
-    public function premadeDesign(): void {
-        // Get design ID from URL
-        $uri = $_SERVER['REQUEST_URI'];
-        $parts = explode('/', trim(parse_url($uri, PHP_URL_PATH), '/'));
-        $designId = (int) end($parts);
+    /** GET /shop/design/{id}: the id is a plain number (/shop/design/12), nothing else. */
+    public function premadeDesign(?string $id = null): void {
+        $designId = ctype_digit((string)$id) ? (int)$id : 0;
+        if ($designId > 0 && $id !== (string)$designId) {   // /shop/design/012 → /shop/design/12
+            header('Location: /shop/design/' . $designId, true, 301);
+            return;
+        }
 
         // Get design details
         $stmt = $this->db->prepare("
@@ -80,8 +95,7 @@ class ShopController extends Controller {
         $design = $stmt->fetch();
 
         if (!$design) {
-            http_response_code(404);
-            echo "Design not found";
+            $this->notFound();
             return;
         }
 
@@ -135,7 +149,25 @@ class ShopController extends Controller {
         }
         unset($product);
 
-        $this->render('shop/premade_design', ['design' => $design, 'availableProducts' => $availableProducts]);
+        // Single-piece prices over every garment, colour and size it comes on,
+        // plus the design's own fee: the page's title quotes the lowest, the
+        // structured data the whole range. Null when it comes on nothing yet.
+        $priceRange = null;
+        foreach ($availableProducts as $p) {
+            $costs = [];
+            foreach ($p['sizes'] as $size) {
+                foreach (explode(',', (string)($size['color_costs'] ?? '')) as $c) {
+                    if ($c !== '') $costs[] = (float)$c;
+                }
+            }
+            [$lo, $hi] = self::priceRange($costs ?: [(float)$p['base_price']], $p['slug'] ?? '', $p['name'] ?? '');
+            $priceRange = $priceRange === null ? [$lo, $hi] : [min($priceRange[0], $lo), max($priceRange[1], $hi)];
+        }
+        if ($priceRange !== null) {
+            $priceRange = [$priceRange[0] + (float)$design['price'], $priceRange[1] + (float)$design['price']];
+        }
+
+        $this->render('shop/premade_design', ['design' => $design, 'availableProducts' => $availableProducts, 'priceRange' => $priceRange]);
     }
 
 public function designer(): void {
@@ -215,7 +247,11 @@ public function designer(): void {
         $this->render('shop/designer', ['products' => $products, 'loadDesign' => $loadDesign]);
     }
 
-    public function selectProduct(): void {
+    /**
+     * GET /shop/select_product: every garment to print on. With $family (a
+     * ProductFamily key, from index()), that family's landing page instead.
+     */
+    public function selectProduct(?string $family = null): void {
         // Hide products without a mockup image — they can't be previewed in
         // the customizer flow that this picker leads into.
         $stmt = $this->db->query("
@@ -234,7 +270,25 @@ public function designer(): void {
         unset($product);
         $favoriteProductIds = (new Favorites($this->db))->idsForCurrentUser('product');
 
-        $this->render('shop/select_product', ['products' => $products, 'favoriteProductIds' => $favoriteProductIds]);
+        // The families that have a page and something in them: the filter
+        // links. On a family's page, only its garments are listed.
+        $families = [];
+        foreach ($products as $product) {
+            $f = ProductFamily::of($product['name'] ?? '');
+            if (ProductFamily::path($f) !== null) {
+                $families[$f] = true;
+            }
+        }
+        $families = array_values(array_intersect(array_keys(ProductFamily::PAGES), array_keys($families)));
+        if ($family !== null) {
+            $products = array_values(array_filter($products, static fn($p) => ProductFamily::of($p['name'] ?? '') === $family));
+            if (!$products) {   // a family page with nothing on it is no page
+                $this->notFound();
+                return;
+            }
+        }
+
+        $this->render('shop/select_product', ['products' => $products, 'favoriteProductIds' => $favoriteProductIds, 'family' => $family, 'families' => $families]);
     }
 
     /**
@@ -342,7 +396,12 @@ public function designer(): void {
             1
         );
 
-        $this->render('shop/custom_product', ['product' => $product, 'colors' => $colors, 'sizes' => $sizes, 'colorSizeMatrix' => $colorSizeMatrix, 'variantCosts' => $variantCosts, 'thumbnails' => $thumbnails, 'deliveryEstimate' => $deliveryEstimate, 'retailPrice' => $retailPrice]);
+        // From the cheapest colour and size to the dearest, for the title and
+        // the structured data (search engines check it against the page).
+        $variantCostList = $variantCosts ? array_merge(...array_map('array_values', array_values($variantCosts))) : [];
+        $priceRange = self::priceRange($variantCostList ?: [(float)$product['base_price']], $product['slug'] ?? '', $product['name'] ?? '');
+
+        $this->render('shop/custom_product', ['product' => $product, 'colors' => $colors, 'sizes' => $sizes, 'colorSizeMatrix' => $colorSizeMatrix, 'variantCosts' => $variantCosts, 'thumbnails' => $thumbnails, 'deliveryEstimate' => $deliveryEstimate, 'retailPrice' => $retailPrice, 'priceRange' => $priceRange]);
     }
 
     /**
@@ -432,6 +491,19 @@ public function designer(): void {
      * adds color_costs, each colour's supplier cost in that size, in
      * color_ids order.
      */
+    /**
+     * The single-piece price range over a garment's colours and sizes, as
+     * the cart charges them: [from, to]. Titles quote "from"; the structured
+     * data gives both, because a page opens on its first colour, which is not
+     * always the cheapest.
+     * @param float[] $costs the variants' supplier costs
+     * @return array{0: float, 1: float}
+     */
+    private static function priceRange(array $costs, string $slug, string $name): array {
+        $category = Pricing::categoryFor($slug, $name);
+        return [Pricing::unitPrice((float)min($costs), $category, 1), Pricing::unitPrice((float)max($costs), $category, 1)];
+    }
+
     private function sizesByProduct(array $productIds, bool $withCosts = false): array {
         $ids = array_values(array_unique(array_map('intval', $productIds)));
         if (!$ids) {

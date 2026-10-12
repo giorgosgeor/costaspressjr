@@ -386,12 +386,20 @@ body.theme-studio .product-list-card {
 }
 body.theme-studio .product-list-card:hover { transform: none; box-shadow: none; border-color: var(--st-field); }
 body.theme-studio .product-list-card.selected { transform: none; box-shadow: none; border-color: var(--st-ink); }
+/* The tile is on a wrapper (.garment-stage, black), not the photo: the
+   photo's white filter would recolour a background of its own. */
+body.theme-studio .product-list-card .product-list-media {
+    display: block;
+    width: 100%;
+    max-width: 250px;
+    margin: 0 auto 10px;
+    border-radius: var(--st-r-img);
+    overflow: hidden;
+}
 body.theme-studio .product-list-card img {
     border: 0;
-    border-radius: var(--st-r-img);
-    background: var(--st-tile);
     padding: 6%;
-    margin-bottom: 10px;
+    margin: 0 auto;
 }
 body.theme-studio .product-list-card .product-name { font-family: var(--font); font-weight: 500; }
 
@@ -1299,3 +1307,16 @@ body.theme-studio .size-qty-note { margin: 8px 0 0; color: var(--st-muted); font
     body.theme-studio .popup-wide .popup-actions { flex-direction: row; }
     body.theme-studio .popup-wide .popup-actions .btn { flex: 1 1 0; }
 }
+
+/* ---- What a garment photo sits on -------------------------------------
+   Black when the garment is white, which is how every photo shows wherever
+   no colour is chosen (listings, cards, thumbnails: see the filter at the top
+   of this file). #ECECEC when the garment is any other colour. The class goes
+   on the element that holds the photo, never on the photo itself: the white
+   filter would recolour a background set there too. Pages that change the
+   colour toggle .is-coloured (CostasTint.stage() in js/lib/color-tint.js,
+   Tint::stageClass() in PHP), and saved previews bake in the same two colours
+   (CostasTint.backdropFor()). Last in the file, so it wins over the tiles
+   above. */
+body.theme-studio .garment-stage { background: #000000; }
+body.theme-studio .garment-stage.is-coloured { background: #ECECEC; }

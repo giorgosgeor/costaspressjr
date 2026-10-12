@@ -39,7 +39,9 @@ answers 500 until then).
    `php database/make_webp.php`: WebP copies of the product photos, about a
    tenth of their size, which browsers are sent instead (both need PHP's GD
    extension, standard on hosts). Photos uploaded later in the admin get both
-   automatically.
+   automatically. Then `php database/make_share_cards.php`: the picture each
+   product and design page shows when it is shared on WhatsApp, Facebook and
+   the like. Run this one again after adding products or designs.
 4. On the server: `php database/migrate.php` — applies anything newer than
    the export. Run it again after every update.
 5. First admin: `php database/create_admin.php --email=you@… --username=…`

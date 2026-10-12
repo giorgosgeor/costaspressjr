@@ -1,4 +1,4 @@
-<?php $title = t('about.title', false); ?>
+<?php $title = t('about.title', false); $metaDescription = t('seo.about.description', false); ?>
 <?php require View::path('layouts/customer_header'); ?>
 
 <section class="section page-section">

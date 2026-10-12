@@ -2,6 +2,7 @@
 $title        = t('info.faq.title', false);
 $infoTitle    = t('info.faq.h1', false);
 $infoSubtitle = t('info.faq.subtitle', false);
+$metaDescription = t('seo.faq.description', false);
 $infoUpdated  = '2026-10-09';
 ob_start();
 ?>

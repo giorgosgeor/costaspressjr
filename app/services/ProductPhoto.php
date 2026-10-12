@@ -6,8 +6,9 @@
  * colouring brought out two flaws: blotchy compression noise on the fabric
  * and a cut-out outline that steps and smears. enhance() smooths the fabric
  * without softening seams, folds or stitching (a bilateral filter: neighbours
- * count for less the more their tone differs) and redraws the outline as a
- * clean edge about 2px wide.
+ * count for less the more their tone differs), gives flatly lit photos the
+ * falloff towards the sides that the well-shot ones have (volume()), and
+ * redraws the outline as a clean edge about 2px wide.
  *
  * A cleaned photo carries a text tag saying so (a PNG tEXt chunk, a JPEG
  * comment), which goes wherever the file is copied, the production export
@@ -23,6 +24,9 @@ final class ProductPhoto {
     private const SIGMA_RANGE = 7.0;      // tone steps beyond ~15/255 (seams, folds) barely count
     private const EDGE_SIGMA = 1.4;       // outline: blurred, then tightened to ~2px
     private const EDGE_RADIUS = 4;
+    private const VOLUME_REACH = 60.0;    // falloff towards the outline: px at 1024 wide (volume())
+    private const VOLUME_EDGE = -0.09;    // the band along the outline: this much darker than the middle
+    private const VOLUME_MAX = 0.16;      // most a photo is darkened there, as a share of full tone
     // 1500×1500. Larger photos would take too long for an upload request and
     // are left as they are (the shop's photos are 1024×1024).
     private const MAX_PIXELS = 2_250_000;
@@ -122,8 +126,9 @@ final class ProductPhoto {
     }
 
     /**
-     * Smooth the fabric, then redraw the outline. Channels are held as byte
-     * strings (one byte a pixel) to stay well inside PHP's memory limit.
+     * Smooth the fabric, shade it towards the sides, then redraw the outline.
+     * Channels are held as byte strings (one byte a pixel) to stay well inside
+     * PHP's memory limit.
      */
     private static function process(\GdImage $image): void {
         $w = imagesx($image);
@@ -141,6 +146,7 @@ final class ProductPhoto {
         }
 
         [$r1, $g1, $b1] = self::smooth($r, $g, $b, $lum, $op, $w, $h);
+        [$r1, $g1, $b1] = self::volume($r1, $g1, $b1, $op, $w, $h);
         [$r2, $g2, $b2, $op2] = self::outline($r1, $g1, $b1, $op, $w, $h);
 
         imagealphablending($image, false);
@@ -150,6 +156,113 @@ final class ProductPhoto {
                 imagesetpixel($image, $x, $y, ($alpha << 24) | (ord($r2[$i]) << 16) | (ord($g2[$i]) << 8) | ord($b2[$i]));
             }
         }
+    }
+
+    /**
+     * The falloff a lit garment has towards its sides. Some supplier photos
+     * are evenly lit, or even lighter at the edges (a halo from the white they
+     * were cut out of), and tinted in a strong colour they read as a flat
+     * cut-out: the tank top in red. This measures how much darker the band
+     * along the outline is than the middle and darkens towards the outline by
+     * only what is missing to reach VOLUME_EDGE, so photos already shaded (the
+     * zip hoodies) barely change. The tones then shift back so the middle keeps
+     * its grey, the midtone Tint turns into the colour itself.
+     */
+    private static function volume(string $r, string $g, string $b, string $op, int $w, int $h): array {
+        // Distance to the outline, on a grid a quarter the size: the falloff
+        // spans dozens of pixels, so the coarse grid loses nothing and is quick.
+        $s  = 4;
+        $gw = intdiv($w + $s - 1, $s);
+        $gh = intdiv($h + $s - 1, $s);
+        $far = 1e9;
+        $d = $lum = [];
+        for ($gy = 0; $gy < $gh; $gy++) {
+            for ($gx = 0; $gx < $gw; $gx++) {
+                $i = min($h - 1, $gy * $s + 1) * $w + min($w - 1, $gx * $s + 1);
+                $d[] = ord($op[$i]) < 128 ? 0.0 : $far;
+                $lum[] = ord($op[$i]) >= 250 ? (ord($r[$i]) * 77 + ord($g[$i]) * 150 + ord($b[$i]) * 29) >> 8 : -1;
+            }
+        }
+        // Chamfer distance, two passes: 1 across, √2 diagonally.
+        for ($y = 0; $y < $gh; $y++) {
+            for ($x = 0, $i = $y * $gw; $x < $gw; $x++, $i++) {
+                if ($d[$i] == 0) continue;
+                $m = $d[$i];
+                if ($x > 0) $m = min($m, $d[$i - 1] + 1);
+                if ($y > 0) {
+                    $m = min($m, $d[$i - $gw] + 1);
+                    if ($x > 0) $m = min($m, $d[$i - $gw - 1] + M_SQRT2);
+                    if ($x < $gw - 1) $m = min($m, $d[$i - $gw + 1] + M_SQRT2);
+                }
+                $d[$i] = $m;
+            }
+        }
+        for ($y = $gh - 1; $y >= 0; $y--) {
+            for ($x = $gw - 1, $i = $y * $gw + $x; $x >= 0; $x--, $i--) {
+                if ($d[$i] == 0) continue;
+                $m = $d[$i];
+                if ($x < $gw - 1) $m = min($m, $d[$i + 1] + 1);
+                if ($y < $gh - 1) {
+                    $m = min($m, $d[$i + $gw] + 1);
+                    if ($x < $gw - 1) $m = min($m, $d[$i + $gw + 1] + M_SQRT2);
+                    if ($x > 0) $m = min($m, $d[$i + $gw - 1] + M_SQRT2);
+                }
+                $d[$i] = $m;
+            }
+        }
+
+        // The shading profile exp(−distance / reach); the middle's median; the
+        // edge band's mean, weighted by the profile.
+        $reach = self::VOLUME_REACH * $w / 1024 / $s;
+        $weight = $inner = [];
+        $band = $sumW = $sumW2 = 0.0;
+        foreach ($d as $i => $dist) {
+            $weight[$i] = $dist >= $far ? 0.0 : exp(-$dist / $reach);
+            if ($lum[$i] < 0) continue;
+            if ($dist > 3 * $reach) $inner[] = $lum[$i];
+            $band  += $weight[$i] * $lum[$i];
+            $sumW  += $weight[$i];
+            $sumW2 += $weight[$i] ** 2;
+        }
+        if (!$inner || $sumW2 <= 0) {
+            return [$r, $g, $b];   // too small or too thin to have a middle
+        }
+        sort($inner);
+        $median = $inner[intdiv(count($inner), 2)];
+        $lack = ($band / $sumW - $median) / 255 - self::VOLUME_EDGE;   // how much lighter the band is than wanted
+        $amp = max(0.0, min(self::VOLUME_MAX, $lack)) * 255;
+        if ($amp < 1) {
+            return [$r, $g, $b];
+        }
+        $scale = $amp * $sumW / $sumW2;   // so the band's weighted mean drops by $amp
+
+        // The middle's grey back where it was: the median of the shaded tones.
+        $after = [];
+        foreach ($lum as $i => $v) {
+            if ($v >= 0) $after[] = $v - $scale * $weight[$i];
+        }
+        sort($after);
+        $lift = $median - $after[intdiv(count($after), 2)];
+
+        // Full size, the profile read off the grid bilinearly.
+        $shade = [];
+        foreach ($weight as $i => $wt) $shade[$i] = $scale * $wt;
+        for ($y = 0, $i = 0; $y < $h; $y++) {
+            $fy = min($gh - 1.0, max(0.0, ($y - 1) / $s));
+            $y0 = (int)$fy; $y1 = min($gh - 1, $y0 + 1); $ty = $fy - $y0;
+            for ($x = 0; $x < $w; $x++, $i++) {
+                if ($op[$i] === "\0") continue;
+                $fx = min($gw - 1.0, max(0.0, ($x - 1) / $s));
+                $x0 = (int)$fx; $x1 = min($gw - 1, $x0 + 1); $tx = $fx - $x0;
+                $top = $shade[$y0 * $gw + $x0] * (1 - $tx) + $shade[$y0 * $gw + $x1] * $tx;
+                $bot = $shade[$y1 * $gw + $x0] * (1 - $tx) + $shade[$y1 * $gw + $x1] * $tx;
+                $delta = $lift - ($top * (1 - $ty) + $bot * $ty);
+                $r[$i] = chr(max(0, min(255, (int)round(ord($r[$i]) + $delta))));
+                $g[$i] = chr(max(0, min(255, (int)round(ord($g[$i]) + $delta))));
+                $b[$i] = chr(max(0, min(255, (int)round(ord($b[$i]) + $delta))));
+            }
+        }
+        return [$r, $g, $b];
     }
 
     /** Bilateral smoothing of the fully opaque pixels; edge pixels are left to outline(). */

@@ -80,8 +80,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 canvas.height = canvasSize;
                 const ctx = canvas.getContext('2d');
 
-                // Fill background (white, matching the mockup container)
-                ctx.fillStyle = '#ffffff';
+                // Fill the background as the page shows it: black behind a
+                // white garment, grey behind any other colour (.garment-stage).
+                ctx.fillStyle = window.CostasTint.backdropFor(colorHexToUse);
                 ctx.fillRect(0, 0, canvasSize, canvasSize);
 
                 // Draw product image centered (simulating object-fit: contain with 98% max)
